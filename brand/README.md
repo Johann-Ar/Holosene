@@ -8,6 +8,8 @@ Fichiers reconstruits à partir de la planche d'identité (`source/identite-plan
 - « S » : **épaisseur régularisée** (tracé à épaisseur constante, bouts arrondis), forme du dessin d'origine conservée.
 - Irisé : deux variantes, chacune liée à son fond — **intérieur lumineux** sur fond clair, **anneau irisé** sur fond sombre.
 - Les petites irrégularités de la planche (tuile décalée, logotype irisé sombre plus petit) sont traitées comme des défauts de montage.
+- Squircle **carré** (la planche était 7 % plus large, vraisemblablement un étirement d'export).
+- Logotype : **Archivo**, graisse 500, largeur 120 %, approche -0,04 em, converti en tracés (largeur du mot = 99,6 % de l'original).
 
 ## Mesures (planche)
 | Élément | Valeur |
@@ -32,11 +34,17 @@ Fichiers reconstruits à partir de la planche d'identité (`source/identite-plan
 | `icons/icon-maskable.svg` | icône pleine (sans coins transparents) pour Android / iOS |
 | `icons/favicon.svg` | favicon (squircle noir, anneau irisé) |
 | `png/` | exports : monogrammes 1024 px, icônes 512 px, `icon-192.png`, `icon-maskable-512.png`, `apple-touch-icon.png` (180 px), `favicon.ico` (16, 32, 48) |
+| `logotype/logotype-black.svg`, `-white.svg` | logotype « Holosene » en tracés (la police n'est pas nécessaire) |
+| `logotype/logotype-iris-light.svg` | sur fond clair : « o » à intérieur irisé lumineux |
+| `logotype/logotype-iris-dark.svg` | sur fond sombre : « o » en anneau irisé |
+| `png/logotype-*-1200.png` | logotype en PNG, 1200 px de large |
+| `png/share-1200x630.png` | image de partage (Open Graph / Twitter) |
 | `iridescent/iridescent.css` | irisé en CSS (`--iris-conic`, `.iris-fill`, `.iris-ring`) |
 | `iridescent/iridescent.glsl` | même irisé en GLSL (`iris(uv)`, `irisCore(r)`) pour la 3D |
 | `iridescent/iridescent-swatch.svg` | arrêts de couleur de l'irisé |
 | `validation/` | comparaisons avec l'original (superpositions, côte à côte, polices candidates) |
-| `tools/` | scripts de construction (`python3 tools/build.py` régénère SVG ; `node tools/render.mjs` pour les PNG) |
+| `tools/` | scripts : `python3 tools/build.py` (monogramme, squircle, icônes), `python3 tools/logotype.py` (logotype), `node tools/render.mjs` (PNG) |
+| `tools/data/` | données de construction, instance d'Archivo utilisée et sa licence (`ARCHIVO-OFL.txt`, SIL Open Font License 1.1) |
 
 ## Irisé
 Dégradé **conique** autour du « o » (angles : 0° = droite) : menthe `#98E2B4` (0°), bleu lavande `#99C1DD` (45°),
@@ -44,7 +52,7 @@ mauve `#DA9BC2` (90°), rose `#FE9AD5` (135°), rose vif `#FF97F0` (180°), rose
 bleu lavande `#9BC1DE` (315°). Version claire : cœur blanc radial. **Rare** : le « o », un survol, le curseur,
 le chargement, une lumière dans la 3D. Jamais pour du texte sur fond clair (contraste ≈ 1,5:1).
 
-## En attente
-- **Logotype « Holosene »** : police à valider (voir `validation/logotype-font-candidates.png`), puis mot recréé,
-  espacement ajusté et converti en tracés (`logotype/`).
-- **Image de partage 1200 × 630** : après validation du logotype.
+## Typographie
+- **Logotype et titres** : Archivo (Omnibus-Type, SIL Open Font License 1.1 — usage web et commercial libres).
+  Pour l'interface, la version variable (axes graisse et largeur) peut servir aux titres.
+- Le logotype est fourni **en tracés** : ne jamais le recomposer au clavier.
