@@ -26,6 +26,10 @@ Fichiers reconstruits à partir de la planche d'identité (`source/identite-plan
 | Monogramme dans la tuile | hauteur ≈ 74 % de la tuile |
 | Squircle | côtés en arc (flèche 8,75 % du côté) + coins arrondis (16,25 %) ; IoU 0,99 avec la planche |
 
+## Guide de marque
+Page interne (non publiée, `noindex`) : `brand/guide/index.html`. Pour la consulter :
+`cd brand && python3 -m http.server`, puis http://localhost:8000/guide/. Valeurs de référence : `brand/tokens.css`.
+
 ## Dossiers
 | Fichier | Usage |
 |---|---|

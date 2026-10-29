@@ -1,0 +1,65 @@
+/*
+ * HOLOSENE — design tokens (source unique pour le guide de marque et le site).
+ * Valeurs mesurées sur la planche d'identité ; contrastes WCAG calculés (voir brand/guide).
+ */
+:root {
+  /* ---------- couleurs de base ---------- */
+  --c-black: #1a1a1a;        /* noir de la marque (tuiles, tracé) */
+  --c-black-deep: #0e0e0e;   /* fond de page sombre */
+  --c-graphite: #2a2a2a;     /* surfaces et cartes sur fond sombre */
+  --c-line-dark: #333333;    /* filets sur fond sombre */
+  --c-grey: #5f605f;         /* gris neutre de la planche : non textuel sur fond sombre (2,8:1) */
+  --c-grey-text: #a0a0a0;    /* texte secondaire sur fond sombre (6,7:1 sur noir) */
+  --c-grey-light: #d9d9d9;   /* texte courant atténué sur fond sombre (12,3:1) */
+  --c-white: #ffffff;
+
+  /* ---------- irisé (rare) ---------- */
+  --iris-mint: #98e2b4;
+  --iris-blue: #99c1dd;
+  --iris-mauve: #da9bc2;
+  --iris-rose: #fe9ad5;
+  --iris-pink: #ff97f0;
+  /* conique CSS : 0deg = haut, sens horaire */
+  --iris-conic: conic-gradient(from 0deg, #da9bc2 0deg, #99c1dd 45deg, #98e2b4 90deg, #9bc1de 135deg,
+    #d99cc3 180deg, #f99dd0 225deg, #ff97f0 270deg, #fe9ad5 315deg, #da9bc2 360deg);
+  --iris-core: radial-gradient(circle, #fff 0%, rgb(255 255 255 / 0.96) 38%, rgb(255 255 255 / 0) 80%);
+
+  /* ---------- typographie ---------- */
+  --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;  /* titres : largeur 120 %, graisse 500 */
+  --font-text: 'Archivo', 'Helvetica Neue', Arial, sans-serif;     /* texte : largeur 100 %, graisse 400 */
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;           /* étiquettes */
+  --display-stretch: 120%;
+  --display-weight: 500;
+  --display-track: -0.04em;  /* même approche que le logotype */
+  --fs-hero: clamp(3rem, 8vw, 7.5rem);
+  --fs-h1: clamp(2.25rem, 4.5vw, 4rem);
+  --fs-h2: clamp(1.5rem, 2.6vw, 2.25rem);
+  --fs-body: 1.0625rem;      /* 17 px */
+  --fs-small: 0.875rem;
+  --fs-label: 0.75rem;       /* étiquettes mono, capitales */
+  --lh-tight: 1;
+  --lh-body: 1.55;
+
+  /* ---------- espacements (base 8) ---------- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px; --sp-5: 32px; --sp-6: 48px; --sp-7: 64px; --sp-8: 96px; --sp-9: 144px;
+  --edge: clamp(16px, 4vw, 56px);
+
+  /* ---------- formes ---------- */
+  /* le squircle (côtés bombés) se fait en SVG : brand/squircle ; à défaut, rayons équivalents : */
+  --radius-s: 10px;
+  --radius-m: 18px;
+  --radius-l: 28px;
+  --radius-pill: 999px;
+
+  /* ---------- mouvement ---------- */
+  --ease-flow: cubic-bezier(0.22, 1, 0.36, 1);     /* sortie douce, « comme l'eau » */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 180ms;   /* survols, focus */
+  --dur-base: 420ms;   /* apparitions d'éléments */
+  --dur-slow: 900ms;   /* changements de section */
+  --dur-scene: 1600ms; /* apparition du réel (points 3D) */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; --dur-scene: 0ms; }
+}

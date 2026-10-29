@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Holosene — guide de marque (interne)</title>
+<link rel="icon" href="../icons/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="../tokens.css" />
+<style>
+  @font-face { font-family: 'Archivo'; src: url(fonts/archivo-variable.woff2) format('woff2'); font-weight: 100 900; font-stretch: 62% 125%; }
+  @font-face { font-family: 'IBM Plex Mono'; src: url(fonts/ibm-plex-mono-400.woff2) format('woff2'); font-weight: 400; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--c-black-deep); color: var(--c-grey-light); font: 400 var(--fs-body)/var(--lh-body) var(--font-text); }
+  a { color: inherit; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 var(--edge); }
+  header.top { display: flex; justify-content: space-between; align-items: center; padding: var(--sp-5) var(--edge); border-bottom: 1px solid var(--c-line-dark); }
+  header.top img { height: 22px; }
+  .label { font: 400 var(--fs-label)/1.4 var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--c-grey-text); }
+  h1, h2, h3 { font-family: var(--font-display); font-stretch: var(--display-stretch); font-weight: var(--display-weight); letter-spacing: var(--display-track); color: var(--c-white); line-height: var(--lh-tight); }
+  h1 { font-size: var(--fs-hero); margin: var(--sp-8) 0 var(--sp-4); }
+  h2 { font-size: var(--fs-h1); margin-bottom: var(--sp-4); }
+  h3 { font-size: 1.25rem; letter-spacing: -0.02em; margin-bottom: var(--sp-2); }
+  section { padding: var(--sp-8) 0; border-top: 1px solid var(--c-line-dark); }
+  p { max-width: 62ch; }
+  p + p { margin-top: var(--sp-3); }
+  .lead { font-size: 1.25rem; color: var(--c-white); }
+  .grid { display: grid; gap: var(--sp-4); margin-top: var(--sp-6); }
+  .g2 { grid-template-columns: repeat(2, 1fr); } .g3 { grid-template-columns: repeat(3, 1fr); } .g4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 860px) { .g3, .g4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .g2, .g3, .g4 { grid-template-columns: 1fr; } }
+  .tile { aspect-ratio: 1; display: grid; place-items: center; border-radius: var(--radius-l); padding: 18%; }
+  .tile.w { background: var(--c-white); } .tile.k { background: var(--c-black); } .tile.g { background: var(--c-grey); }
+  .tile img { max-width: 100%; max-height: 100%; }
+  .wide { aspect-ratio: 16 / 9; padding: 12% 14%; }
+  .cap { margin-top: var(--sp-2); }
+  .cap b { color: var(--c-white); font-weight: 500; }
+  /* palette */
+  .sw { border-radius: var(--radius-m); overflow: hidden; border: 1px solid var(--c-line-dark); }
+  .sw .chip { height: 120px; }
+  .sw .meta { padding: var(--sp-3); background: var(--c-black); }
+  .sw .meta b { display: block; color: var(--c-white); font-weight: 500; }
+  table { border-collapse: collapse; width: 100%; margin-top: var(--sp-5); font-size: var(--fs-small); }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--c-line-dark); vertical-align: top; }
+  th { font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--c-grey-text); }
+  td.ok { color: #98e2b4; } td.no { color: #fe9ad5; }
+  /* zone de protection */
+  .clear { position: relative; display: inline-block; outline: 1px dashed var(--iris-blue); background: var(--c-black); }
+  .clear img { display: block; }
+  .clear::after { content: ''; position: absolute; inset: var(--x); outline: 1px solid rgb(255 255 255 / .25); pointer-events: none; }
+  .x { position: absolute; font: 400 11px var(--font-mono); color: var(--iris-blue); }
+  /* irisé */
+  .iris-demo { aspect-ratio: 1; border-radius: 50%; background: var(--iris-core), var(--iris-conic); filter: blur(2px); }
+  .iris-ring-demo { aspect-ratio: 1; border-radius: 50%; background: var(--iris-conic); -webkit-mask: radial-gradient(circle, transparent 50%, #000 51%); mask: radial-gradient(circle, transparent 50%, #000 51%); }
+  pre { margin-top: var(--sp-4); padding: var(--sp-4); background: var(--c-black); border: 1px solid var(--c-line-dark); border-radius: var(--radius-m); font: 400 13px/1.6 var(--font-mono); color: var(--c-grey-light); overflow-x: auto; }
+  /* typo */
+  .spec { padding: var(--sp-5); background: var(--c-black); border-radius: var(--radius-l); }
+  .spec .big { font-family: var(--font-display); font-stretch: 120%; font-weight: 500; letter-spacing: -0.04em; color: #fff; font-size: clamp(2.5rem, 6vw, 5rem); line-height: 1; }
+  /* mouvement */
+  .move { height: 6px; border-radius: 3px; background: var(--c-graphite); position: relative; overflow: hidden; margin-top: var(--sp-3); }
+  .move span { position: absolute; inset: 0; width: 30%; background: #fff; border-radius: 3px; animation: flow var(--d) var(--ease-flow) infinite alternate; }
+  @keyframes flow { to { transform: translateX(233%); } }
+  /* usages incorrects */
+  .bad { position: relative; }
+  .bad::before { content: '×'; position: absolute; top: 10px; right: 14px; font: 500 22px var(--font-text); color: #fe9ad5; }
+  .good::before { content: '✓'; position: absolute; top: 10px; right: 14px; font: 500 20px var(--font-text); color: #98e2b4; }
+  .good { position: relative; }
+  .busy { background: repeating-linear-gradient(45deg, #b8b8b8 0 12px, #e8e8e8 12px 24px) !important; }
+  img { max-width: 100%; }
+  code { font-family: var(--font-mono); font-size: .9em; overflow-wrap: anywhere; }
+  @media (max-width: 700px) {
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+    .clear { transform: scale(.75); transform-origin: center top; }
+    header.top { flex-wrap: wrap; gap: 8px; }
+  }
+  footer { padding: var(--sp-7) 0; color: var(--c-grey-text); font-size: var(--fs-small); }
+</style>
+</head>
+<body>
+<header class="top">
+  <img src="../logotype/logotype-white.svg" alt="Holosene" />
+  <span class="label">Guide de marque · interne · v1</span>
+</header>
+
+<main class="wrap">
+  <h1>Guide de marque</h1>
+  <p class="lead">Holosene est le studio de Johann Arata : capter le réel et le transformer en volumes et en images 3D. L'identité réunit un tracé organique (le « S », un mouvement d'eau, un profil) et un point optique (le « o », lentille ou point de capture), avec une seule lumière : l'irisé.</p>
+  <p class="label" style="margin-top:var(--sp-4)">Document interne, non publié. Les fichiers sont dans <code>brand/</code> ; ne jamais redessiner le logo.</p>
+
+  <!-- 1. LOGO -->
+  <section>
+    <p class="label">01 · Logo</p>
+    <h2>Monogramme et logotype</h2>
+    <p>Le monogramme « So » est le signe principal ; le logotype « Holosene » l'accompagne ou le remplace quand il faut nommer le studio. Version sombre par défaut. Fichiers vectoriels uniquement (SVG), jamais recomposés au clavier.</p>
+    <div class="grid g4">
+      <div><div class="tile k"><img src="../monogram/monogram-white.svg" alt="Monogramme blanc sur noir" /></div><p class="cap label"><b>Blanc</b> sur noir — par défaut</p></div>
+      <div><div class="tile k"><img src="../monogram/monogram-iris-dark.svg" alt="Monogramme irisé sur noir" /></div><p class="cap label"><b>Irisé</b> sur noir — anneau</p></div>
+      <div><div class="tile w"><img src="../monogram/monogram-black.svg" alt="Monogramme noir sur blanc" /></div><p class="cap label"><b>Noir</b> sur blanc</p></div>
+      <div><div class="tile w"><img src="../monogram/monogram-iris-light.svg" alt="Monogramme irisé sur blanc" /></div><p class="cap label"><b>Irisé</b> sur blanc — cœur lumineux</p></div>
+    </div>
+    <div class="grid g2">
+      <div><div class="tile k wide"><img src="../logotype/logotype-white.svg" alt="Logotype blanc" /></div><p class="cap label"><b>Logotype</b> blanc</p></div>
+      <div><div class="tile k wide"><img src="../logotype/logotype-iris-dark.svg" alt="Logotype irisé" /></div><p class="cap label"><b>Logotype</b> irisé (les « o » seulement)</p></div>
+      <div><div class="tile w wide"><img src="../logotype/logotype-black.svg" alt="Logotype noir" /></div><p class="cap label"><b>Logotype</b> noir</p></div>
+      <div><div class="tile w wide"><img src="../logotype/logotype-iris-light.svg" alt="Logotype irisé sur blanc" /></div><p class="cap label"><b>Logotype</b> irisé sur blanc</p></div>
+    </div>
+    <div class="grid g4">
+      <div><img src="../icons/icon-black-iris.svg" alt="" style="width:100%" /><p class="cap label"><b>Icône</b> — favicon, application</p></div>
+      <div><img src="../icons/icon-black.svg" alt="" style="width:100%" /><p class="cap label"><b>Icône</b> noire</p></div>
+      <div><img src="../icons/icon-white.svg" alt="" style="width:100%" /><p class="cap label"><b>Icône</b> blanche</p></div>
+      <div><img src="../icons/icon-white-iris.svg" alt="" style="width:100%" /><p class="cap label"><b>Icône</b> blanche irisée</p></div>
+    </div>
+
+    <h3 style="margin-top:var(--sp-7)">Construction</h3>
+    <p>Le bord gauche du « S » — un profil — est la ligne maîtresse ; l'épaisseur, modulée (pleins et déliés), se construit depuis ce profil vers l'intérieur. Le « o » est un cercle parfait dont l'anneau vaut 92 % de l'épaisseur du « S » (correction optique : une forme fermée paraît plus lourde). Recherche détaillée : <code>brand/research/</code>.</p>
+
+    <h3 style="margin-top:var(--sp-6)">Zone de protection</h3>
+    <p>Unité <b>x</b> = diamètre extérieur du « o » (≈ 35 % de la hauteur du monogramme). Aucun élément dans une marge de <b>1 x</b> autour du monogramme. Pour le logotype, <b>x</b> = hauteur du « H ».</p>
+    <div class="grid g2">
+      <div style="text-align:center"><span class="clear" style="--x:56px;padding:56px"><img src="../monogram/monogram-white.svg" alt="" style="height:160px" /></span><p class="cap label">Monogramme · marge 1 x</p></div>
+      <div style="text-align:center"><span class="clear" style="--x:28px;padding:28px"><img src="../logotype/logotype-white.svg" alt="" style="height:28px" /></span><p class="cap label">Logotype · marge 1 x (hauteur du H)</p></div>
+    </div>
+
+    <h3 style="margin-top:var(--sp-6)">Tailles minimales</h3>
+    <table>
+      <tr><th>Élément</th><th>Écran</th><th>Impression</th><th>Exemple réel</th></tr>
+      <tr><td>Monogramme seul</td><td>24 px de haut</td><td>8 mm</td><td><img src="../monogram/monogram-white.svg" alt="" style="height:24px" /></td></tr>
+      <tr><td>Monogramme dans l'icône</td><td>16 px (favicon)</td><td>—</td><td><img src="../icons/icon-black-iris.svg" alt="" style="height:16px" /> <img src="../icons/icon-black-iris.svg" alt="" style="height:32px" /></td></tr>
+      <tr><td>Logotype</td><td>96 px de large</td><td>25 mm</td><td><img src="../logotype/logotype-white.svg" alt="" style="width:96px" /></td></tr>
+      <tr><td>Irisé visible</td><td>monogramme ≥ 48 px</td><td>≥ 15 mm</td><td>en dessous, utiliser la version blanche ou noire</td></tr>
+    </table>
+  </section>
+
+  <!-- 2. COULEURS -->
+  <section>
+    <p class="label">02 · Couleurs</p>
+    <h2>Noir, blanc, gris — et une lumière</h2>
+    <p>Valeurs mesurées sur la planche. Le site est sombre par défaut ; l'irisé reste rare.</p>
+    <div class="grid g4">
+      <div class="sw"><div class="chip" style="background:#0E0E0E"></div><div class="meta"><b>Noir profond</b><span class="label">#0E0E0E · fond de page</span></div></div>
+      <div class="sw"><div class="chip" style="background:#1A1A1A"></div><div class="meta"><b>Noir</b><span class="label">#1A1A1A · marque, tuiles</span></div></div>
+      <div class="sw"><div class="chip" style="background:#2A2A2A"></div><div class="meta"><b>Graphite</b><span class="label">#2A2A2A · surfaces</span></div></div>
+      <div class="sw"><div class="chip" style="background:#5F605F"></div><div class="meta"><b>Gris neutre</b><span class="label">#5F605F · non textuel</span></div></div>
+      <div class="sw"><div class="chip" style="background:#A0A0A0"></div><div class="meta"><b>Gris texte</b><span class="label">#A0A0A0 · texte secondaire</span></div></div>
+      <div class="sw"><div class="chip" style="background:#D9D9D9"></div><div class="meta"><b>Gris clair</b><span class="label">#D9D9D9 · texte courant</span></div></div>
+      <div class="sw"><div class="chip" style="background:#FFFFFF"></div><div class="meta"><b>Blanc</b><span class="label">#FFFFFF · titres, logo</span></div></div>
+      <div class="sw"><div class="chip" style="background:var(--iris-core),var(--iris-conic)"></div><div class="meta"><b>Irisé</b><span class="label">conique · rare</span></div></div>
+    </div>
+    <table>
+      <tr><th>Texte</th><th>Fond</th><th>Contraste</th><th>WCAG AA (texte courant 4,5:1)</th></tr>
+      <tr><td>Blanc #FFFFFF</td><td>Noir #1A1A1A</td><td>17,4:1</td><td class="ok">oui (AAA)</td></tr>
+      <tr><td>Gris clair #D9D9D9</td><td>Noir #1A1A1A</td><td>12,3:1</td><td class="ok">oui (AAA)</td></tr>
+      <tr><td>Gris texte #A0A0A0</td><td>Noir #1A1A1A</td><td>6,7:1</td><td class="ok">oui</td></tr>
+      <tr><td>Gris neutre #5F605F</td><td>Noir #1A1A1A</td><td>2,8:1</td><td class="no">non — jamais pour du texte sur fond sombre</td></tr>
+      <tr><td>Noir #1A1A1A</td><td>Blanc</td><td>17,4:1</td><td class="ok">oui (AAA)</td></tr>
+      <tr><td>Gris neutre #5F605F</td><td>Blanc</td><td>6,3:1</td><td class="ok">oui</td></tr>
+      <tr><td>Irisé (5 teintes)</td><td>Noir #1A1A1A</td><td>7,8 à 11,5:1</td><td class="ok">lisible, mais réservé aux accents</td></tr>
+      <tr><td>Irisé (5 teintes)</td><td>Blanc</td><td>1,5 à 2,2:1</td><td class="no">non — jamais de texte irisé sur fond clair</td></tr>
+    </table>
+  </section>
+
+  <!-- 3. IRISÉ -->
+  <section>
+    <p class="label">03 · Irisé</p>
+    <h2>La seule lumière</h2>
+    <p>Un dégradé conique autour du « o » : menthe à droite, bleu lavande en diagonale, mauve en haut et en bas, rose à gauche. Sur fond clair, un cœur blanc s'y ajoute. Il est défini une seule fois et partagé par le SVG, le CSS et la 3D (GLSL) : <code>brand/iridescent/</code>.</p>
+    <div class="grid g4">
+      <div><div class="iris-ring-demo"></div><p class="cap label"><b>Anneau</b> — fond sombre</p></div>
+      <div><div style="background:#fff;border-radius:var(--radius-l);padding:18%"><div class="iris-demo"></div></div><p class="cap label"><b>Cœur lumineux</b> — fond clair</p></div>
+      <div style="grid-column:span 2"><img src="../iridescent/iridescent-swatch.svg" alt="Arrêts de couleur de l'irisé" style="width:100%;border-radius:var(--radius-m)" /><p class="cap label"><b>Arrêts</b> 0° → 315°</p></div>
+    </div>
+    <h3 style="margin-top:var(--sp-6)">Où l'utiliser — et seulement là</h3>
+    <p>Le « o » du logo · un état de survol ou de sélection · le curseur · l'indicateur de chargement · une lumière dans la 3D (contours des nuages de points, selon l'angle de vue). Jamais sur un aplat de fond, jamais sur un paragraphe, jamais plus d'un élément irisé par écran.</p>
+<pre>/* CSS */
+background: var(--iris-conic);                       /* anneau, survol */
+background: var(--iris-core), var(--iris-conic);     /* cœur lumineux, fond clair */
+
+// GLSL (brand/iridescent/iridescent.glsl)
+vec3 c = iris(uv);              // uv : position autour du centre, dans [-1, 1]
+float glow = irisCore(r / rIn); // cœur blanc</pre>
+  </section>
+
+  <!-- 4. TYPOGRAPHIE -->
+  <section>
+    <p class="label">04 · Typographie</p>
+    <h2>Une famille, deux largeurs</h2>
+    <p>Le logotype est dessiné avec <b>Archivo</b> (Omnibus-Type, SIL Open Font License : usage web et commercial libre). La même police variable sert aux titres (largeur 120 %, graisse 500, approche -0,04 em) et au texte (largeur 100 %, graisse 400). Les étiquettes sont en <b>IBM Plex Mono</b> (OFL), capitales espacées.</p>
+    <div class="grid g3">
+      <div class="spec"><p class="label">Titre · Archivo 120 % · 500</p><p class="big">Capter le réel</p></div>
+      <div class="spec"><p class="label">Texte · Archivo 100 % · 400 · 17 px / 1,55</p><p style="margin-top:var(--sp-3)">Des volumes et des images 3D à partir de captations : nuages de points, Gaussian splatting, film.</p></div>
+      <div class="spec"><p class="label">Étiquette · IBM Plex Mono · 12 px · capitales</p><p class="label" style="margin-top:var(--sp-3);color:#fff">Rivière · 2025 — 26 · 4DGS</p></div>
+    </div>
+    <table>
+      <tr><th>Niveau</th><th>Taille</th><th>Usage</th></tr>
+      <tr><td>Hero</td><td>48 → 120 px (fluide)</td><td>un seul par écran</td></tr>
+      <tr><td>Titre 1</td><td>36 → 64 px</td><td>titres de page et de section</td></tr>
+      <tr><td>Titre 2</td><td>24 → 36 px</td><td>titres de projet, sous-sections</td></tr>
+      <tr><td>Texte</td><td>17 px</td><td>paragraphes, 62 caractères par ligne au plus</td></tr>
+      <tr><td>Petit</td><td>14 px</td><td>légendes, crédits</td></tr>
+      <tr><td>Étiquette</td><td>12 px mono, capitales, +0,06 em</td><td>métadonnées (année, milieu, technique)</td></tr>
+    </table>
+  </section>
+
+  <!-- 5. FORMES -->
+  <section>
+    <p class="label">05 · Formes</p>
+    <h2>Le squircle</h2>
+    <p>La forme de l'écran et de l'icône : côtés légèrement bombés, coins très arrondis (ajustée sur la planche). Elle encadre les vidéos, les cartes de projets, les boutons et les icônes. Fichiers : <code>brand/squircle/</code> ; en CSS, à défaut du SVG, les rayons <code>--radius-s / m / l</code>.</p>
+    <div class="grid g4">
+      <div><img src="../squircle/squircle-white.svg" alt="" style="width:100%" /><p class="cap label"><b>Squircle</b> — icônes, vignettes</p></div>
+      <div><div style="aspect-ratio:16/10;background:var(--c-graphite);border-radius:var(--radius-l)"></div><p class="cap label"><b>Cadre vidéo</b> — rayon L 28 px</p></div>
+      <div><div style="aspect-ratio:4/5;background:var(--c-graphite);border-radius:var(--radius-l)"></div><p class="cap label"><b>Carte de projet</b> — rayon L</p></div>
+      <div style="display:flex;flex-direction:column;gap:12px;justify-content:center"><span style="display:inline-block;padding:12px 22px;border-radius:var(--radius-m);background:#fff;color:#1a1a1a;font-weight:500;text-align:center">Voir le projet</span><span style="display:inline-block;padding:12px 22px;border-radius:var(--radius-m);border:1px solid #fff;color:#fff;text-align:center">Contact</span><p class="cap label"><b>Boutons</b> — rayon M 18 px</p></div>
+    </div>
+  </section>
+
+  <!-- 6. MOUVEMENT -->
+  <section>
+    <p class="label">06 · Mouvement</p>
+    <h2>Lent, fluide, organique</h2>
+    <p>Le mouvement suit le tracé du « S » : il coule plutôt qu'il ne bondit. Le réel apparaît à partir des points (dispersion → rassemblement) ; rien ne bouge sans raison. Avec <code>prefers-reduced-motion</code>, toutes les durées passent à zéro et la 3D reste immobile.</p>
+    <div class="grid g4">
+      <div><p class="label">Rapide · 180 ms</p><div class="move" style="--d:180ms"><span></span></div><p class="cap">survol, focus</p></div>
+      <div><p class="label">Base · 420 ms</p><div class="move" style="--d:420ms"><span></span></div><p class="cap">apparition d'un élément</p></div>
+      <div><p class="label">Lent · 900 ms</p><div class="move" style="--d:900ms"><span></span></div><p class="cap">changement de section</p></div>
+      <div><p class="label">Scène · 1600 ms</p><div class="move" style="--d:1600ms"><span></span></div><p class="cap">apparition du réel (points 3D)</p></div>
+    </div>
+    <p class="label" style="margin-top:var(--sp-4)">Courbe : cubic-bezier(0.22, 1, 0.36, 1) — sortie douce</p>
+  </section>
+
+  <!-- 7. USAGES -->
+  <section>
+    <p class="label">07 · Usages</p>
+    <h2>Correct et incorrect</h2>
+    <div class="grid g4">
+      <div class="good"><div class="tile k"><img src="../monogram/monogram-iris-dark.svg" alt="" /></div><p class="cap label">Fichier d'origine, fond uni</p></div>
+      <div class="good"><div class="tile w"><img src="../monogram/monogram-black.svg" alt="" /></div><p class="cap label">Version noire sur fond clair</p></div>
+      <div class="good"><div class="tile k wide" style="aspect-ratio:1"><img src="../logotype/logotype-white.svg" alt="" /></div><p class="cap label">Logotype blanc, marge respectée</p></div>
+      <div class="good"><div class="tile g"><img src="../monogram/monogram-white.svg" alt="" /></div><p class="cap label">Blanc sur gris neutre</p></div>
+
+      <div class="bad"><div class="tile k"><img src="../monogram/monogram-white.svg" alt="" style="transform:scaleX(1.4)" /></div><p class="cap label">Déformer, étirer</p></div>
+      <div class="bad"><div class="tile k"><img src="../monogram/monogram-white.svg" alt="" style="transform:rotate(-18deg)" /></div><p class="cap label">Faire pivoter</p></div>
+      <div class="bad"><div class="tile k"><img src="../monogram/monogram-white.svg" alt="" style="filter:invert(36%) sepia(90%) saturate(3000%) hue-rotate(220deg)" /></div><p class="cap label">Changer la couleur</p></div>
+      <div class="bad"><div class="tile k"><div style="width:72%;aspect-ratio:816/1000;background:var(--iris-conic);-webkit-mask:url(../monogram/monogram-white.svg) center/contain no-repeat;mask:url(../monogram/monogram-white.svg) center/contain no-repeat"></div></div><p class="cap label">Irisé sur tout le signe</p></div>
+      <div class="bad"><div class="tile k"><img src="../monogram/monogram-white.svg" alt="" style="filter:drop-shadow(8px 10px 0 #5f605f)" /></div><p class="cap label">Ombre, effet, contour</p></div>
+      <div class="bad"><div class="tile w busy"><img src="../monogram/monogram-black.svg" alt="" /></div><p class="cap label">Fond chargé, contraste faible</p></div>
+      <div class="bad"><div class="tile w"><span style="font:500 28px var(--font-text);background:var(--iris-conic);-webkit-background-clip:text;background-clip:text;color:transparent">Holosene</span></div><p class="cap label">Recomposer au clavier · texte irisé</p></div>
+      <div class="bad"><div class="tile k"><img src="../monogram/monogram-iris-dark.svg" alt="" style="height:20px" /></div><p class="cap label">Irisé sous 48 px</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>Holosene — guide de marque interne, v1. Fichiers et scripts : <code>brand/</code>. Valeurs de référence : <code>brand/tokens.css</code>.</p>
+</footer>
+</body>
+</html>
