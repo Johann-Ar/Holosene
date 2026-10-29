@@ -55,7 +55,10 @@ P = np.vstack([p0, P, p1]); N = np.vstack([n0, N, n1]); w = np.r_[w0, w, w1]; n 
 
 # 4. pinceau rond posé sur le profil
 disks = [Point(P[i] + N[i] * w[i] / 2).buffer(w[i] / 2, quad_segs=32) for i in range(0, n, 2)]
-shape = union_all(disks).buffer(3, quad_segs=32).buffer(-3, quad_segs=32)
+shape = union_all(disks)
+# angles rentrants (virage intérieur du bas) : fermeture morphologique, arrondit les crans sans toucher au profil
+shape = shape.buffer(16, quad_segs=48).buffer(-16, quad_segs=48)
+shape = shape.buffer(-3, quad_segs=32).buffer(3, quad_segs=32)
 
 # 5. contour réduit en Bézier (départ à l'extrémité haute)
 ring = np.array(shape.exterior.coords)[:-1]
