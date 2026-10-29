@@ -22,7 +22,7 @@
 .D .hero .bottom { position: absolute; left: 0; right: 0; bottom: 92px; z-index: 3; display: grid; gap: 18px; }
 .D .hero .bottom img { width: 100%; display: block; }
 .D .hero .meta { display: flex; justify-content: space-between; gap: 16px; align-items: end; }
-.D .hero .meta p.todo { max-width: 34ch; font-size: 1.05rem; }
+.D .hero .meta p.intent { max-width: 34ch; font-size: 1.05rem; color: #fff; }
 
 /* 2. projet phare : plein écran cinéma (B) */
 .D .feature { position: relative; min-height: 92svh; display: flex; align-items: flex-end; overflow: hidden; }
@@ -48,6 +48,8 @@
 .D .spec { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .D .spec div { border-top: 1px solid #333; padding-top: 8px; min-width: 0; }
 .D .spec b { display: block; font-weight: 500; font-size: 14px; color: #fff; }
+.D .credit { font-size: 13px; color: #a0a0a0; }
+.D .lab .intro p:not(.lbl) { max-width: 46ch; }
 
 /* 4. lab : version claire, relevé (C) */
 .D .lab { background: #f2f2f0; color: #1a1a1a; padding-block: 120px; }
@@ -82,7 +84,7 @@
     <header class="wrap"><img src="../assets/monogram-white.svg" alt="Holosene"><nav class="navd"><span>Projets</span><span>Lab</span><span>Studio</span><span>Contact</span></nav></header>
     <div class="bottom wrap">
       <img src="../assets/logotype-white.svg" alt="Holosene">
-      <div class="meta"><p class="todo">[Phrase d'intention à compléter par Johann]</p><p class="lbl">Studio de Johann Arata · captation, reconstruction, 3D temps réel</p></div>
+      <div class="meta"><p class="intent">Je capte le réel et le transforme en volumes et en espaces 3D à parcourir.</p><p class="lbl">Studio de Johann Arata · captation, reconstruction, 3D temps réel</p></div>
     </div>
   </section>
 
@@ -102,24 +104,24 @@
     <div class="grid">
       <article class="card"><div class="pic sq" style="background-image:url(../assets/pont.webp)"></div><p class="lbl">Rivière · 2025 – 26</p><h3 class="disp">4Dérives</h3>
         <div class="spec"><div><span class="lbl">Capteur</span><b>GoPro, à hauteur d'yeux</b></div><div><span class="lbl">Reconstruction</span><b>4D Gaussian splatting</b></div><div><span class="lbl">Rendu</span><b>Film, essais 4D</b></div></div></article>
-      <article class="card"><div class="pic sq"><span>[Visuel à fournir · crédit Schmidt Ocean Institute]</span></div><p class="lbl">Grands fonds · 2026</p><h3 class="disp">Dumbo</h3>
-        <div class="spec"><div><span class="lbl">Source</span><b>Vidéos de submersibles (Schmidt Ocean Institute)</b></div><div><span class="lbl">Traitement</span><b>Segmentation SAM2, profondeur par luminosité</b></div><div><span class="lbl">Rendu</span><b>Galerie 3D temps réel</b></div></div></article>
-      <article class="card"><div class="pic sq"><span>[Visuel à fournir · accord de Nicolas Floc'h]</span></div><p class="lbl">Littoral · 2025 – 26</p><h3 class="disp">Photographique Volume</h3>
-        <div class="spec"><div><span class="lbl">Source</span><b>Photographies de Nicolas Floc'h</b></div><div><span class="lbl">Traitement</span><b>Profondeur estimée par IA (Depth Anything V2)</b></div><div><span class="lbl">Rendu</span><b>Paysages 3D, son (Web Audio)</b></div></div></article>
-      <article class="card"><div class="pic sq"><span>[Visuel à fournir]</span></div><p class="lbl">Recherche · 2024 – 25</p><h3 class="disp">Mondes Immergés</h3>
+      <article class="card"><div class="pic sq" style="background-image:url(../assets/dumbo-volume.webp)"></div><p class="lbl">Grands fonds · 2026</p><h3 class="disp">Dumbo</h3>
+        <div class="spec"><div><span class="lbl">Source</span><b>Vidéos de submersibles (Schmidt Ocean Institute)</b></div><div><span class="lbl">Traitement</span><b>Segmentation SAM2, profondeur par luminosité</b></div><div><span class="lbl">Rendu</span><b>Galerie 3D temps réel</b></div></div><p class="credit">Rendu : Johann Arata, d'après des vidéos du Schmidt Ocean Institute</p></article>
+      <article class="card"><div class="pic sq" style="background-image:url(../assets/pv-volume.webp)"></div><p class="lbl">Littoral · 2025 – 26</p><h3 class="disp">Photographique Volume</h3>
+        <div class="spec"><div><span class="lbl">Source</span><b>Photographies de Nicolas Floc'h</b></div><div><span class="lbl">Traitement</span><b>Profondeur estimée par IA (Depth Anything V2)</b></div><div><span class="lbl">Rendu</span><b>Paysages 3D, son (Web Audio)</b></div></div><p class="credit">Rendu : Johann Arata, d'après les photographies de Nicolas Floc'h</p></article>
+      <article class="card"><div class="pic sq" style="background-image:url(../assets/mondes-immerges.webp);background-position:center 30%"></div><p class="lbl">Recherche · 2024 – 25</p><h3 class="disp">Mondes Immergés</h3>
         <div class="spec"><div><span class="lbl">Forme</span><b>Article de recherche</b></div><div><span class="lbl">Sujet</span><b>Design immersif et milieux aquatiques</b></div><div><span class="lbl">Cadre</span><b>DNMADe Design numérique</b></div></div></article>
     </div>
   </section>
 
   <section class="lab">
     <div class="inner wrap">
-      <div class="intro"><p class="lbl">Lab · relevé n° 01</p><h2 class="disp">Essais 4DGS</h2><p class="todo">[Texte du lab et du mémoire, à fournir par Johann]</p></div>
+      <div class="intro"><p class="lbl">Lab · relevé n° 01</p><h2 class="disp">Essais 4DGS</h2><p>Mémoire en cours : la reconstruction volumétrique du réel capturé (Gaussian splatting 3D et 4D) et la frontière entre captation, reconstruction et génération par IA.</p><p>Premier relevé : les essais en 4D Gaussian splatting de 4Dérives, qui prolongent l'espace hors du cadre.</p></div>
       <div class="win sq" role="img" aria-label="Essai de 4D Gaussian splatting sur 4Dérives"></div>
       <div class="data">
         <div><span class="lbl">Source</span><b>Tournage 4Dérives</b></div>
         <div><span class="lbl">Outil</span><b>Luma AI</b></div>
         <div><span class="lbl">Technique</span><b>4D Gaussian splatting</b></div>
-        <div><span class="lbl">Constat</span><b class="todo">[à compléter]</b></div>
+        <div><span class="lbl">Constat</span><b>Montre les limites des outils accessibles aujourd'hui</b></div>
       </div>
     </div>
   </section>
