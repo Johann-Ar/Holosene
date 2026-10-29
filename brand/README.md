@@ -5,7 +5,11 @@ Fichiers reconstruits à partir de la planche d'identité (`source/identite-plan
 
 ## Décisions validées par Johann
 - « o » : **cercle parfait** (sur la planche il était légèrement ovale, 88 × 77 px).
-- « S » : **épaisseur régularisée** (tracé à épaisseur constante, bouts arrondis), forme du dessin d'origine conservée.
+- « S » : **version P1** (recherche dans `research/`). Le **bord gauche (le profil) est la ligne maîtresse**, redessinée
+  en courbes propres (4 inflexions réelles conservées, tremblements supprimés). L'épaisseur d'origine est conservée
+  (pleins et déliés), **augmentée de 12 %** et construite depuis le profil vers l'intérieur au pinceau rond ;
+  creux du profil adouci ; gouttes renflées aux extrémités, longueur d'origine. Script : `tools/final_s.py`.
+- « o » : **anneau R4**, épaisseur = 92 % de l'épaisseur médiane du « S » (correction optique), axe conservé.
 - Irisé : deux variantes, chacune liée à son fond — **intérieur lumineux** sur fond clair, **anneau irisé** sur fond sombre.
 - Les petites irrégularités de la planche (tuile décalée, logotype irisé sombre plus petit) sont traitées comme des défauts de montage.
 - Squircle **carré** (la planche était 7 % plus large, vraisemblablement un étirement d'export).
@@ -17,8 +21,8 @@ Fichiers reconstruits à partir de la planche d'identité (`source/identite-plan
 | Noir (tuiles, tracé) | `#1A1A1A` |
 | Blanc | `#FFFFFF` (mesuré `#FEFEFE`) |
 | Gris neutre | `#5F605F` |
-| Épaisseur du « S » | 80 / 1000 de la hauteur du monogramme |
-| « o » | rayons 166 et 111 / 1000 (anneau ≈ 17 % du diamètre) |
+| Épaisseur du « S » (médiane) | ≈ 93 / 1000 de la hauteur du monogramme, modulée (pleins et déliés) |
+| « o » | rayons ≈ 177 et 91 / 1000 ; anneau = 92 % de l'épaisseur du « S » |
 | Monogramme dans la tuile | hauteur ≈ 74 % de la tuile |
 | Squircle | côtés en arc (flèche 8,75 % du côté) + coins arrondis (16,25 %) ; IoU 0,99 avec la planche |
 
@@ -28,7 +32,6 @@ Fichiers reconstruits à partir de la planche d'identité (`source/identite-plan
 | `monogram/monogram-black.svg`, `-white.svg` | monogramme plein (contours vectorisés), noir ou blanc |
 | `monogram/monogram-iris-light.svg` | sur fond clair : anneau noir, intérieur irisé avec cœur blanc |
 | `monogram/monogram-iris-dark.svg` | sur fond sombre : « S » blanc, anneau irisé |
-| `monogram/monogram-centerline.svg` | tracé central modifiable (6 courbes de Bézier + cercle), à épaisseur de trait |
 | `squircle/squircle-black.svg`, `-white.svg` | forme des tuiles (cadres, cartes, boutons, icônes) |
 | `icons/icon-*.svg` | monogramme dans le squircle : noir, blanc, et versions irisées |
 | `icons/icon-maskable.svg` | icône pleine (sans coins transparents) pour Android / iOS |
@@ -43,7 +46,8 @@ Fichiers reconstruits à partir de la planche d'identité (`source/identite-plan
 | `iridescent/iridescent.glsl` | même irisé en GLSL (`iris(uv)`, `irisCore(r)`) pour la 3D |
 | `iridescent/iridescent-swatch.svg` | arrêts de couleur de l'irisé |
 | `validation/` | comparaisons avec l'original (superpositions, côte à côte, polices candidates) |
-| `tools/` | scripts : `python3 tools/build.py` (monogramme, squircle, icônes), `python3 tools/logotype.py` (logotype), `node tools/render.mjs` (PNG) |
+| `research/` | recherche sur le monogramme (profil, épaisseur, anneau) et planches comparatives |
+| `tools/` | scripts : `python3 tools/final_s.py` (dessin final du « S »), `python3 tools/build.py` (monogramme, squircle, icônes), `python3 tools/logotype.py` (logotype), `node tools/render.mjs` (PNG) |
 | `tools/data/` | données de construction, instance d'Archivo utilisée et sa licence (`ARCHIVO-OFL.txt`, SIL Open Font License 1.1) |
 
 ## Irisé

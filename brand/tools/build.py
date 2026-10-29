@@ -15,19 +15,15 @@ IRIS = [(0, '#98E2B4'), (45, '#99C1DD'), (90, '#DA9BC2'), (135, '#FE9AD5'), (180
         (225, '#F99DD0'), (270, '#D99CC3'), (315, '#9BC1DE'), (360, '#98E2B4')]
 
 res = np.load(os.path.join(DATA, 'res.npy')); g = json.load(open(os.path.join(DATA, 'geo.json')))
-STROKE = g['stroke']; ocx, ocy, RO, RI = g['o']
-# « o » : cercle parfait aux proportions de la planche (rayons = 16,6 % et 11,1 % de la hauteur du monogramme),
-# centré comme sur le dessin source
-_c = np.vstack([bez(s_, np.linspace(0, 1, 60)) for s_ in fit_curve(res, 6.0)])
-_HM = (_c[:, 1].max() - _c[:, 1].min()) + STROKE
-RO, RI = 0.166 * _HM, 0.111 * _HM
-segs = fit_curve(res, 6.0)
 
-# ---------- géométrie du monogramme, ramenée à l'origine ----------
-curve = np.vstack([bez(s, np.linspace(0, 1, 60)) for s in segs])
-S_poly = LineString(curve).buffer(STROKE / 2, quad_segs=48)
-minx = min(S_poly.bounds[0], ocx - RO); miny = min(S_poly.bounds[1], ocy - RO)
-maxx = max(S_poly.bounds[2], ocx + RO); maxy = max(S_poly.bounds[3], ocy + RO)
+# ---------- géométrie du monogramme (version finale validée : tools/final_s.py), ramenée à l'origine ----------
+FINAL = json.load(open(os.path.join(DATA, 's_final.json')))
+OUT_SEGS = [[np.array(p) for p in sg] for sg in FINAL['outline']]
+ocx, ocy, RO, RI = FINAL['o']['cx'], FINAL['o']['cy'], FINAL['o']['r_out'], FINAL['o']['r_in']
+STROKE = FINAL['stroke_median']
+_pts = np.vstack([bez(sg, np.linspace(0, 1, 40)) for sg in OUT_SEGS])
+minx = min(_pts[:, 0].min(), ocx - RO); miny = min(_pts[:, 1].min(), ocy - RO)
+maxx = max(_pts[:, 0].max(), ocx + RO); maxy = max(_pts[:, 1].max(), ocy + RO)
 # échelle : hauteur du monogramme = 1000 unités
 k = 1000 / (maxy - miny)
 T = lambda p: ((p[0] - minx) * k, (p[1] - miny) * k)
@@ -41,12 +37,8 @@ def path_from_segs(sg, close=False):
         d += f'C{f(s[1][0])} {f(s[1][1])} {f(s[2][0])} {f(s[2][1])} {f(s[3][0])} {f(s[3][1])}'
     return d + ('Z' if close else '')
 
-# S en contour (forme pleine) : contour du tracé à épaisseur constante, ajusté en Bézier
-ext = np.array([T(c) for c in S_poly.exterior.coords])
-ext = ext[:-1]; ext = np.vstack([ext, ext[:1]])
-S_OUTLINE = path_from_segs(fit_curve(ext, 0.8), close=True)
-# S en trait (ligne centrale modifiable)
-S_CENTER = path_from_segs([[np.array(T(p)) for p in s] for s in segs])
+# S en contour (forme pleine) : contour final validé
+S_OUTLINE = path_from_segs([[np.array(T(p)) for p in sg] for sg in OUT_SEGS], close=True)
 circle = lambda cx, cy, r: f'M{f(cx - r)} {f(cy)}a{f(r)} {f(r)} 0 1 0 {f(2 * r)} 0a{f(r)} {f(r)} 0 1 0 {f(-2 * r)} 0Z'
 O_RING = circle(OX, OY, ORO) + circle(OX, OY, ORI)
 
@@ -129,10 +121,6 @@ os.makedirs(f'{OUT}/monogram', exist_ok=True); os.makedirs(f'{OUT}/squircle', ex
 for v in ['black', 'white', 'iris-light', 'iris-dark']:
     body, defs = monogram_svg(v)
     open(f'{OUT}/monogram/monogram-{v}.svg', 'w').write(svg(VW, VH, body, defs, 'Holosene'))
-open(f'{OUT}/monogram/monogram-centerline.svg', 'w').write(svg(VW, VH,
-    f'<path d="{S_CENTER}" fill="none" stroke="{BLACK}" stroke-width="{f(SW)}" stroke-linecap="round"/>'
-    f'<circle cx="{f(OX)}" cy="{f(OY)}" r="{f((ORO + ORI) / 2)}" fill="none" stroke="{BLACK}" stroke-width="{f(ORO - ORI)}"/>',
-    title='Holosene — tracé central (modifiable)'))
 SQ = squircle_path(1000, 1000)
 for name, c in [('black', BLACK), ('white', WHITE)]:
     open(f'{OUT}/squircle/squircle-{name}.svg', 'w').write(svg(1000, 1000, f'<path d="{SQ}" fill="{c}"/>'))
@@ -150,5 +138,5 @@ for name, (tile, mono) in variants.items():
     open(f'{OUT}/icons/{name}.svg', 'w').write(icon(tile, mono))
 open(f'{OUT}/icons/icon-maskable.svg', 'w').write(icon(BLACK, 'iris-dark', full_bleed=True))
 json.dump({'viewBox': [VW, VH], 'stroke': SW, 'o': {'cx': OX, 'cy': OY, 'r_out': ORO, 'r_in': ORI},
-           'squircle_exponent': N, 'S_segments': len(segs)}, open(f'{OUT}/geometry.json', 'w'), indent=2)
-print('monogramme', VW, 'x', VH, '| S :', len(segs), 'segments (trait), épaisseur', round(SW, 1), '| o : rayon', round(ORO, 1), '/', round(ORI, 1), '| squircle n =', N)
+           'squircle_exponent': N, 'S_contour_curves': len(OUT_SEGS)}, open(f'{OUT}/geometry.json', 'w'), indent=2)
+print('monogramme', VW, 'x', VH, '| S :', len(OUT_SEGS), 'courbes de contour, épaisseur médiane', round(SW, 1), '| o : rayon', round(ORO, 1), '/', round(ORI, 1), '| squircle n =', N)
