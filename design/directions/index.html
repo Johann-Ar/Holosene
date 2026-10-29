@@ -1,0 +1,49 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Holosene — comparer les directions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #0e0e0e; overflow: hidden; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+  iframe.on { opacity: 1; pointer-events: auto; }
+  .switch { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 10; display: flex; gap: 4px; padding: 4px;
+            background: rgb(14 14 14 / .82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid #333; border-radius: 999px;
+            font: 400 12px/1 ui-monospace, 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .06em; }
+  .switch button { all: unset; cursor: pointer; padding: 9px 14px; border-radius: 999px; color: #a0a0a0; white-space: nowrap; }
+  .switch button[aria-pressed="true"] { background: #fff; color: #1a1a1a; }
+  .switch button:focus-visible { outline: 2px solid #99c1dd; outline-offset: 2px; }
+  .switch kbd { font: inherit; opacity: .55; margin-right: 6px; }
+  .hint { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 10; font: 400 11px ui-monospace, monospace; color: #a0a0a0;
+          background: rgb(14 14 14 / .7); padding: 6px 10px; border-radius: 999px; transition: opacity .6s; }
+  @media (max-width: 600px) { .switch kbd { display: none } .switch button { padding: 9px 11px } }
+</style></head><body>
+<iframe src="a-lentille.html" title="Direction A — Lentille"></iframe>
+<iframe src="b-courant.html" title="Direction B — Courant"></iframe>
+<iframe src="c-releve.html" title="Direction C — Relevé"></iframe>
+<p class="hint" id="hint">Touches 1 · 2 · 3 ou ← → pour changer de direction</p>
+<nav class="switch" aria-label="Directions">
+  <button type="button" data-i="0"><kbd>1</kbd>A · Lentille</button>
+  <button type="button" data-i="1"><kbd>2</kbd>B · Courant</button>
+  <button type="button" data-i="2"><kbd>3</kbd>C · Relevé</button>
+</nav>
+<script>
+  const frames = [...document.querySelectorAll('iframe')], btns = [...document.querySelectorAll('.switch button')]
+  let cur = 0
+  const show = (i) => {
+    cur = (i + frames.length) % frames.length
+    frames.forEach((f, k) => f.classList.toggle('on', k === cur))
+    btns.forEach((b, k) => b.setAttribute('aria-pressed', String(k === cur)))
+    try { history.replaceState(null, '', '#' + 'abc'[cur]) } catch {}
+  }
+  const onKey = (e) => {
+    if (e.key >= '1' && e.key <= '3') show(+e.key - 1)
+    else if (e.key === 'ArrowRight') show(cur + 1)
+    else if (e.key === 'ArrowLeft') show(cur - 1)
+  }
+  addEventListener('keydown', onKey)
+  // les touches marchent aussi quand le focus est dans une maquette
+  frames.forEach((f) => f.addEventListener('load', () => { try { f.contentWindow.addEventListener('keydown', onKey) } catch {} }))
+  btns.forEach((b) => b.addEventListener('click', () => show(+b.dataset.i)))
+  show(Math.max(0, 'abc'.indexOf(location.hash.slice(1))))
+  setTimeout(() => (document.getElementById('hint').style.opacity = 0), 4000)
+</script>
+</body></html>
