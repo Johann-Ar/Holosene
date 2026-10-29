@@ -1,0 +1,26 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Direction A — Lentille</title>
+<link rel="stylesheet" href="common.css"><style>
+  .hero { position: relative; height: 100vh; overflow: hidden; background: #0e0e0e; }
+  .cloud { position: absolute; inset: 0; background: url(../assets/points-riviere.jpg) center/cover; opacity: .55; }
+  /* la lentille : le « o » du logo devient le point de capture ; le réel apparaît à travers */
+  .lens { position: absolute; left: 50%; top: 47%; width: min(38vw, 52vh); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+          background: url(../assets/riviere-calme.webp) center/cover; box-shadow: 0 0 0 clamp(6px, .9vw, 12px) transparent; }
+  .lens::before { content: ''; position: absolute; inset: calc(-1 * clamp(8px, 1.1vw, 14px)); border-radius: 50%; background: var(--iris-conic);
+          -webkit-mask: radial-gradient(circle, transparent calc(70.7% - 1px), #000 70.7%); mask: radial-gradient(circle, transparent 66%, #000 66.5%); filter: blur(1px); }
+  header { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 28px var(--edge); z-index: 2; }
+  header img { height: 34px; }
+  .intent { position: absolute; left: var(--edge); bottom: 40px; max-width: 32ch; z-index: 2; }
+  .intent p { color: #fff; font-size: 1.15rem; margin-top: 10px; }
+  .meta { position: absolute; right: var(--edge); bottom: 40px; text-align: right; z-index: 2; }
+  .cross { position: absolute; left: 50%; top: 47%; width: 14px; height: 14px; transform: translate(-50%,-50%); z-index: 2; }
+  .cross::before, .cross::after { content:''; position:absolute; background: rgba(255,255,255,.7); }
+  .cross::before { left: 50%; top: 0; bottom: 0; width: 1px; } .cross::after { top: 50%; left: 0; right: 0; height: 1px; }
+  .ticks { position: absolute; left: 50%; top: 47%; transform: translate(-50%,-50%); width: calc(min(38vw,52vh) + 90px); aspect-ratio:1; border-radius:50%; border: 1px dashed rgba(255,255,255,.18); }
+  @media (max-width: 700px) { .nav span:not(:last-child) { display:none } .lens { width: 72vw; top: 42% } .ticks{ top:42%; width: calc(72vw + 50px) } .cross{top:42%} .meta { display:none } .intent { bottom: 28px } }
+</style></head><body>
+<section class="hero">
+  <div class="cloud"></div><div class="ticks"></div><div class="lens"></div><div class="cross"></div>
+  <header><img src="../../brand/monogram/monogram-white.svg" alt="Holosene"><nav class="nav"><span>Projets</span><span>Lab</span><span>Studio</span><span>Contact</span></nav></header>
+  <div class="intent"><p class="label">Holosene — studio de Johann Arata</p><p class="todo">[Phrase d'intention — à compléter par Johann]</p></div>
+  <div class="meta"><p class="label">Capture 01 · 4Dérives</p><p class="label">Rivière · GoPro · 2025</p><p class="label" style="color:#fff">nuage de points ↔ image</p></div>
+</section></body></html>

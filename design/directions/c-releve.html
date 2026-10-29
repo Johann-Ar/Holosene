@@ -1,0 +1,48 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Direction C — Relevé</title>
+<link rel="stylesheet" href="common.css"><style>
+  body { background: #f2f2f0; color: #1a1a1a; }
+  .label { color: #5f605f; }
+  .page { height: 100vh; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 1fr auto; gap: 0 20px; padding: 26px var(--edge) 28px; }
+  header { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; padding-bottom: 18px; border-bottom: 1px solid #1a1a1a; }
+  header img { height: 26px; }
+  .nav { color: #1a1a1a; }
+  .side { grid-column: 1 / 4; display: flex; flex-direction: column; justify-content: space-between; padding: 26px 0; }
+  .side h1 { font-size: clamp(2rem, 3.4vw, 3.4rem); color: #1a1a1a; }
+  .side .todo { color: #b5651d; }
+  .window { grid-column: 4 / 11; margin: 26px 0; position: relative; background: #0e0e0e url(../assets/points-riviere.jpg) center/cover; }
+  .window .o { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%,-50%); border-radius: 50%; background: var(--iris-conic); -webkit-mask: radial-gradient(circle, transparent 58%, #000 59%); mask: radial-gradient(circle, transparent 58%, #000 59%); }
+  .data { grid-column: 11 / -1; padding: 26px 0; display: flex; flex-direction: column; gap: 14px; }
+  .data div { border-top: 1px solid #c8c8c6; padding-top: 8px; }
+  .data b { display: block; font-weight: 500; font-size: 14px; }
+  .thumbs { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; border-top: 1px solid #1a1a1a; padding-top: 16px; }
+  .thumbs div { aspect-ratio: 16/11; background-size: cover; background-position: center; }
+  .thumbs p { margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 700px) {
+    .page { display: block; height: auto; }
+    .nav span:not(:last-child) { display: none }
+    .window { aspect-ratio: 1; margin: 18px 0 }
+    .side { padding: 18px 0 0 } .side h1 { margin-bottom: 8px }
+    .data { flex-direction: row; flex-wrap: wrap; gap: 10px } .data div { flex: 1 1 40% }
+    .thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px }
+  }
+</style></head><body>
+<div class="page">
+  <header><img src="../../brand/logotype/logotype-black.svg" alt="Holosene"><nav class="nav"><span>Projets</span><span>Lab</span><span>Studio</span><span>Contact</span></nav></header>
+  <div class="side"><div><p class="label">Relevé n° 01 · rivière</p><h1 class="display" style="margin-top:12px">4Dérives</h1></div><p class="todo">[Phrase d'intention — à compléter par Johann]</p></div>
+  <div class="window squircle"><span class="o"></span></div>
+  <div class="data">
+    <div><span class="label">Lieu</span><b class="todo">[à compléter]</b></div>
+    <div><span class="label">Capteur</span><b>GoPro, à hauteur d'yeux</b></div>
+    <div><span class="label">Reconstruction</span><b>4D Gaussian splatting</b></div>
+    <div><span class="label">Rendu</span><b>Nuage de points</b></div>
+    <div><span class="label">Année</span><b>2025 — 26</b></div>
+  </div>
+  <div class="thumbs">
+    <div><div class="squircle" style="aspect-ratio:16/11;background:url(../assets/4dgs-essai.webp) center/cover"></div><p class="label">4Dérives</p></div>
+    <div><div class="squircle" style="aspect-ratio:16/11;background:url(../assets/pont.webp) center/cover"></div><p class="label">4Dérives · terrain</p></div>
+    <div><div class="squircle" style="aspect-ratio:16/11;background:url(../assets/riviere-traitee.webp) center/cover"></div><p class="label">4Dérives · traitement</p></div>
+    <div><div class="squircle" style="aspect-ratio:16/11;background:url(../assets/4dgs-essai-2.webp) center/cover"></div><p class="label">Lab · essai 4DGS</p></div>
+    <div><div class="squircle" style="aspect-ratio:16/11;background:#1a1a1a"></div><p class="label todo">[Projet à fournir]</p></div>
+    <div><div class="squircle" style="aspect-ratio:16/11;background:#1a1a1a"></div><p class="label todo">[Projet à fournir]</p></div>
+  </div>
+</div></body></html>

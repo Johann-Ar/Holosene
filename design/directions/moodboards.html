@@ -1,0 +1,53 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Holosene — trois directions</title>
+<link rel="stylesheet" href="common.css"><style>
+  body { padding: 48px var(--edge) 80px; }
+  h1 { font-size: 56px; margin-bottom: 8px; } .intro { max-width: 70ch; margin-bottom: 56px; }
+  .dir { display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; padding: 48px 0; border-top: 1px solid var(--c-line-dark); }
+  .dir h2 { font-size: 44px; margin: 6px 0 14px; }
+  .kw { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; } .kw span { border: 1px solid var(--c-line-dark); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: #fff; }
+  dl { display: grid; grid-template-columns: 130px 1fr; gap: 10px 16px; margin-top: 18px; font-size: 15px; } dt { font: 400 11px/1.6 var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--c-grey-text); }
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 120px; gap: 10px; }
+  .board div { border-radius: 14px; background-size: cover; background-position: center; }
+  .s2 { grid-column: span 2; } .r2 { grid-row: span 2; }
+  .shot { margin-top: 18px; display: grid; grid-template-columns: 3fr 1fr; gap: 12px; align-items: start; } .shot img { width: 100%; border-radius: 10px; border: 1px solid var(--c-line-dark); }
+</style></head><body>
+<p class="label">Holosene · étape 3 · directions artistiques</p>
+<h1 class="display">Trois directions</h1>
+<p class="intro">Toutes reposent sur la même identité (monogramme, logotype, irisé rare, squircle, Archivo). Elles diffèrent par la façon de montrer le réel. Images : uniquement les captations de Johann (4Dérives : GoPro, terrain, essais en 4D Gaussian splatting). Textes entre crochets : à fournir par Johann.</p>
+
+<section class="dir"><div>
+  <p class="label">Direction A</p><h2 class="display">Lentille</h2>
+  <p>Le « o » devient un point de capture : au centre de l'écran, une lentille cerclée d'irisé laisse voir l'image réelle ; autour, la même scène en nuage de points. Regarder, c'est passer de la reconstruction au réel.</p>
+  <div class="kw"><span>optique</span><span>précision</span><span>centre</span><span>viseur</span><span>silence</span></div>
+  <dl><dt>3D</dt><dd>nuage de points plein écran ; la lentille suit lentement le curseur (au doigt : fixe), le réel apparaît à travers</dd>
+  <dt>Irisé</dt><dd>uniquement l'anneau de la lentille</dd><dt>Mouvement</dt><dd>lent, mise au point, respiration de la lentille</dd>
+  <dt>Force</dt><dd>immédiatement lisible ; signature unique, liée au logo</dd><dt>Risque</dt><dd>dispositif qui peut lasser s'il revient partout</dd></dl>
+</div><div>
+  <div class="board"><div class="s2 r2" style="background-image:url(../assets/points-riviere.jpg)"></div><div style="background:var(--iris-conic);border-radius:50%;width:110px;height:110px;place-self:center;-webkit-mask:radial-gradient(circle,transparent 62%,#000 63%);mask:radial-gradient(circle,transparent 62%,#000 63%)"></div><div style="background-image:url(../assets/riviere-calme.webp);border-radius:50%;width:110px;height:110px;place-self:center"></div><div style="background:#1a1a1a url(../../brand/monogram/monogram-white.svg) center/40% no-repeat"></div><div class="s2" style="background-image:url(../assets/pont.webp)"></div></div>
+  <div class="shot"><img src="captures/a-lentille-ordinateur.png" alt=""><img src="captures/a-lentille-mobile.png" alt=""></div>
+</div></section>
+
+<section class="dir"><div>
+  <p class="label">Direction B</p><h2 class="display">Courant</h2>
+  <p>Le tracé du « S » comme un courant : l'image réelle en points occupe tout l'écran, le logotype géant ancre le bas, une ligne fluide traverse la page et guide la lecture. Plus cinématographique, plus proche du film.</p>
+  <div class="kw"><span>organique</span><span>cinéma</span><span>flux</span><span>immersion</span><span>éditorial</span></div>
+  <dl><dt>3D</dt><dd>nuage de points ou splat plein écran, caméra pilotée par le défilement (travelling d'auteur)</dd>
+  <dt>Irisé</dt><dd>les « o » du logotype ; un reflet sur l'eau dans la 3D</dd><dt>Mouvement</dt><dd>continu, ondulation, la ligne se dessine au défilement</dd>
+  <dt>Force</dt><dd>forte présence, très proche des studios de creative tech</dd><dt>Risque</dt><dd>plus chargé ; exige de très bonnes vidéos</dd></dl>
+</div><div>
+  <div class="board"><div class="s2 r2" style="background-image:url(../assets/points-packraft.jpg)"></div><div style="background-image:url(../assets/4dgs-essai.webp)"></div><div style="background-image:url(../assets/riviere-traitee.webp)"></div><div style="background:#0e0e0e url(../../brand/logotype/logotype-iris-dark.svg) center/80% no-repeat"></div><div class="s2" style="background-image:url(../assets/riviere-packraft.webp)"></div></div>
+  <div class="shot"><img src="captures/b-courant-ordinateur.png" alt=""><img src="captures/b-courant-mobile.png" alt=""></div>
+</div></section>
+
+<section class="dir"><div>
+  <p class="label">Direction C</p><h2 class="display">Relevé</h2>
+  <p>Le studio comme laboratoire de terrain : une grille stricte, une fenêtre en squircle sur la captation, et à côté la fiche technique (lieu, capteur, reconstruction, rendu). Version claire, sobre, documentaire — proche de la posture de recherche.</p>
+  <div class="kw"><span>laboratoire</span><span>archive</span><span>méthode</span><span>clarté</span><span>données</span></div>
+  <dl><dt>3D</dt><dd>dans la fenêtre squircle ; les vignettes passent du point au réel au survol</dd>
+  <dt>Irisé</dt><dd>le « o » au centre de la fenêtre, comme repère de visée</dd><dt>Mouvement</dt><dd>sobre, transitions de fiche à fiche</dd>
+  <dt>Force</dt><dd>parle aux labos et aux entreprises de capture (méthode visible)</dd><dt>Risque</dt><dd>moins spectaculaire pour un studio créatif</dd></dl>
+</div><div>
+  <div class="board" style="background:#f2f2f0;padding:10px;border-radius:16px"><div class="s2 r2 squircle" style="background-image:url(../assets/points-riviere.jpg);border-radius:0"></div><div style="background:#fff;display:grid;place-items:center;font:400 11px var(--font-mono);color:#5f605f;text-transform:uppercase">capteur · rendu</div><div style="background-image:url(../assets/4dgs-essai-2.webp)"></div><div style="background:#fff url(../../brand/logotype/logotype-black.svg) center/80% no-repeat"></div><div class="s2" style="background-image:url(../assets/pont.webp)"></div></div>
+  <div class="shot"><img src="captures/c-releve-ordinateur.png" alt=""><img src="captures/c-releve-mobile.png" alt=""></div>
+</div></section>
+</body></html>

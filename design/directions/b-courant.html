@@ -1,0 +1,25 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Direction B — Courant</title>
+<link rel="stylesheet" href="common.css"><style>
+  .hero { position: relative; height: 100vh; overflow: hidden; }
+  .media { position: absolute; inset: 0; background: url(../assets/points-packraft.jpg) center 40%/cover; }
+  .media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,14,14,.8) 0%, rgba(14,14,14,0) 18%, rgba(14,14,14,0) 45%, rgba(14,14,14,.88) 88%), linear-gradient(90deg, rgba(14,14,14,.75) 0%, rgba(14,14,14,0) 40%); }
+  header { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; padding: 26px var(--edge); z-index: 3; }
+  .flow { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .word { position: absolute; left: var(--edge); right: var(--edge); bottom: 72px; z-index: 3; }
+  .word img { width: 100%; display: block; }
+  .row { position: absolute; left: var(--edge); right: var(--edge); bottom: 28px; display: flex; justify-content: space-between; z-index: 3; }
+  .intent { position: absolute; left: var(--edge); top: 34%; max-width: 28ch; z-index: 3; color: #fff; font-size: 1.35rem; line-height: 1.35; }
+  .strip { position: absolute; right: var(--edge); top: 30%; display: flex; flex-direction: column; gap: 10px; z-index: 3; }
+  .strip div { width: 150px; aspect-ratio: 16/10; background-size: cover; background-position: center; border-radius: 16px; opacity: .9; }
+  @media (max-width: 700px) { .strip { display: none } .intent { top: 26%; font-size: 1.1rem } .word { bottom: 64px } .nav span:not(:last-child){display:none} }
+</style></head><body>
+<section class="hero">
+  <div class="media"></div>
+  <!-- le tracé du « S » traverse l'écran comme un courant -->
+  <svg class="flow" viewBox="0 0 1440 900" preserveAspectRatio="none"><path d="M1500 120 C 1100 60, 820 180, 760 330 C 700 480, 980 520, 900 700 C 850 820, 600 900, 380 960" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/></svg>
+  <header><span class="label" style="color:#fff">Holosene</span><nav class="nav"><span>Projets</span><span>Lab</span><span>Studio</span><span>Contact</span></nav></header>
+  <p class="intent todo">[Phrase d'intention — à compléter par Johann]</p>
+  <div class="strip"><div style="background-image:url(../assets/4dgs-essai.webp)"></div><div style="background-image:url(../assets/pont.webp)"></div><div style="background-image:url(../assets/riviere-traitee.webp)"></div></div>
+  <div class="word"><img src="../../brand/logotype/logotype-iris-dark.svg" alt="Holosene"></div>
+  <div class="row"><span class="label">4Dérives · rivière · 4D Gaussian splatting</span><span class="label">Défiler ↓</span></div>
+</section></body></html>
