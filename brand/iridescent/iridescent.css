@@ -1,0 +1,40 @@
+/*
+ * Irisé HOLOSENE — mesuré sur la planche d'identité.
+ * Dégradé conique autour du « o » : rose à gauche, bleu lavande en haut et en bas à droite, menthe à droite.
+ * Règle : rare. Réservé au « o », à un état de survol, au curseur, au chargement, à une lumière dans la 3D.
+ */
+:root {
+  --iris-pink: #ff97f0;
+  --iris-rose: #fe9ad5;
+  --iris-mauve: #da9bc2;
+  --iris-blue: #99c1dd;
+  --iris-mint: #98e2b4;
+  --iris-core: #ffffff;
+  /* conique : 0deg = haut, sens horaire (convention CSS) */
+  --iris-conic: conic-gradient(
+    from 0deg,
+    #da9bc2 0deg,   /* haut : mauve */
+    #99c1dd 45deg,  /* haut droite : bleu lavande */
+    #98e2b4 90deg,  /* droite : menthe */
+    #9bc1de 135deg, /* bas droite : bleu lavande */
+    #d99cc3 180deg, /* bas : mauve */
+    #f99dd0 225deg, /* bas gauche : rose */
+    #ff97f0 270deg, /* gauche : rose vif */
+    #fe9ad5 315deg, /* haut gauche : rose */
+    #da9bc2 360deg
+  );
+  /* cœur lumineux (version claire : intérieur du « o ») */
+  --iris-core-glow: radial-gradient(circle, #fff 0%, rgb(255 255 255 / 0.96) 38%, rgb(255 255 255 / 0) 80%);
+}
+
+/* intérieur lumineux (sur fond clair) */
+.iris-fill {
+  background: var(--iris-core-glow), var(--iris-conic);
+  filter: blur(0.04em); /* adoucit la conique comme sur la planche */
+}
+/* anneau irisé (sur fond sombre) */
+.iris-ring {
+  background: var(--iris-conic);
+  -webkit-mask: radial-gradient(circle, transparent 66.9%, #000 67%);
+  mask: radial-gradient(circle, transparent 66.9%, #000 67%);
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 120" width="900" height="120"><title>Holosene — arrêts de l'irisé (0° → 360°)</title>
+<rect width="900" height="120" fill="#1A1A1A"/>
+<g font-family="monospace" font-size="11" fill="#fff">
+<rect x="10" y="10" width="100" height="70" fill="#98E2B4"/><text x="10" y="100">0° #98E2B4</text>
+<rect x="120" y="10" width="100" height="70" fill="#99C1DD"/><text x="120" y="100">45° #99C1DD</text>
+<rect x="230" y="10" width="100" height="70" fill="#DA9BC2"/><text x="230" y="100">90° #DA9BC2</text>
+<rect x="340" y="10" width="100" height="70" fill="#FE9AD5"/><text x="340" y="100">135° #FE9AD5</text>
+<rect x="450" y="10" width="100" height="70" fill="#FF97F0"/><text x="450" y="100">180° #FF97F0</text>
+<rect x="560" y="10" width="100" height="70" fill="#F99DD0"/><text x="560" y="100">225° #F99DD0</text>
+<rect x="670" y="10" width="100" height="70" fill="#D99CC3"/><text x="670" y="100">270° #D99CC3</text>
+<rect x="780" y="10" width="100" height="70" fill="#9BC1DE"/><text x="780" y="100">315° #9BC1DE</text>
+</g></svg>
