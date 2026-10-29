@@ -16,6 +16,7 @@
 html, body { height: 100%; overflow: hidden; }
 body { background: var(--deep); color: var(--grey-light); font: 400 17px/1.55 var(--display); }
 .dir { position: fixed; inset: 0; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s; overflow: hidden; }
+.Dl { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .dir.on { opacity: 1; visibility: visible; transition: opacity .35s ease; }
 @media (prefers-reduced-motion: reduce) { .dir, .dir.on { transition: none; } }
 .label { font: 400 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--grey-text); }
@@ -88,7 +89,7 @@ body { background: var(--deep); color: var(--grey-light); font: 400 17px/1.55 va
 .switch button:focus-visible { outline: 2px solid #99c1dd; outline-offset: 2px; }
 .switch kbd { font: inherit; opacity: .55; margin-right: 6px; }
 .hint { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 10; font: 400 11px var(--mono); color: var(--grey-text); background: rgb(14 14 14 / .75); padding: 6px 10px; border-radius: 999px; transition: opacity .6s; white-space: nowrap; }
-@media (max-width: 600px) { .switch kbd { display: none; } .switch button { padding: 9px 10px; font-size: 11px; } .hint { display: none; } }
+@media (max-width: 600px) { .switch .n { display: none; } .switch kbd { display: none; } .switch button { padding: 9px 10px; font-size: 11px; } .hint { display: none; } }
 </style>
 
 <section class="dir A" id="dir-a" aria-label="Direction A, Lentille">
@@ -131,14 +132,149 @@ body { background: var(--deep); color: var(--grey-light); font: 400 17px/1.55 va
   </div>
 </section>
 
-<p class="hint" id="hint">Touches 1 · 2 · 3 ou ← → pour changer de direction</p>
+<section class="dir Dl" id="dir-d" aria-label="Direction D, Synthèse">
+<style>
+/* D — Synthèse : un accueil qui défile. A (lentille) ouvre, B (courant) porte le projet phare, C (relevé) structure projets et lab. */
+.D { --e-l: max(16px, env(safe-area-inset-left, 0px), 4vw); --e-r: max(16px, env(safe-area-inset-right, 0px), 4vw); background: var(--deep, #0e0e0e); color: #d9d9d9; }
+.D .lbl { font: 400 12px/1.4 var(--mono, 'Plex Mono', 'IBM Plex Mono', monospace); text-transform: uppercase; letter-spacing: .06em; color: #a0a0a0; }
+.D .disp { font-family: 'Archivo', 'Helvetica Neue', Arial, sans-serif; font-stretch: 120%; font-weight: 500; letter-spacing: -0.04em; color: #fff; line-height: 1; text-wrap: balance; }
+.D .todo { color: #ffb36b; }
+.D .wrap { padding-left: var(--e-l); padding-right: var(--e-r); }
+.D .navd { display: flex; gap: 28px; font-size: 14px; color: #fff; }
+.D .sq { -webkit-mask: url(img/squircle-black.svg) center / 100% 100% no-repeat; mask: url(img/squircle-black.svg) center / 100% 100% no-repeat; }
+
+/* 1. ouverture : lentille (A) + logotype ancré (B) */
+.D .hero { position: relative; height: 100svh; min-height: 560px; overflow: hidden; }
+.D .hero .cloud { position: absolute; inset: 0; background: url(img/points-riviere.jpg) center/cover; opacity: .5; }
+.D .hero .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(14 14 14 / .7), rgb(14 14 14 / 0) 20%, rgb(14 14 14 / 0) 55%, rgb(14 14 14 / .9) 92%); }
+.D .hero header { position: absolute; top: env(safe-area-inset-top, 0px); left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding-top: 26px; z-index: 3; }
+.D .hero header img { height: 34px; }
+.D .lens { position: absolute; left: 50%; top: 35%; width: min(26vw, 36vh); height: min(26vw, 36vh); transform: translate(-50%, -50%); border-radius: 50%; background: url(img/riviere-calme.webp) center/cover; z-index: 2; }
+.D .lens::before { content: ''; position: absolute; inset: calc(-1 * clamp(8px, 1vw, 12px)); border-radius: 50%; background: var(--iris);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 66.5%); mask: radial-gradient(circle, transparent 66%, #000 66.5%); filter: blur(1px); }
+.D .hero .bottom { position: absolute; left: 0; right: 0; bottom: 92px; z-index: 3; display: grid; gap: 18px; }
+.D .hero .bottom img { width: 100%; display: block; }
+.D .hero .meta { display: flex; justify-content: space-between; gap: 16px; align-items: end; }
+.D .hero .meta p.todo { max-width: 34ch; font-size: 1.05rem; }
+
+/* 2. projet phare : plein écran cinéma (B) */
+.D .feature { position: relative; min-height: 92svh; display: flex; align-items: flex-end; overflow: hidden; }
+.D .feature .media { position: absolute; inset: 0; background: url(img/points-packraft.jpg) center 45%/cover; }
+.D .feature .media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(14 14 14 / .85), rgb(14 14 14 / .1) 55%), linear-gradient(0deg, rgb(14 14 14 / .9), rgb(14 14 14 / 0) 45%); }
+.D .feature svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.D .feature svg path { fill: none; stroke: rgb(255 255 255 / .3); stroke-width: 1.2; }
+.D .feature .txt { position: relative; z-index: 2; padding-block: 0 72px; display: grid; gap: 16px; max-width: 760px; }
+.D .feature h2 { font-size: clamp(3rem, 9vw, 8rem); }
+.D .feature p { max-width: 52ch; color: #fff; }
+.D .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.D .chips span { border: 1px solid rgb(255 255 255 / .35); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: #fff; }
+
+/* 3. projets : grille + fiche technique (C), sur fond sombre */
+.D .projects { padding-block: 120px; display: grid; gap: 40px; }
+.D .projects .head { display: flex; justify-content: space-between; align-items: end; gap: 16px; border-bottom: 1px solid #333; padding-bottom: 18px; }
+.D .projects h2 { font-size: clamp(2.25rem, 4.5vw, 4rem); }
+.D .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 32px; }
+.D .card { display: grid; gap: 14px; min-width: 0; }
+.D .card .pic { aspect-ratio: 16 / 10; max-width: 100%; background: #1a1a1a center/cover; display: grid; place-items: center; }
+.D .card .pic span { font: 400 11px var(--mono, monospace); color: #a0a0a0; text-transform: uppercase; letter-spacing: .06em; text-align: center; padding: 0 16px; }
+.D .card h3 { font-size: 1.6rem; }
+.D .spec { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.D .spec div { border-top: 1px solid #333; padding-top: 8px; min-width: 0; }
+.D .spec b { display: block; font-weight: 500; font-size: 14px; color: #fff; }
+
+/* 4. lab : version claire, relevé (C) */
+.D .lab { background: #f2f2f0; color: #1a1a1a; padding-block: 120px; }
+.D .lab .lbl { color: #5f605f; } .D .lab .disp { color: #1a1a1a; } .D .lab .todo { color: #a85a16; }
+.D .lab .inner { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
+.D .lab .intro { grid-column: 1 / 5; display: grid; align-content: start; gap: 16px; }
+.D .lab h2 { font-size: clamp(2.25rem, 4.5vw, 4rem); }
+.D .lab .win { grid-column: 5 / 10; aspect-ratio: 4 / 3; max-width: 100%; background: url(img/4dgs-essai.webp) center/cover; }
+.D .lab .data { grid-column: 10 / -1; display: grid; align-content: start; gap: 14px; }
+.D .lab .data div { border-top: 1px solid #c8c8c6; padding-top: 8px; }
+.D .lab .data b { display: block; font-weight: 500; font-size: 14px; }
+
+/* 5. contact */
+.D .contact { padding-block: 120px 140px; display: grid; justify-items: start; gap: 22px; }
+.D .contact img { height: 64px; }
+.D .contact .mail { font-family: 'Archivo', sans-serif; font-stretch: 120%; font-weight: 500; letter-spacing: -0.03em; font-size: clamp(1.6rem, 4vw, 3rem); color: #fff; overflow-wrap: anywhere; }
+.D .contact .mail:hover { background: var(--iris); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+@media (max-width: 760px) {
+  .D .navd span:not(:last-child) { display: none; }
+  .D .lens { width: 66vw; height: 66vw; top: 38%; }
+  .D .hero .meta { flex-direction: column; align-items: start; }
+  .D .grid { grid-template-columns: 1fr; }
+  .D .lab .inner { display: grid; grid-template-columns: 1fr; }
+  .D .lab .intro, .D .lab .win, .D .lab .data { grid-column: 1 / -1; }
+  .D .projects, .D .lab, .D .contact { padding-block: 80px; }
+}
+</style>
+<div class="D">
+  <section class="hero">
+    <div class="cloud"></div><div class="shade"></div><div class="lens" role="img" aria-label="La rivière de 4Dérives, vue à travers la lentille"></div>
+    <header class="wrap"><img src="img/monogram-white.svg" alt="Holosene"><nav class="navd"><span>Projets</span><span>Lab</span><span>Studio</span><span>Contact</span></nav></header>
+    <div class="bottom wrap">
+      <img src="img/logotype-white.svg" alt="Holosene">
+      <div class="meta"><p class="todo">[Phrase d'intention à compléter par Johann]</p><p class="lbl">Studio de Johann Arata · captation, reconstruction, 3D temps réel</p></div>
+    </div>
+  </section>
+
+  <section class="feature">
+    <div class="media"></div>
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true"><path d="M1500 80 C 1150 40, 900 160, 840 320 C 780 480, 1060 540, 980 720 C 930 840, 680 920, 460 980"/></svg>
+    <div class="txt wrap">
+      <p class="lbl">Projet phare · 2025 – 26</p>
+      <h2 class="disp">4Dérives</h2>
+      <p>Une descente de rivière filmée en GoPro à hauteur d'yeux, en trois saisons. Des essais en 4D Gaussian splatting prolongent l'espace hors du cadre.</p>
+      <div class="chips"><span>Rivière</span><span>Film</span><span>4D Gaussian splatting</span></div>
+    </div>
+  </section>
+
+  <section class="projects wrap">
+    <div class="head"><h2 class="disp">Projets</h2><p class="lbl">Capteur · reconstruction · rendu</p></div>
+    <div class="grid">
+      <article class="card"><div class="pic sq" style="background-image:url(img/pont.webp)"></div><p class="lbl">Rivière · 2025 – 26</p><h3 class="disp">4Dérives</h3>
+        <div class="spec"><div><span class="lbl">Capteur</span><b>GoPro, à hauteur d'yeux</b></div><div><span class="lbl">Reconstruction</span><b>4D Gaussian splatting</b></div><div><span class="lbl">Rendu</span><b>Film, essais 4D</b></div></div></article>
+      <article class="card"><div class="pic sq"><span>[Visuel à fournir · crédit Schmidt Ocean Institute]</span></div><p class="lbl">Grands fonds · 2026</p><h3 class="disp">Dumbo</h3>
+        <div class="spec"><div><span class="lbl">Source</span><b>Vidéos de submersibles (Schmidt Ocean Institute)</b></div><div><span class="lbl">Traitement</span><b>Segmentation SAM2, profondeur par luminosité</b></div><div><span class="lbl">Rendu</span><b>Galerie 3D temps réel</b></div></div></article>
+      <article class="card"><div class="pic sq"><span>[Visuel à fournir · accord de Nicolas Floc'h]</span></div><p class="lbl">Littoral · 2025 – 26</p><h3 class="disp">Photographique Volume</h3>
+        <div class="spec"><div><span class="lbl">Source</span><b>Photographies de Nicolas Floc'h</b></div><div><span class="lbl">Traitement</span><b>Profondeur estimée par IA (Depth Anything V2)</b></div><div><span class="lbl">Rendu</span><b>Paysages 3D, son (Web Audio)</b></div></div></article>
+      <article class="card"><div class="pic sq"><span>[Visuel à fournir]</span></div><p class="lbl">Recherche · 2024 – 25</p><h3 class="disp">Mondes Immergés</h3>
+        <div class="spec"><div><span class="lbl">Forme</span><b>Article de recherche</b></div><div><span class="lbl">Sujet</span><b>Design immersif et milieux aquatiques</b></div><div><span class="lbl">Cadre</span><b>DNMADe Design numérique</b></div></div></article>
+    </div>
+  </section>
+
+  <section class="lab">
+    <div class="inner wrap">
+      <div class="intro"><p class="lbl">Lab · relevé n° 01</p><h2 class="disp">Essais 4DGS</h2><p class="todo">[Texte du lab et du mémoire, à fournir par Johann]</p></div>
+      <div class="win sq" role="img" aria-label="Essai de 4D Gaussian splatting sur 4Dérives"></div>
+      <div class="data">
+        <div><span class="lbl">Source</span><b>Tournage 4Dérives</b></div>
+        <div><span class="lbl">Outil</span><b>Luma AI</b></div>
+        <div><span class="lbl">Technique</span><b>4D Gaussian splatting</b></div>
+        <div><span class="lbl">Constat</span><b class="todo">[à compléter]</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact wrap">
+    <img src="img/monogram-iris-dark.svg" alt="">
+    <p class="lbl">Contact</p>
+    <p class="mail">arata.johann@gmail.com</p>
+  </section>
+</div>
+
+</section>
+
+<p class="hint" id="hint">Touches 1 · 2 · 3 · 4 ou ← → pour changer de direction</p>
 <nav class="switch" aria-label="Directions">
-  <button type="button" id="btn-a" data-i="0"><kbd>1</kbd>A · Lentille</button>
-  <button type="button" id="btn-b" data-i="1"><kbd>2</kbd>B · Courant</button>
-  <button type="button" id="btn-c" data-i="2"><kbd>3</kbd>C · Relevé</button>
+  <button type="button" id="btn-a" data-i="0"><kbd>1</kbd>A<span class="n"> · Lentille</span></button>
+  <button type="button" id="btn-b" data-i="1"><kbd>2</kbd>B<span class="n"> · Courant</span></button>
+  <button type="button" id="btn-c" data-i="2"><kbd>3</kbd>C<span class="n"> · Relevé</span></button>
+  <button type="button" id="btn-d" data-i="3"><kbd>4</kbd>D<span class="n"> · Synthèse</span></button>
 </nav>
 <script>
-  const dirs = [...document.querySelectorAll('.dir')], btns = [...document.querySelectorAll('.switch button')], keys = ['a', 'b', 'c']
+  const dirs = [...document.querySelectorAll('.dir')], btns = [...document.querySelectorAll('.switch button')], keys = ['a', 'b', 'c', 'd']
   let cur = 0
   function show(i, updateHash = true) {
     cur = (i + dirs.length) % dirs.length
@@ -147,7 +283,7 @@ body { background: var(--deep); color: var(--grey-light); font: 400 17px/1.55 va
     if (updateHash && location.hash !== '#' + keys[cur]) { try { history.replaceState(null, '', '#' + keys[cur]) } catch (e) {} }
   }
   addEventListener('keydown', (e) => {
-    if (e.key >= '1' && e.key <= '3') show(+e.key - 1)
+    if (e.key >= '1' && e.key <= '4') show(+e.key - 1)
     else if (e.key === 'ArrowRight') show(cur + 1)
     else if (e.key === 'ArrowLeft') show(cur - 1)
   })

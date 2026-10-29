@@ -8,6 +8,11 @@
 
 Pour consulter : `python3 -m http.server` à la racine du dépôt, puis http://localhost:8000/design/directions/moodboards.html.
 
-## Comparer les trois directions
-- `directions/index.html` : les trois maquettes superposées ; touches **1 · 2 · 3** ou **← →**, boutons en bas (mobile).
+## Direction D — Synthèse
+`directions/d-synthese.html` : un accueil complet qui défile, combinant les trois directions :
+ouverture en lentille (A) avec logotype ancré (B) ; projet phare plein écran (B) ; projets en grille avec fiche
+technique capteur / reconstruction / rendu (C) ; lab en version claire (C) ; contact. Irisé : une fois par écran.
+
+## Comparer les directions
+- `directions/index.html` : les trois maquettes superposées ; touches **1 · 2 · 3 · 4** ou **← →**, boutons en bas (mobile).
 - `directions/comparateur.html` : même chose en un seul fichier autonome (version publiée en page web privée).
