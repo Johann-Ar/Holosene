@@ -22,8 +22,8 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
   location.replace('en/' + location.hash)
 }
 
-/* Verre liquide sur les bords (WebGL), sauf si l'utilisateur réduit les animations. */
-if (!reduced) root.classList.add('liquid')
+/* Verre liquide sur les bords : seulement sur Chromium (filtre SVG en arrière-plan) et sans réduction des animations. */
+if (navigator.userAgentData?.brands?.some((b) => /Chromium/.test(b.brand)) && !reduced) root.classList.add('liquid')
 
 /* Contact : copier l'adresse. */
 document.querySelectorAll('.copy').forEach((b) => {

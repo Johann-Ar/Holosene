@@ -84,6 +84,37 @@ float sdInner(vec2 p, float w) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
+// lentille du curseur en un point q (couleur de fond base) : image d'origine, bord intérieur « verre liquide », anneau irisé
+vec3 withLens(vec2 q, vec3 base) {
+  float aa = 0.9 / uDpr;
+  float R = uLens.z;
+  vec3 col = base;
+  if (R > 0.5) {
+    vec2 lp = q - uLens.xy;
+    float d = length(lp);
+    if (d < uLensO + 2.0) {
+      float k = smoothstep(0.833, 1.0, d / R);
+      float bend = 0.2 * k * k * k;
+      vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
+      vec3 orig = vec3(0.0);
+      for (int i = 0; i < 4; i++) {
+        vec2 o = (i == 0 ? t1 : i == 1 ? -t1 : i == 2 ? t2 : -t2);
+        orig += vec3(texture2D(uTex, cover(c0 + lp * (1.0 - bend * 1.012) + o)).r,
+                     texture2D(uTex, cover(c0 + lp * (1.0 - bend) + o)).g,
+                     texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.988) + o)).b);
+      }
+      orig *= 0.25;
+      vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
+      orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
+      float inner = 1.0 - smoothstep(R - aa, R + aa, d);
+      col = mix(col, orig, inner);
+      float ring = smoothstep(R - 2.0 - aa, R - 2.0 + aa, d) * (1.0 - smoothstep(uLensO - aa, uLensO + aa, d));
+      col = mix(col, iris(atan(lp.x, -lp.y) / 6.28318), ring);
+    }
+  }
+  return col;
+}
+
 void main() {
   vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
   p.y = uRes.y - p.y;
@@ -95,7 +126,7 @@ void main() {
   float wT = 1.0 - smoothstep(0.0, 85.0, sc.y), wB = 1.0 - smoothstep(0.0, 65.0, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 55.0, p.x); wR = smoothstep(uClip.y - 55.0, uClip.y, p.x); }
-  vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;
+  vec2 suck = vec2(0.0);   // aspiration désactivée : le verre liquide SVG s'en charge (évite le cumul)
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
   vec2 hp = p;
@@ -112,34 +143,7 @@ void main() {
     sd = sdCard(p);
     col += vec3(uCardBg) * (1.0 - a); a = 1.0;
   }
-  // lentille : l'image d'origine, nette au centre ; près du bord intérieur, déformation « verre liquide » :
-  // l'image se courbe vers le bord, les couleurs se séparent légèrement, un reflet fin longe l'anneau
-  float R = uLens.z;
-  if (R > 0.5) {
-    vec2 lp = p - uLens.xy;
-    float d = length(lp);
-    if (d < uLensO + 2.0) {
-      float k = smoothstep(0.833, 1.0, d / R);   // effet loupe sur le dernier sixième du rayon seulement
-      float bend = 0.2 * k * k * k;
-      // échantillons moyennés là où l'image est comprimée (évite le moiré) ; séparation des couleurs très légère
-      vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
-      vec3 orig = vec3(0.0);
-      for (int i = 0; i < 4; i++) {
-        vec2 o = (i == 0 ? t1 : i == 1 ? -t1 : i == 2 ? t2 : -t2);
-        orig += vec3(texture2D(uTex, cover(c0 + lp * (1.0 - bend * 1.012) + o)).r,
-                     texture2D(uTex, cover(c0 + lp * (1.0 - bend) + o)).g,
-                     texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.988) + o)).b);
-      }
-      orig *= 0.25;
-      vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
-      orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);   // reflet
-      float inner = 1.0 - smoothstep(R - aa, R + aa, d);
-      col = mix(col, orig, inner); a = mix(a, 1.0, inner);
-      // anneau irisé, rogné par le bord de la carte comme l'image
-      float ring = smoothstep(R - 2.0 - aa, R - 2.0 + aa, d) * (1.0 - smoothstep(uLensO - aa, uLensO + aa, d));
-      col = mix(col, iris(atan(lp.x, -lp.y) / 6.28318), ring); a = mix(a, 1.0, ring);
-    }
-  }
+  col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
 
   if (uRadius > 0.0) {
     // bord en verre liquide (à la manière d'Apple) : dans l'épaisseur du verre, l'image est aspirée depuis l'intérieur
@@ -161,6 +165,7 @@ void main() {
         float sp = 0.06 + 0.1 * uGlass;
         vec4 hr = halftoneS(p, suck - n * bend * (1.0 + sp)), hg = halftoneS(p, suck - n * bend), hb = halftoneS(p, suck - n * bend * (1.0 - sp));
         vec3 g = vec3(hr.r, hg.g, hb.b) + vec3(uCardBg) * (1.0 - hg.a);
+        g = withLens(p - n * bend * 0.7, g);                                         // la lentille se voit à travers le verre, déviée
         // irisé au survol : suite de couleurs répétée le long du bord
         vec2 cp = p - uRes * 0.5;
         vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
