@@ -1,7 +1,7 @@
 /**
  * Rendu WebGL du site : une seule toile fixe derrière la page, qui dessine chaque vue [data-gl] à sa place.
  * Chaque vue : l'image (ou plus tard la vidéo) en trame de points, et une lentille qui suit le curseur et montre l'original.
- * L'anneau a les proportions et les couleurs du « o » du logo ; autour, la trame s'écarte et prend un reflet irisé.
+ * L'anneau reprend les couleurs du « o » du logo, en film plastique translucide (lunettes 3D en carton), sans autre effet.
  * Accueil : le S du monogramme en trame de points, le « o » en aplat irisé comme sur le logo ; pas de lentille.
  */
 
@@ -31,6 +31,11 @@ vec2 cover(vec2 p) {
   return clamp((p - (uRes - size) * 0.5) / size, 0.001, 0.999);
 }
 float hash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 x) {
+  vec2 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+float fbm(vec2 x) { float v = 0.0, w = 0.5; for (int i = 0; i < 4; i++) { v += w * vnoise(x); x *= 2.03; w *= 0.5; } return v; }
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 // dégradé irisé de la marque (brand/tokens.css, --iris-conic), 0 = en haut, sens horaire
 vec3 iris(float t) {
@@ -55,11 +60,9 @@ void main() {
   vec2 dir = length(lp) > 0.001 ? normalize(lp) : vec2(0.0);
   float ang = atan(lp.x, -lp.y) / 6.28318;
   vec3 ic = iris(ang);
-  // halo : autour de la lentille, la trame s'écarte et grossit
-  float g = R > 0.5 ? exp(-pow(max(d - Ro, 0.0) / (R * 0.6 + 8.0), 2.0)) * step(Ro, d) : 0.0;
 
   // trame : un point par cellule, sa taille suit la lumière de l'image
-  vec2 pw = p - dir * g * uCell * 0.6;
+  vec2 pw = p;
   vec2 cell = floor(pw / uCell);
   vec2 c = (cell + 0.5) * uCell;
   float l = lum(texture2D(uTex, cover(c)).rgb);
@@ -70,10 +73,10 @@ void main() {
   float rnd = hash(cell);
   float rev = smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
   float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor) * m;
-  float r = min(uCell * 0.49 * kk * rev * edge * (1.0 + 0.5 * g), uCell * 0.62);
+  float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(pw - c))) * clamp(r / aa, 0.0, 1.0);
   vec3 col = vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0)));
-  col = mix(col, min(col * ic * 1.3, 1.0), 0.75 * g) * dotA;   // reflet irisé près de la lentille
+  col *= dotA;
   float a = dotA;
 
   if (R > 0.5) {
@@ -82,7 +85,12 @@ void main() {
       vec3 orig = texture2D(uTex, cover(p)).rgb;
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       float rim = smoothstep(R - aa, R + aa, d) * (1.0 - smoothstep(Ro - aa, Ro + aa, d));
-      vec3 ring = ic;
+      // anneau : film plastique coloré translucide (lunettes 3D en carton) ; on voit la trame à travers, avec les plis de la pellicule
+      vec2 fq = mat2(0.86, -0.5, 0.5, 0.86) * lp / Ro;
+      float n = fbm(fq * vec2(2.4, 7.5));
+      vec3 ring = col * mix(vec3(1.0), ic, 0.75) + ic * 0.3;
+      ring += vec3(smoothstep(0.58, 0.85, n) * 0.12);
+      ring *= 1.0 - smoothstep(0.4, 0.18, n) * 0.08;
       col = mix(col, orig, inner); a = mix(a, 1.0, inner);
       col = mix(col, ring, rim); a = mix(a, 1.0, rim);
     }
@@ -112,7 +120,7 @@ void main() {
 /** Géométrie du monogramme (viewBox 816 × 1000) : le S et le « o ». */
 const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
 const O = { x: 639.25, y: 586.8, ro: 176.7, ri: 90.8 }
-const EYE = O.ri / O.ro   // proportion du trou du « o » : la lentille garde la même
+const EYE = 0.7   // lentille du curseur : anneau plus fin que le « o » du logo (0,51), mieux adapté au suivi
 
 /** Place le monogramme dans la vue d'accueil (mêmes calculs que le CSS de .hero__mark). */
 export function markBox(w, h) {

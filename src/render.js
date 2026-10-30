@@ -43,7 +43,7 @@ export function render(lang) {
   // un projet = une carte de la piste horizontale : l'image en trame de points, la lentille montre l'original
   const card = (p, i) => `
       <article class="card" id="projet-${p.slug}" aria-labelledby="pt-${p.slug}">
-        <a class="card__media" href="#p-${p.slug}" data-gl="card" data-cell="6" data-lens="56" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(p.title)}">
+        <a class="card__media" href="#p-${p.slug}" data-gl="card" data-cell="6" data-lens="40" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(p.title)}">
           <img src="${m(p.cover)}" alt="" decoding="async" loading="lazy">
         </a>
         <div class="card__meta">
