@@ -1,7 +1,7 @@
 /**
  * Contenu du site Holosene (FR / EN).
  * Règle : uniquement des informations fournies par Johann (portfolio, CV, brief). Rien d'inventé.
- * T('fr', 'en') : texte traduit. TODO('…') : à fournir par Johann — affiché seulement en mode développement (?dev).
+ * T('fr', 'en') : texte traduit. TODO('…') : à fournir par Johann, affiché seulement en mode développement (?dev).
  * Médias : chemins relatifs à public/media/.
  */
 export const T = (fr, en = fr) => ({ fr, en })
@@ -35,14 +35,15 @@ export const ui = {
   skip: T('Aller au contenu', 'Skip to content'),
   nav: T('Navigation principale', 'Main navigation'),
   langLabel: T('Read in English', 'Lire en français'),
-  featured: T('Projet phare', 'Featured project'),
   open: T('Voir la fiche', 'View project'),
   close: T('Fermer', 'Close'),
   specHead: T('Captation · traitement · rendu', 'Capture · processing · output'),
   copy: T('Copier l’adresse', 'Copy address'),
   copied: T('Adresse copiée', 'Address copied'),
   legal: T('Mentions légales et confidentialité', 'Legal notice and privacy'),
-  lensLabel: T('La rivière de 4Dérives, vue à travers la lentille', 'The river of 4Dérives, seen through the lens'),
+  lensLabel: T('Le monogramme Holosene : le S tramé de points, le « o » en lentille de verre qui montre l’image d’origine', 'The Holosene monogram: the S made of dots, the “o” a glass lens showing the original image'),
+  panelLabel: T('Image du projet en trame de points ; la lentille montre l’image d’origine', 'Project image as a dot screen; the lens shows the original image'),
+  index: T('Projets', 'Work'),
   sections: {
     intent: T('Intention', 'Intent'),
     context: T('Contexte et milieu', 'Context and environment'),
@@ -62,7 +63,7 @@ export const projects = [
   {
     slug: '4derives',
     title: '4Dérives',
-    year: '2025 — 26',
+    year: '2025-26',
     milieu: T('Rivière', 'River'),
     cover: '4derives/080.webp',
     spec: [
@@ -139,7 +140,7 @@ export const projects = [
   {
     slug: 'photographique-volume',
     title: 'Photographique Volume',
-    year: '2025 — 26',
+    year: '2025-26',
     milieu: T('Littoral', 'Coastline'),
     cover: 'photographique-volume/029.webp',
     coverCredit: T('Rendu : Johann Arata, d’après les photographies de Nicolas Floc’h', 'Render: Johann Arata, from Nicolas Floc’h’s photographs'),
@@ -153,7 +154,7 @@ export const projects = [
       'Les photographies sous-marines de Nicolas Floc’h, prises dans les Calanques, deviennent des paysages 3D. Sept images, du rivage vers le large.',
       'Nicolas Floc’h’s underwater photographs of the Calanques turned into 3D landscapes. Seven images, from the shore out to the open sea.',
     ),
-    capture: T('Pas de captation propre : photographies de Nicolas Floc’h (Calanques, 2018 — 2020), séries « Invisible » et « La Couleur de l’eau ».', 'No own capture: photographs by Nicolas Floc’h (Calanques, 2018 — 2020), series “Invisible” and “La Couleur de l’eau”.'),
+    capture: T('Pas de captation propre : photographies de Nicolas Floc’h (Calanques, 2018-2020), séries « Invisible » et « La Couleur de l’eau ».', 'No own capture: photographs by Nicolas Floc’h (Calanques, 2018-2020), series “Invisible” and “La Couleur de l’eau”.'),
     processing: T(
       'La profondeur est estimée par IA (Depth Anything V2), puis affinée par la lumière de l’image. « Invisible » donne la forme, « La Couleur de l’eau » la couleur.',
       'Depth is estimated by AI (Depth Anything V2), then refined by the light in the image. “Invisible” gives the shape, “La Couleur de l’eau” the colour.',
@@ -178,7 +179,7 @@ export const projects = [
   {
     slug: 'mondes-immerges',
     title: 'Mondes Immergés',
-    year: '2024 — 25',
+    year: '2024-25',
     milieu: T('Recherche', 'Research'),
     cover: 'mondes-immerges/011.webp',
     spec: [
@@ -233,6 +234,6 @@ export const lab = {
 }
 
 export const studio = T(
-  'Holosene est le studio de Johann Arata, designer numérique, en master Design – Environnements numériques à la Faculté des arts de Strasbourg. Un studio solo, sans équipe.',
-  'Holosene is the studio of Johann Arata, a digital designer studying for a master’s in Design – Digital Environments at the Faculty of Arts in Strasbourg. A one-person studio, with no team.',
+  'Holosene est le studio de Johann Arata, designer numérique, en master Design (Environnements numériques) à la Faculté des arts de Strasbourg. Un studio solo, sans équipe.',
+  'Holosene is the studio of Johann Arata, a digital designer studying for a master’s in Design (Digital Environments) at the Faculty of Arts in Strasbourg. A one-person studio, with no team.',
 )

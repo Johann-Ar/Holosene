@@ -18,12 +18,12 @@ function prerender() {
       const { render, esc } = await load('src/render.js')
       const { site } = await load('src/content.js')
       const url = lang === 'fr' ? SITE_URL : `${SITE_URL}en/`
-      const title = lang === 'fr' ? 'Holosene — studio de Johann Arata' : 'Holosene — Johann Arata’s studio'
+      const title = lang === 'fr' ? 'Holosene, studio de Johann Arata' : 'Holosene, Johann Arata’s studio'
       const desc = site.description[lang]
       const ld = {
         '@context': 'https://schema.org',
         '@graph': [
-          { '@type': 'Organization', '@id': `${SITE_URL}#studio`, name: 'Holosene', url: SITE_URL, logo: `${SITE_URL}icons/icon-black-iris-512.png`, founder: { '@id': `${SITE_URL}#johann` }, email: site.email },
+          { '@type': 'Organization', '@id': `${SITE_URL}#studio`, name: 'Holosene', url: SITE_URL, logo: `${SITE_URL}icons/icon-512.png`, founder: { '@id': `${SITE_URL}#johann` }, email: site.email },
           { '@type': 'Person', '@id': `${SITE_URL}#johann`, name: site.person, jobTitle: lang === 'fr' ? 'Designer numérique' : 'Digital designer', email: `mailto:${site.email}`, sameAs: site.socials.map((s) => s.href).filter((h) => h.includes('github')) },
         ],
       }
