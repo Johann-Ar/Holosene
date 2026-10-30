@@ -1,7 +1,8 @@
 /**
  * Rendu WebGL du site : une seule toile fixe derrière la page, qui dessine chaque vue [data-gl] à sa place.
  * Chaque vue : l'image (ou plus tard la vidéo) en trame de points, et une lentille qui montre l'original.
- * La lentille est un anneau de verre teinté, rouge d'un côté et cyan de l'autre, comme les lunettes 3D en carton.
+ * La lentille est plate : un anneau de film plastique translucide aux couleurs irisées de la marque, texturé comme la pellicule
+ * des lunettes 3D en carton.
  * Accueil : la trame ne remplit que le S du monogramme, la lentille se pose sur le « o » et suit le curseur.
  */
 
@@ -33,6 +34,21 @@ vec2 cover(vec2 p) {
 }
 float hash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
+// dégradé irisé de la marque (brand/tokens.css, --iris-conic), 0 = en haut, sens horaire
+vec3 iris(float t) {
+  vec3 c[9];
+  c[0] = vec3(0.855, 0.608, 0.761); c[1] = vec3(0.600, 0.757, 0.867); c[2] = vec3(0.596, 0.886, 0.706);
+  c[3] = vec3(0.608, 0.757, 0.871); c[4] = vec3(0.851, 0.612, 0.765); c[5] = vec3(0.976, 0.616, 0.816);
+  c[6] = vec3(1.000, 0.592, 0.941); c[7] = vec3(0.996, 0.604, 0.835); c[8] = c[0];
+  float x = t * 8.0; vec3 r = c[0];
+  for (int i = 0; i < 8; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
+  return r;
+}
+float vnoise(vec2 x) {
+  vec2 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+float fbm(vec2 x) { float v = 0.0, w = 0.5; for (int i = 0; i < 4; i++) { v += w * vnoise(x); x *= 2.03; w *= 0.5; } return v; }
 
 void main() {
   vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
@@ -64,36 +80,25 @@ void main() {
     float d = length(lp);
     float Ro = R + uRim;
     vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
-    // ombre portée légère autour du verre
-    col *= 1.0 - 0.6 * exp(-max(d - Ro, 0.0) / (uRim * 0.6 + 4.0)) * step(Ro, d);
     if (d < Ro + 2.0) {
-      // intérieur : l'image d'origine, légèrement grossie, aberration chromatique sur le bord
-      float t = clamp(d / R, 0.0, 1.0);
-      vec2 q = uLens.xy + lp * (0.82 + 0.18 * t * t);
-      float ca = 3.0 * t * t * t;
-      vec3 orig = vec3(texture2D(uTex, cover(q + dir * ca)).r, texture2D(uTex, cover(q)).g, texture2D(uTex, cover(q - dir * ca)).b);
+      // intérieur : l'image d'origine, à plat
+      vec3 orig = texture2D(uTex, cover(p)).rgb;
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
 
-      // anneau de verre : un tube transparent qui dévie l'image et la teinte
-      float u = clamp((d - R) / uRim, 0.0, 1.0);
-      float bulge = sin(3.14159 * u);
-      vec2 rq = p - dir * uRim * (u - 0.5) * 1.6;
-      vec3 under = texture2D(uTex, cover(rq)).rgb;
-      float side = smoothstep(-0.55, 0.55, lp.x / Ro);
-      vec3 tint = mix(vec3(1.0, 0.08, 0.2), vec3(0.0, 0.9, 1.0), side);
-      tint /= max(tint.r, max(tint.g, tint.b));
-      vec3 glass = under * mix(vec3(1.0), tint, 0.62) + tint * 0.16;
-      glass += tint * pow(1.0 - bulge, 3.0) * 0.45;                 // bords plus denses (Fresnel)
-      vec2 L = normalize(vec2(-0.55, -0.83));
-      float spec = pow(max(dot(dir, L), 0.0), 5.0) * smoothstep(0.12, 0.4, u) * (1.0 - smoothstep(0.5, 0.8, u));
-      glass += vec3(spec * 0.7);                                     // reflet
-      float spec2 = pow(max(dot(dir, -L), 0.0), 8.0) * smoothstep(0.55, 0.75, u) * (1.0 - smoothstep(0.8, 0.95, u));
-      glass += vec3(spec2 * 0.25);
-      glass += vec3(0.5) * (exp(-abs(d - R) * uDpr * 0.8) + exp(-abs(d - Ro) * uDpr * 0.8) * 0.6);
+      // anneau : un film coloré translucide, à plat, aux couleurs irisées de la marque
+      float ang = fract(atan(lp.x, -lp.y) / 6.28318);
+      vec3 film = iris(ang);
+      vec3 ring = mix(film, orig * film, 0.22);
+      // texture de pellicule plastique : plis longs, reflets doux, grain
+      vec2 fp = mat2(0.86, -0.5, 0.5, 0.86) * (p - uLens.xy) / max(Ro, 1.0);
+      float n = fbm(fp * vec2(2.2, 7.0) + vec2(uTime * 0.03, 0.0));
+      ring += vec3(smoothstep(0.58, 0.85, n) * 0.1);
+      ring *= 1.0 - smoothstep(0.4, 0.2, n) * 0.06;
+      ring += (hash(floor(p * uDpr)) - 0.5) * 0.03;
       float rim = smoothstep(R - aa, R + aa, d) * (1.0 - smoothstep(Ro - aa, Ro + aa, d));
 
       col = mix(col, orig, inner); a = mix(a, 1.0, inner);
-      col = mix(col, glass, rim); a = mix(a, 1.0, rim);
+      col = mix(col, ring, rim); a = mix(a, 1.0, rim);
     }
   }
   gl_FragColor = vec4(col, a);
@@ -193,7 +198,7 @@ export function createGL(canvas, { reduced }) {
 
       // lentille : position de repos, ou le pointeur s'il est dans la vue
       let rest, R = v.r, rim = v.rim
-      if (v.mark) { const m = markBox(w, h); rest = { x: m.o.x, y: m.o.y }; R = m.o.ri; rim = m.o.ro - m.o.ri; maskFor(v, w, h) }
+      if (v.mark) { const m = markBox(w, h); rest = { x: m.o.x, y: m.o.y }; rim = Math.max(6, m.o.ro * 0.11); R = m.o.ro - rim; maskFor(v, w, h) }
       else {
         const small = w < 760
         R = small ? v.r * 0.78 : v.r; rim = small ? v.rim * 0.85 : v.rim

@@ -29,7 +29,7 @@ export function render(lang) {
   // un projet = une vue plein écran : l'image en trame de points, la lentille montre l'original
   const panel = (p, i) => `
     <article class="panel" id="projet-${p.slug}" aria-labelledby="pt-${p.slug}">
-      <div class="panel__view" data-gl="panel" data-cell="7" data-lens="66" data-rim="13" role="img" aria-label="${esc(t(ui.panelLabel))}">
+      <div class="panel__view" data-gl="panel" data-cell="7" data-lens="70" data-rim="8" role="img" aria-label="${esc(t(ui.panelLabel))}">
         <img src="${m(p.cover)}" alt="" decoding="async">
       </div>
       <div class="panel__txt wrap">
