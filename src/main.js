@@ -25,12 +25,15 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
 /* Essai : la touche Espace bascule entre le noir actuel et le noir pur (choix mémorisé). */
 root.classList.toggle('pure-black', store.get('black') === 'pure')
 addEventListener('keydown', (e) => {
-  if (e.code !== 'Space' || e.repeat || e.target.closest?.('input, textarea, button, a, [contenteditable]')) return
+  if (e.code !== 'Space' || e.repeat || root.classList.contains('fiche-open') || e.target.closest?.('input, textarea, button, a, [contenteditable]')) return
   e.preventDefault()
   const on = root.classList.toggle('pure-black')
   store.set('black', on ? 'pure' : null)
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', on ? '#000000' : '#0e0e0e')
 })
+
+/* Verre liquide sur les bords : seulement sur Chromium (filtre SVG en arrière-plan) et sans réduction des animations. */
+if (navigator.userAgentData?.brands?.some((b) => /Chromium/.test(b.brand)) && !reduced) root.classList.add('liquid')
 
 /* Contact : copier l'adresse. */
 document.querySelectorAll('.copy').forEach((b) => {
@@ -72,7 +75,7 @@ function syncFiche() {
     lastFocus ??= document.activeElement
     open.scrollTop = 0
     open.style.setProperty('--fh', open.querySelector('.fiche__head').offsetHeight + 'px')
-    open.resetRow?.()
+    fiches.find((x) => x.f === open)?.reset()
     open.focus({ preventScroll: true })
   } else {
     lenis?.start()
@@ -87,48 +90,72 @@ function syncFiche() {
 }
 addEventListener('hashchange', syncFiche)
 
-/* Fiches, grand écran : la molette fait défiler la rangée à l'horizontale (avec douceur) ; le pavé tactile et le doigt
-   la font glisser directement. Au bout, continuer à défiler remplit une jauge puis ouvre le projet suivant. */
+/* Fiches, grand écran : la rangée est déplacée par le script.
+   - pavé tactile (petits pas continus) : suit le geste directement, sans lissage ajouté ;
+   - molette de souris (grands pas) : glisse en douceur ;
+   - glisser à la souris ou au doigt, flèches du clavier.
+   Au bout, continuer à défiler remplit une jauge puis ouvre le projet suivant. */
 const wide = matchMedia('(min-width: 769px)')
-const PULL = 650
-document.querySelectorAll('.fiche').forEach((f) => {
+const PULL = 480
+const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
   const row = f.querySelector('.fiche__row'), next = f.querySelector('.fiche__next')
-  let target = 0, anim = false, pull = 0, lastPull = 0, relaxing = false
-  const setPull = (v) => { pull = Math.max(0, v); f.style.setProperty('--pull', Math.min(pull / PULL, 1).toFixed(3)) }
-  const atEnd = () => row.scrollLeft >= row.scrollWidth - row.clientWidth - 2
-  const glide = () => {
-    row.scrollLeft += (target - row.scrollLeft) * (reduced ? 1 : 0.14)
-    if (Math.abs(target - row.scrollLeft) > 0.5) requestAnimationFrame(glide)
-    else { row.scrollLeft = target; anim = false }
-  }
+  const F = { f, row, x: 0, target: 0, max: 0, pull: 0, lastPull: 0, smooth: false }
+  const setPull = (v) => { F.pull = Math.max(0, v); f.style.setProperty('--pull', Math.min(F.pull / PULL, 1).toFixed(3)) }
   const pullBy = (d) => {
-    setPull(pull + d); lastPull = performance.now()
-    if (pull >= PULL) { setPull(0); location.hash = next.getAttribute('href'); return }
-    if (relaxing) return
-    relaxing = true
-    const relax = (now) => {
-      if (pull <= 0) return (relaxing = false)
-      if (now - lastPull > 160) setPull(pull * 0.9 - 2)
-      requestAnimationFrame(relax)
-    }
-    requestAnimationFrame(relax)
+    setPull(F.pull + d); F.lastPull = performance.now()
+    if (F.pull >= PULL) { setPull(0); location.hash = next.getAttribute('href') }
   }
-  row.addEventListener('wheel', (e) => {
-    if (!wide.matches || e.ctrlKey) return
-    const horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY)
-    const d = (horizontal ? e.deltaX : e.deltaY) * (e.deltaMode === 1 ? 32 : 1)
-    if (!horizontal) {
-      e.preventDefault()
-      if (!anim) target = row.scrollLeft
-      target = Math.max(0, Math.min(row.scrollWidth - row.clientWidth, target + d))
-      if (!anim) { anim = true; requestAnimationFrame(glide) }
-    }
-    if (d > 0 && atEnd()) pullBy(d * 0.55)
-    else if (d < 0 && pull > 0) pullBy(d)
+  F.measure = () => { F.max = Math.max(0, row.scrollWidth - innerWidth); F.target = Math.min(F.target, F.max) }
+  const by = (d, smooth) => {
+    const before = F.target
+    F.target = Math.max(0, Math.min(F.max, F.target + d))
+    F.smooth = smooth; if (!smooth) F.x = F.target
+    const rest = d - (F.target - before)
+    if (rest > 0 && F.target >= F.max - 1) pullBy(rest * 0.55)
+    else if (d < 0 && F.pull > 0) pullBy(d)
+  }
+  f.addEventListener('wheel', (e) => {
+    if (!wide.matches || e.ctrlKey || e.target.closest('.fiche__col') && e.target.closest('.fiche__col').scrollHeight > e.target.closest('.fiche__col').clientHeight + 2 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) return
+    e.preventDefault()
+    const d = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? innerWidth : 1)
+    by(d, e.deltaMode !== 0 || Math.abs(d) >= 50)   // grands pas : molette ; petits pas : pavé tactile
   }, { passive: false })
-  row.addEventListener('scroll', () => { if (!anim) target = row.scrollLeft }, { passive: true })
-  f.resetRow = () => { row.scrollLeft = 0; target = 0; setPull(0) }
+  f.addEventListener('keydown', (e) => {
+    if (!wide.matches) return
+    const k = { ArrowRight: 1, ArrowDown: 1, PageDown: 1, ' ': 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1 }[e.key]
+    if (k && !e.target.closest('a, button')) { e.preventDefault(); by(k * innerWidth * 0.6, true) }
+  })
+  let down = null
+  row.addEventListener('pointerdown', (e) => { if (!wide.matches || e.button || e.target.closest('a, button')) return; down = { x: e.clientX, t: F.target, id: e.pointerId, moved: false } })
+  addEventListener('pointermove', (e) => {
+    if (!down || e.pointerId !== down.id) return
+    const dx = e.clientX - down.x
+    if (!down.moved && Math.abs(dx) > 6) { down.moved = true; row.classList.add('is-drag') }
+    if (down.moved) { F.target = F.x = Math.max(0, Math.min(F.max, down.t - dx)); F.smooth = false }
+  })
+  addEventListener('pointerup', () => { if (down) { row.classList.remove('is-drag'); down = null } })
+  F.reset = () => {
+    F.x = F.target = 0; setPull(0)
+    f.querySelectorAll('img[loading="lazy"]').forEach((i) => (i.loading = 'eager'))   // images chargées dès l'ouverture
+    F.measure()
+  }
+  F.frame = (dt) => {
+    if (F.pull > 0 && performance.now() - F.lastPull > 160) setPull(F.pull * 0.9 - 2)
+    if (F.smooth) F.x += (F.target - F.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.12))
+    if (Math.abs(F.target - F.x) < 0.3) F.x = F.target
+    row.style.transform = wide.matches ? `translate3d(${(-F.x).toFixed(1)}px, 0, 0)` : ''
+  }
+  f.querySelectorAll('img').forEach((i) => i.addEventListener('load', () => F.measure()))
+  return F
 })
+addEventListener('resize', () => fiches.forEach((F) => F.measure()))
+let ficheT = performance.now()
+function ficheFrame(now) {
+  const dt = Math.min(0.05, (now - ficheT) / 1000); ficheT = now
+  const open = document.querySelector('.fiche:target')
+  const F = open && fiches.find((x) => x.f === open)
+  F?.frame(dt)
+}
 addEventListener('keydown', (e) => {
   const open = document.querySelector('.fiche:target')
   if (!open) return
@@ -232,6 +259,8 @@ const word = document.querySelector('.studio__word')
 const wordBlocks = [...document.querySelectorAll('[data-words]')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 function scrollEffects() {
   const vh = innerHeight
+  // la bande du bas s'efface en haut de page (mots-clés de l'accueil) et en fin de page (pied de page)
+  root.classList.toggle('edge-bottom-off', scrollY < 40 || scrollY + vh > document.documentElement.scrollHeight - 120)
   if (word) {
     const r = word.getBoundingClientRect()
     const p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.75)))
@@ -255,6 +284,7 @@ function loop(t) {
   lenis?.raf(t)
   gl?.frame(t)
   workFrame(t)
+  ficheFrame(t)
   if (!reduced) scrollEffects()
   requestAnimationFrame(loop)
 }

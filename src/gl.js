@@ -7,6 +7,28 @@
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 
+// anneau de la lentille, dessiné par-dessus toutes les vues (il n'est jamais coupé par le bord d'une carte)
+const RING = `precision highp float;
+uniform vec3 uL;      // centre (px écran, origine en haut à gauche), rayon extérieur
+uniform float uW;     // épaisseur
+uniform float uH;     // hauteur de la toile (px CSS)
+uniform float uDpr;
+vec3 iris(float t) {
+  vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
+  c[0] = vec3(1.000, 0.592, 0.941); c[1] = vec3(0.996, 0.604, 0.835); c[2] = vec3(0.855, 0.608, 0.761);
+  c[3] = vec3(0.600, 0.757, 0.867); c[4] = vec3(0.596, 0.886, 0.706); c[5] = c[0];
+  float x = fract(t) * 5.0; vec3 r = c[0];
+  for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
+  return r;
+}
+void main() {
+  vec2 p = vec2(gl_FragCoord.x, uH * uDpr - gl_FragCoord.y) / uDpr;
+  vec2 d = p - uL.xy; float r = length(d), aa = 0.9 / uDpr;
+  float a = smoothstep(uL.z - uW - aa, uL.z - uW + aa, r) * (1.0 - smoothstep(uL.z - aa, uL.z + aa, r));
+  if (a <= 0.0) discard;
+  gl_FragColor = vec4(iris(atan(d.x, -d.y) / 6.28318) * a, a);
+}`
+
 const FRAG = `precision highp float;
 uniform sampler2D uTex;
 uniform sampler2D uMask;
@@ -33,14 +55,13 @@ vec2 cover(vec2 p) {
 }
 float hash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
-// dégradé irisé de la marque (brand/tokens.css, --iris-conic), 0 = en haut, sens horaire
+// roue irisée de la marque, à parts égales ; 0 = en haut, sens horaire
 vec3 iris(float t) {
-  vec3 c[9];
-  c[0] = vec3(0.855, 0.608, 0.761); c[1] = vec3(0.600, 0.757, 0.867); c[2] = vec3(0.596, 0.886, 0.706);
-  c[3] = vec3(0.608, 0.757, 0.871); c[4] = vec3(0.851, 0.612, 0.765); c[5] = vec3(0.976, 0.616, 0.816);
-  c[6] = vec3(1.000, 0.592, 0.941); c[7] = vec3(0.996, 0.604, 0.835); c[8] = c[0];
-  float x = fract(t) * 8.0; vec3 r = c[0];
-  for (int i = 0; i < 8; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
+  vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
+  c[0] = vec3(1.000, 0.592, 0.941); c[1] = vec3(0.996, 0.604, 0.835); c[2] = vec3(0.855, 0.608, 0.761);
+  c[3] = vec3(0.600, 0.757, 0.867); c[4] = vec3(0.596, 0.886, 0.706); c[5] = c[0];
+  float x = fract(t) * 5.0; vec3 r = c[0];
+  for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
   return r;
 }
 
@@ -126,8 +147,11 @@ export function createGL(canvas, { reduced }) {
   if (!gl) return null
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s }
   const prog = gl.createProgram()
-  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG)); gl.linkProgram(prog)
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG)); gl.bindAttribLocation(prog, 0, 'a'); gl.linkProgram(prog)
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
+  const ringProg = gl.createProgram()
+  gl.attachShader(ringProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(ringProg, sh(gl.FRAGMENT_SHADER, RING)); gl.bindAttribLocation(ringProg, 0, 'a'); gl.linkProgram(ringProg)
+  const RU = {}; for (const n of ['uL', 'uW', 'uH', 'uDpr']) RU[n] = gl.getUniformLocation(ringProg, n)
   gl.useProgram(prog)
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
@@ -147,12 +171,10 @@ export function createGL(canvas, { reduced }) {
   addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY, true) }, { passive: true })
   addEventListener('touchstart', (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY, true) }, { passive: true })
   document.documentElement.addEventListener('pointerleave', () => { ptr.t = -1e9 })
-  const hoverDevice = matchMedia('(hover: hover)').matches
 
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
-    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, phase: Math.random() * 10,
-      L: { x: 0, y: 0, vx: 0, vy: 0, s: 0, sv: 0 },
-      mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7, r: +el.dataset.lens || 56,
+    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0,
+      mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
       radius: +el.dataset.radius || 0, clip: el.closest('[data-clip]'), fade: el.dataset.gl === 'panel', mask: null, maskKey: '' }
     const src = v.video || el.querySelector('img')
     const done = () => { upload(v.tex, src); v.img = [src.videoWidth || src.naturalWidth, src.videoHeight || src.naturalHeight]; v.ready = v.img[0] > 0 }
@@ -183,15 +205,9 @@ export function createGL(canvas, { reduced }) {
   }
   resize(); addEventListener('resize', resize)
 
-  // ressorts : la lentille suit le pointeur avec un peu d'inertie, et apparaît avec un léger rebond
-  function spring(L, tx, ty, ts, dt) {
-    const n = Math.max(1, Math.ceil(dt / (1 / 240))), h = dt / n
-    for (let i = 0; i < n; i++) {
-      L.vx += ((tx - L.x) * 420 - L.vx * 41) * h; L.vy += ((ty - L.y) * 420 - L.vy * 41) * h
-      L.x += L.vx * h; L.y += L.vy * h
-      L.sv += ((ts - L.s) * 260 - L.sv * 33) * h; L.s += L.sv * h
-    }
-  }
+  // une seule lentille pour toute la page : elle suit le pointeur de près (sans dépassement), apparaît sur les cartes
+  const lens = { x: 0, y: 0, s: 0, init: false }
+  const follow = (a, b, tau, dt) => a + (b - a) * (1 - Math.exp(-dt / tau))
 
   let last = performance.now(), time = 0
   function frame(now) {
@@ -201,6 +217,22 @@ export function createGL(canvas, { reduced }) {
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
     if (document.documentElement.classList.contains('fiche-open')) return
+    // la lentille : visible quand le pointeur est sur une carte (pas sur l'accueil)
+    const small = W < 600
+    const Ro = small ? 60 : 74, Ri = Ro - (small ? 9 : 12)
+    let over = false
+    for (const v of views) {
+      if (v.mark || !v.ready) continue
+      const b = v.el.getBoundingClientRect(), cr = v.clip?.getBoundingClientRect()
+      if (ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))) { over = true; break }
+    }
+    const show = over && (!ptr.touch || now - ptr.t < 1400) && !document.documentElement.classList.contains('fiche-open')
+    if (!lens.init || (lens.s < 0.02 && show)) { lens.x = ptr.x; lens.y = ptr.y; lens.init = true }
+    if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
+    else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
+    const sc = lens.s < 0.005 ? 0 : 1 - Math.pow(1 - lens.s, 2)
+
+    gl.useProgram(prog)
     for (const v of views) {
       const b = v.el.getBoundingClientRect()
       if (!v.ready || b.bottom < 0 || b.top > H || b.right < 0 || b.left > W || b.width < 2) continue
@@ -215,22 +247,6 @@ export function createGL(canvas, { reduced }) {
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
       if (v.mark) maskFor(v, w, h)
 
-      // lentille : au pointeur s'il est dans la vue ; sur écran tactile, elle dérive doucement dans les cartes
-      const small = w < 600
-      const Ro = small ? v.r * 0.8 : v.r, R = Ro - (small ? 9 : 12)   // v.r : rayon extérieur
-      const lx = ptr.x - b.left, ly = ptr.y - b.top
-      const inside = lx >= 0 && ly >= 0 && lx <= w && ly <= h && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
-      const active = inside && (!ptr.touch || now - ptr.t < 1400)
-      const drift = !hoverDevice && !v.mark && !active
-      const t = time * 0.3 + v.phase
-      const L = v.L
-      let tx = L.x, ty = L.y, ts = 0
-      if (active && !v.mark) { tx = lx; ty = ly; ts = 1 }
-      else if (drift) { tx = w * (0.5 + Math.sin(t) * 0.22); ty = h * (0.5 + Math.sin(t * 1.3) * 0.2); ts = 0.9 }
-      if (L.s < 0.02 && ts > 0) { L.x = tx; L.y = ty; L.vx = L.vy = 0 }
-      if (reduced) { L.x = tx; L.y = ty; L.s = ts; L.vx = L.vy = 0 } else spring(L, tx, ty, ts, dt)
-      const sc = Math.max(0, L.s) * Math.min(1, reveal * 1.6)
-
       const x0 = Math.round(b.left * dpr), y0 = Math.round((H - b.bottom) * dpr)
       gl.viewport(x0, y0, Math.round(w * dpr), Math.round(h * dpr))
       gl.scissor(Math.max(0, x0), Math.max(0, y0), Math.round(w * dpr), Math.round(h * dpr))
@@ -243,9 +259,16 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uCardBg, document.documentElement.classList.contains('pure-black') ? 0.043 : 0.075)
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
-      gl.uniform3f(U.uLens, L.x, L.y, R * sc); gl.uniform1f(U.uRim, (Ro - R) * sc)
+      // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
+      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v.mark ? 0 : Ri * sc); gl.uniform1f(U.uRim, 0)
       if (v.mark) { const m = markBox(w, h), e = Math.min(1, reveal * 1.4); gl.uniform4f(U.uEye, m.x + O.x * m.s, m.y + O.y * m.s, O.ro * m.s * e, O.ri * m.s * e) }
       else gl.uniform4f(U.uEye, 0, 0, 0, 0)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+    if (sc > 0) {
+      gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
+      gl.useProgram(ringProg)
+      gl.uniform3f(RU.uL, lens.x, lens.y, Ro * sc); gl.uniform1f(RU.uW, (Ro - Ri) * sc); gl.uniform1f(RU.uH, H); gl.uniform1f(RU.uDpr, dpr)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
   }

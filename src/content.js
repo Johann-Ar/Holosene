@@ -216,6 +216,12 @@ export const projects = [
 ]
 
 /** Recherche : le profil de chercheur, au-delà des projets. Uniquement des éléments fournis par Johann. */
+/** Projets choisis : courte présentation de la section. */
+export const workIntro = T(
+  'Une sélection de projets où le réel capté devient volume, image ou espace à parcourir, de la rivière aux grands fonds jusqu’au littoral.',
+  'A selection of projects where captured reality becomes volume, image or space to explore, from the river to the deep sea and the coastline.',
+)
+
 export const research = {
   intro: T(
     'Mon mémoire porte sur la reconstruction volumétrique du réel capturé (Gaussian splatting 3D et 4D) et sur la frontière entre captation, reconstruction et génération par IA.',
