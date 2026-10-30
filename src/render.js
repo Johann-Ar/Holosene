@@ -108,8 +108,6 @@ export function render(lang) {
       <a class="fiche__next" href="#p-${next.slug}">
         <span class="lbl">${lang === 'fr' ? 'Projet suivant' : 'Next project'}</span>
         <span class="disp">${esc(next.title)} →</span>
-        <span class="fiche__pull" aria-hidden="true"><i></i></span>
-        <span class="lbl fiche__hint" aria-hidden="true">${lang === 'fr' ? 'Continuez à faire défiler' : 'Keep scrolling'}</span>
       </a>
     </div>
   </section>`

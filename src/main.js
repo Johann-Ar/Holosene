@@ -89,25 +89,14 @@ function syncFiche() {
 addEventListener('hashchange', syncFiche)
 
 /* Fiches, grand écran : la rangée est déplacée par le script, avec une seule douceur pour toutes les entrées
-   (pavé tactile, molette, glisser à la souris ou au doigt, clavier).
-   Au bout, continuer à défiler remplit une jauge puis ouvre le projet suivant. */
+   (pavé tactile, molette, glisser à la souris ou au doigt, clavier). */
 const wide = matchMedia('(min-width: 769px)')
-const PULL = 1400
 const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
-  const row = f.querySelector('.fiche__row'), next = f.querySelector('.fiche__next')
-  const F = { f, row, x: 0, target: 0, max: 0, pull: 0, lastPull: 0 }
-  const setPull = (v) => { F.pull = Math.max(0, v); f.style.setProperty('--pull', Math.min(F.pull / PULL, 1).toFixed(3)) }
-  const pullBy = (d) => {
-    setPull(F.pull + d); F.lastPull = performance.now()
-    if (F.pull >= PULL) { setPull(0); location.hash = next.getAttribute('href') }
-  }
+  const row = f.querySelector('.fiche__row')
+  const F = { f, row, x: 0, target: 0, max: 0 }
   F.measure = () => { F.max = Math.max(0, row.scrollWidth - innerWidth); F.target = Math.min(F.target, F.max) }
   const by = (d) => {
-    const before = F.target
     F.target = Math.max(0, Math.min(F.max, F.target + d))
-    const rest = d - (F.target - before)
-    if (rest > 0 && F.target >= F.max - 1) pullBy(rest * 0.35)
-    else if (d < 0 && F.pull > 0) pullBy(d)
   }
   f.addEventListener('wheel', (e) => {
     if (!wide.matches || e.ctrlKey) return
@@ -130,12 +119,11 @@ const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
   })
   addEventListener('pointerup', () => { if (down) { row.classList.remove('is-drag'); down = null } })
   F.reset = () => {
-    F.x = F.target = 0; setPull(0)
+    F.x = F.target = 0
     f.querySelectorAll('img[loading="lazy"]').forEach((i) => (i.loading = 'eager'))   // images chargées dès l'ouverture
     F.measure()
   }
   F.frame = (dt) => {
-    if (F.pull > 0 && performance.now() - F.lastPull > 160) setPull(F.pull * 0.86 - 4)
     F.x += (F.target - F.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.085))   // même douceur pour toutes les entrées
     if (Math.abs(F.target - F.x) < 0.3) F.x = F.target
     row.style.transform = wide.matches ? `translate3d(${(-F.x).toFixed(1)}px, 0, 0)` : ''

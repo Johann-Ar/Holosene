@@ -249,9 +249,6 @@ main, .foot { position: relative; z-index: 1; }
 .fiche__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .fiche__next { display: grid; justify-items: start; gap: 10px; text-decoration: none; color: var(--c-white); }
 .fiche__next .disp { font-size: clamp(2.2rem, 4vw, 3.6rem); white-space: nowrap; }
-.fiche__pull { display: block; width: 220px; height: 2px; background: rgb(255 255 255 / 0.14); overflow: hidden; }
-.fiche__pull i { display: block; height: 100%; background: var(--iris-line); transform-origin: left; transform: scaleX(var(--pull, 0)); }
-.fiche__hint { opacity: 0.7; }
 
 /* grand écran : une seule rangée, qui défile à l'horizontale (molette, pavé tactile, doigt) */
 @media (min-width: 769px) {
@@ -265,7 +262,7 @@ main, .foot { position: relative; z-index: 1; }
   .fiche__media > figure { flex: none; height: 100%; width: auto; aspect-ratio: var(--r); }
   .duo { flex: none; display: grid; grid-template-rows: 1fr 1fr; gap: 16px; height: 100%; aspect-ratio: 0.72; }
   .duo figure { min-height: 0; }
-  .fiche__next { flex: none; align-self: center; padding: 0 4vw 0 2vw; transform: translateX(calc(var(--pull, 0) * -60px)); }
+  .fiche__next { flex: none; align-self: center; padding: 0 4vw 0 2vw; }
 }
 /* mobile : tout à la suite, à la verticale */
 @media (max-width: 768px) {
@@ -273,7 +270,6 @@ main, .foot { position: relative; z-index: 1; }
   .fiche__media { display: grid; gap: 12px; }
   .fiche__media figure { aspect-ratio: var(--r); }
   .duo { display: grid; gap: 12px; }
-  .fiche__pull, .fiche__hint { display: none; }
   .fiche__next .disp { white-space: normal; }
 }
 
