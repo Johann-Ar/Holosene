@@ -47,7 +47,7 @@ export function render(lang) {
   const card = (c) => {
     const tag = c.href ? 'a' : 'div', href = c.href ? ` href="${c.href}"` : ''
     const media = c.image
-      ? `<${tag} class="card__media"${href} data-gl="card" data-cell="6" data-lens="60" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(c.title)}"><img src="${m(c.image)}" alt="" decoding="async" loading="lazy"></${tag}>`
+      ? `<${tag} class="card__media"${href} data-gl="card" data-cell="6" data-lens="74" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(c.title)}"><img src="${m(c.image)}" alt="" decoding="async" loading="lazy"></${tag}>`
       : `<div class="card__media card__media--text"><span class="disp">${esc(c.badge || '')}</span></div>`
     return `
       <article class="card${c.todo ? ' todo' : ''}" id="${c.id}" aria-labelledby="${c.id}-t">
@@ -64,10 +64,9 @@ export function render(lang) {
   // une piste : cartes, compteur, ligne de progression, flèches
   const rail = (cards, label) => `
     <div class="work__pin">
-      <div class="work__track wrap" data-clip tabindex="0" aria-label="${esc(label)}">${cards.join('')}</div>
+      <div class="work__track wrap" data-clip tabindex="0" aria-label="${esc(label)}"><div class="work__strip">${cards.join('')}</div></div>
       <div class="work__bar wrap">
-        <span class="lbl work__count" aria-hidden="true">01 / ${n2(cards.length - 1)}</span><span class="work__gap"></span>
-        <button class="work__nav" type="button" data-dir="-1" aria-label="${lang === 'fr' ? 'Précédent' : 'Previous'}">←</button><button class="work__nav" type="button" data-dir="1" aria-label="${lang === 'fr' ? 'Suivant' : 'Next'}">→</button>
+        <button class="btn btn--light work__nav" type="button" data-dir="-1" aria-label="${lang === 'fr' ? 'Précédent' : 'Previous'}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="btn btn--light work__nav" type="button" data-dir="1" aria-label="${lang === 'fr' ? 'Suivant' : 'Next'}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>`
 
@@ -116,11 +115,16 @@ export function render(lang) {
   </section>`
   }
 
-  const selected = projects.filter((p) => !p.research)
+  const selected = projects
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
+<svg class="defs" aria-hidden="true" focusable="false"><filter id="liquid" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+  <feTurbulence type="fractalNoise" baseFrequency="0.008 0.022" numOctaves="2" seed="7" result="n"/>
+  <feDisplacementMap in="SourceGraphic" in2="n" scale="34" xChannelSelector="R" yChannelSelector="G"/>
+</filter></svg>
+<div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
   <a href="#top" class="brand" aria-label="Holosene">
     <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">

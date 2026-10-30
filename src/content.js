@@ -179,7 +179,6 @@ export const projects = [
   },
   {
     slug: 'mondes-immerges',
-    research: true, // présenté dans Recherche, pas dans Projets choisis
     title: 'Mondes Immergés',
     year: '2024-25',
     milieu: T('Recherche', 'Research'),

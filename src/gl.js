@@ -1,7 +1,7 @@
 /**
  * Rendu WebGL du site : une seule toile fixe derrière la page, qui dessine chaque vue [data-gl] à sa place.
  * Chaque vue : l'image (ou plus tard la vidéo) en trame de points, et une lentille qui suit le curseur et montre l'original.
- * L'anneau reprend les couleurs du « o » du logo, en film plastique translucide (lunettes 3D en carton), sans autre effet.
+ * L'anneau reprend les couleurs du « o » du logo, en aplat, sans autre effet.
  * Accueil : le S du monogramme en trame de points, le « o » en aplat irisé comme sur le logo ; pas de lentille.
  */
 
@@ -23,6 +23,7 @@ uniform float uRadius;  // coins arrondis (0 : aucun)
 uniform vec3 uLens;     // centre (px CSS), rayon intérieur
 uniform float uRim;     // épaisseur de l'anneau
 uniform vec4 uClip;     // piste horizontale : bords gauche et droit (px, dans la vue), largeur du fondu
+uniform float uCardBg;  // gris du fond des cartes
 uniform vec4 uEye;      // accueil : le « o » du logo (centre, rayon extérieur, rayon intérieur), aplat irisé
 
 vec2 cover(vec2 p) {
@@ -31,11 +32,6 @@ vec2 cover(vec2 p) {
   return clamp((p - (uRes - size) * 0.5) / size, 0.001, 0.999);
 }
 float hash(vec2 c) { return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
-float vnoise(vec2 x) {
-  vec2 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
-}
-float fbm(vec2 x) { float v = 0.0, w = 0.5; for (int i = 0; i < 4; i++) { v += w * vnoise(x); x *= 2.03; w *= 0.5; } return v; }
 float lum(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 // dégradé irisé de la marque (brand/tokens.css, --iris-conic), 0 = en haut, sens horaire
 vec3 iris(float t) {
@@ -85,12 +81,7 @@ void main() {
       vec3 orig = texture2D(uTex, cover(p)).rgb;
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       float rim = smoothstep(R - aa, R + aa, d) * (1.0 - smoothstep(Ro - aa, Ro + aa, d));
-      // anneau : film plastique coloré translucide (lunettes 3D en carton) ; on voit la trame à travers, avec les plis de la pellicule
-      vec2 fq = mat2(0.86, -0.5, 0.5, 0.86) * lp / Ro;
-      float n = fbm(fq * vec2(2.4, 7.5));
-      vec3 ring = col * mix(vec3(1.0), ic, 0.75) + ic * 0.3;
-      ring += vec3(smoothstep(0.58, 0.85, n) * 0.12);
-      ring *= 1.0 - smoothstep(0.4, 0.18, n) * 0.08;
+      vec3 ring = ic;   // anneau plein, aux couleurs du « o » du logo
       col = mix(col, orig, inner); a = mix(a, 1.0, inner);
       col = mix(col, ring, rim); a = mix(a, 1.0, rim);
     }
@@ -109,7 +100,7 @@ void main() {
     vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
     float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
     float cov = 1.0 - smoothstep(-aa, aa, sd);
-    col += vec3(0.075) * (1.0 - a); a = 1.0;
+    col += vec3(uCardBg) * (1.0 - a); a = 1.0;
     col *= cov; a *= cov;
   }
   // bords latéraux fondus de la piste des projets
@@ -141,7 +132,7 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uRim', 'uEye', 'uClip']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uRim', 'uEye', 'uClip', 'uCardBg']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
@@ -226,7 +217,7 @@ export function createGL(canvas, { reduced }) {
 
       // lentille : au pointeur s'il est dans la vue ; sur écran tactile, elle dérive doucement dans les cartes
       const small = w < 600
-      const Ro = small ? v.r * 0.8 : v.r, R = Ro - (small ? 4 : 5)   // v.r : rayon extérieur ; anneau fin
+      const Ro = small ? v.r * 0.8 : v.r, R = Ro - (small ? 9 : 12)   // v.r : rayon extérieur
       const lx = ptr.x - b.left, ly = ptr.y - b.top
       const inside = lx >= 0 && ly >= 0 && lx <= w && ly <= h && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       const active = inside && (!ptr.touch || now - ptr.t < 1400)
@@ -249,6 +240,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.42 : 0); gl.uniform1f(U.uRadius, v.radius)
+      gl.uniform1f(U.uCardBg, document.documentElement.classList.contains('pure-black') ? 0.043 : 0.075)
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       gl.uniform3f(U.uLens, L.x, L.y, R * sc); gl.uniform1f(U.uRim, (Ro - R) * sc)
