@@ -77,6 +77,12 @@ float sdCard(vec2 p) {
   vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
 }
+// bord intérieur du verre : même rectangle, rentré de w, coins toujours arrondis (rayon conservé)
+float sdInner(vec2 p, float w) {
+  float r = uRadius + w * 0.6;                       // rayon intérieur plus grand : la courbe reste douce
+  vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - w - r);
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
 
 void main() {
   vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
@@ -86,9 +92,9 @@ void main() {
   // verre liquide : près des bords de l'écran (haut, bas) et de la piste (gauche, droite), l'image est aspirée vers
   // l'intérieur (on lit l'image plus loin du bord). La forme de la vignette ne bouge pas : rien ne sort du cadre.
   vec2 sc = uScr.xy + p;
-  float wT = 1.0 - smoothstep(0.0, 170.0, sc.y), wB = 1.0 - smoothstep(0.0, 130.0, uScr.w - sc.y);
+  float wT = 1.0 - smoothstep(0.0, 85.0, sc.y), wB = 1.0 - smoothstep(0.0, 65.0, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
-  if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 110.0, p.x); wR = smoothstep(uClip.y - 110.0, uClip.y, p.x); }
+  if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 55.0, p.x); wR = smoothstep(uClip.y - 55.0, uClip.y, p.x); }
   vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
@@ -141,10 +147,14 @@ void main() {
     // l'orientation du bord (vive en haut à gauche, douce en bas à droite), ombre intérieure. Irisé au survol.
     {
       float W = 34.0;
-      float t = clamp(-sd / W, 0.0, 1.0);                  // 0 à l'arête, 1 à la fin du verre
+      // position dans l'épaisseur du verre entre deux contours arrondis : lisse aussi dans les coins
+      float di = sdInner(p, W);
+      float t = clamp(-sd / max(-sd + di, 1e-3), 0.0, 1.0);   // 0 à l'arête, 1 au bord intérieur
+      if (di < 0.0) t = 1.0;
       vec2 e = vec2(1.0, 0.0);
-      vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy), sdCard(p + e.yx) - sdCard(p - e.yx)) + 1e-5);
-      col *= 1.0 - 0.4 * exp(-max(-sd - W, 0.0) / 9.0) * step(W, -sd);   // ombre intérieure, juste après le verre
+      vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy) + sdInner(p + e.xy, W) - sdInner(p - e.xy, W),
+                              sdCard(p + e.yx) - sdCard(p - e.yx) + sdInner(p + e.yx, W) - sdInner(p - e.yx, W)) + 1e-5);
+      col *= 1.0 - 0.4 * exp(-max(-di, 0.0) / 9.0) * step(0.0, -di);   // ombre intérieure, juste après le verre
       if (t < 1.0) {
         float s1 = 1.0 - t;
         float bend = W * 0.85 * s1 * s1;              // réfraction : on lit l'image plus à l'intérieur
@@ -157,7 +167,7 @@ void main() {
         vec3 tint = mix(vec3(1.0), ic, uGlass);
         g = g * mix(vec3(1.0), tint, 0.75 * s1) + tint * 0.1 * s1;
         g *= 0.62 + 0.38 * smoothstep(0.0, 0.9, t);                                   // le verre assombrit l'image (visible aussi sur le clair)
-        g *= 1.0 - 0.55 * exp(-abs(-sd - W) / 2.0);                                   // fine ligne sombre où le verre s'arrête
+        g *= 1.0 - 0.55 * exp(-abs(di) / 2.0);                                         // fine ligne sombre où le verre s'arrête
         // lumière spéculaire selon l'orientation du bord
         vec2 L = normalize(vec2(-0.65, -0.76));
         float facing = dot(n, L);
