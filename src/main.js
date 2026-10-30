@@ -65,7 +65,11 @@ function syncFiche() {
   } else {
     lenis?.start()
     const back = /^#projet-/.test(location.hash) && document.querySelector(location.hash)
-    if (back) lenis ? lenis.scrollTo(back, { immediate: true }) : back.scrollIntoView()
+    if (back) {
+      const y = pinned ? cardScrollY(back) : null
+      if (y !== null) lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y)
+      else { back.scrollIntoView({ block: 'center' }); back.parentElement.scrollLeft = back.offsetLeft - back.parentElement.offsetLeft }
+    }
     if (lastFocus) { lastFocus.focus?.({ preventScroll: true }); lastFocus = null }
   }
 }
@@ -88,26 +92,59 @@ addEventListener('keydown', (e) => {
 const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target) } }), { threshold: 0.01 })
 document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el))
 
-/* Studio : le logotype se trace puis se remplit, le texte s'allume mot à mot, selon le défilement. */
+/* Projets : sur grand écran, la piste horizontale avance pendant que l'on fait défiler la page. */
+const work = document.querySelector('.work')
+const scroller = work?.querySelector('.work__scroller')
+const track = work?.querySelector('.work__track')
+const count = work?.querySelector('.work__count')
+const cards = track ? [...track.querySelectorAll('.card')] : []
+const pinMedia = matchMedia('(min-width: 761px)')
+let pinned = false, span = 0
+function layoutWork() {
+  if (!work) return
+  pinned = pinMedia.matches && !reduced
+  root.classList.toggle('is-pinned', pinned)
+  span = pinned ? Math.max(0, track.scrollWidth - innerWidth) : 0
+  scroller.style.height = pinned ? `${span + innerHeight}px` : ''
+}
+layoutWork(); addEventListener('resize', layoutWork); addEventListener('load', layoutWork)
+/** Défilement vertical qui amène la carte à l'écran. */
+function cardScrollY(card) {
+  const top = scroller.getBoundingClientRect().top + scrollY
+  return top + Math.min(span, Math.max(0, card.offsetLeft - cards[0].offsetLeft))
+}
+function workFrame() {
+  if (!work) return
+  let p
+  if (pinned) {
+    const start = scroller.getBoundingClientRect().top
+    const x = Math.min(span, Math.max(0, -start))
+    track.style.setProperty('--x', x.toFixed(1))
+    p = span ? x / span : 0
+  } else p = track.scrollWidth > track.clientWidth ? track.scrollLeft / (track.scrollWidth - track.clientWidth) : 0
+  work.style.setProperty('--p', p.toFixed(4))
+  if (count) count.textContent = `${String(Math.min(cards.length, Math.round(p * (cards.length - 1)) + 1)).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`
+}
+
+/* À propos : le logotype se trace puis se remplit ; les grands textes s'allument mot à mot au défilement. */
 const word = document.querySelector('.studio__word')
-const words = [...document.querySelectorAll('.studio__txt .w')]
-let lastOn = -1
-function studio() {
+const wordBlocks = [...document.querySelectorAll('[data-words]')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
+function scrollEffects() {
   const vh = innerHeight
   if (word) {
     const r = word.getBoundingClientRect()
-    const p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.7)))
-    word.style.setProperty('--draw', (1 - Math.min(1, p * 1.4)).toFixed(3))
-    word.style.setProperty('--fill', Math.max(0, (p - 0.55) / 0.45).toFixed(3))
+    const p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.75)))
+    word.style.setProperty('--draw', (1 - Math.min(1, p * 1.5)).toFixed(3))
+    word.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.55) / 0.4)).toFixed(3))
   }
-  if (words.length) {
-    const r = words[0].parentElement.getBoundingClientRect()
-    const p = Math.min(1, Math.max(0, (vh * 0.82 - r.top) / (r.height + vh * 0.3)))
-    const on = Math.round(p * words.length)
-    if (on !== lastOn) { words.forEach((w, i) => w.classList.toggle('on', i < on)); lastOn = on }
+  for (const b of wordBlocks) {
+    const r = b.el.getBoundingClientRect()
+    const p = Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (r.height + vh * 0.25)))
+    const on = Math.round(p * b.words.length)
+    if (on !== b.on) { b.words.forEach((w, i) => w.classList.toggle('on', i < on)); b.on = on }
   }
 }
-if (reduced) { word?.style.setProperty('--draw', 0); words.forEach((w) => w.classList.add('on')) }
+if (reduced) { word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null
@@ -116,7 +153,8 @@ try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (
 function loop(t) {
   lenis?.raf(t)
   gl?.frame(t)
-  if (!reduced) studio()
+  workFrame()
+  if (!reduced) scrollEffects()
   requestAnimationFrame(loop)
 }
 requestAnimationFrame(loop)

@@ -16,21 +16,22 @@ export const site = {
     'Je capte le réel et le transforme en volumes et en espaces 3D à parcourir.',
     'I capture the real world and turn it into volumes and 3D spaces to explore.',
   ),
-  baseline: T('Studio de Johann Arata · captation, reconstruction, 3D temps réel', 'Studio of Johann Arata · capture, reconstruction, real-time 3D'),
+  baseline: T('Captation, reconstruction, 3D temps réel', 'Capture, reconstruction, real-time 3D'),
+  signature: T('Portfolio de Johann Arata', 'Portfolio of Johann Arata'),
   description: T(
-    'Holosene, studio de Johann Arata : captation du réel, nuages de points, Gaussian splatting et 3D temps réel.',
-    'Holosene, Johann Arata’s studio: real-world capture, point clouds, Gaussian splatting and real-time 3D.',
+    'Holosene, portfolio de Johann Arata : captation du réel, nuages de points, Gaussian splatting et 3D temps réel.',
+    'Holosene, Johann Arata’s portfolio: real-world capture, point clouds, Gaussian splatting and real-time 3D.',
   ),
   socials: [
     { label: 'GitHub', href: 'https://github.com/holosene' },
-    { label: 'YouTube', href: 'https://www.youtube.com/watch?v=1lXEIx5jFCQ' },
   ],
 }
 
 export const ui = {
   projects: T('Projets', 'Work'),
   lab: T('Lab', 'Lab'),
-  studio: T('Studio', 'Studio'),
+  studio: T('À propos', 'About'),
+  workHint: T('Faites défiler', 'Scroll'),
   contact: T('Contact', 'Contact'),
   skip: T('Aller au contenu', 'Skip to content'),
   nav: T('Navigation principale', 'Main navigation'),
@@ -234,6 +235,6 @@ export const lab = {
 }
 
 export const studio = T(
-  'Holosene est le studio de Johann Arata, designer numérique, en master Design (Environnements numériques) à la Faculté des arts de Strasbourg. Un studio solo, sans équipe.',
-  'Holosene is the studio of Johann Arata, a digital designer studying for a master’s in Design (Digital Environments) at the Faculty of Arts in Strasbourg. A one-person studio, with no team.',
+  'Je suis Johann Arata, designer numérique, en master Design (Environnements numériques) à la Faculté des arts de Strasbourg. Holosene rassemble mes projets : captation du réel, reconstruction, 3D temps réel.',
+  'I am Johann Arata, a digital designer studying for a master’s in Design (Digital Environments) at the Faculty of Arts in Strasbourg. Holosene gathers my projects: real-world capture, reconstruction, real-time 3D.',
 )

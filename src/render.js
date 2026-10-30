@@ -6,9 +6,21 @@
 import { readFileSync } from 'node:fs'
 import { site, ui, projects, lab, studio } from './content.js'
 
-// logotype en ligne (page Studio) : chaque lettre se trace puis se remplit au défilement
-const logotype = readFileSync(new URL('../public/media/logotype-white.svg', import.meta.url), 'utf8')
-  .replace(/<title>.*?<\/title>/, '').replace(/ fill="#FFFFFF"/g, ' pathLength="1"').replace(/ width="\d+" height="\d+"/, ' class="studio__word"')
+// logotype en ligne (À propos) : le tracé irisé se dessine, puis le blanc se remplit avec un liseré irisé
+// sur ses bords, comme le blanc de l'œil du monogramme noir.
+const logoSrc = readFileSync(new URL('../public/media/logotype-white.svg', import.meta.url), 'utf8')
+const logoPaths = logoSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, '')).join('')
+const logoBox = logoSrc.match(/viewBox="([^"]+)"/)[1]
+const IRIS = ['#da9bc2', '#99c1dd', '#98e2b4', '#9bc1de', '#d99cc3', '#f99dd0', '#ff97f0', '#fe9ad5', '#da9bc2']
+const logotype = `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="true">
+  <defs>
+    <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="98" y1="0" x2="4922" y2="0">${IRIS.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
+    <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="erode" radius="7"/><feGaussianBlur stdDeviation="5"/></filter>
+  </defs>
+  <g class="w-edge" fill="url(#iris-g)">${logoPaths}</g>
+  <g class="w-core" fill="#fff" filter="url(#core)">${logoPaths}</g>
+  <g class="w-line" fill="none" stroke="url(#iris-g)">${logoPaths.replace(/<path /g, '<path pathLength="1" ')}</g>
+</svg>`
 
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
@@ -23,24 +35,21 @@ export function render(lang) {
   const root = lang === 'fr' ? '' : '../'
   const m = (src) => `${root}media/${src}`
 
-  const chips = (rows) => `<ul class="chips">${rows.map(([, v]) => `<li>${esc(t(v))}</li>`).join('')}</ul>`
   const n2 = (i) => String(i + 1).padStart(2, '0')
 
-  // un projet = une vue plein écran : l'image en trame de points, la lentille montre l'original
-  const panel = (p, i) => `
-    <article class="panel" id="projet-${p.slug}" aria-labelledby="pt-${p.slug}">
-      <div class="panel__view" data-gl="panel" data-cell="7" data-lens="70" data-rim="8" role="img" aria-label="${esc(t(ui.panelLabel))}">
-        <img src="${m(p.cover)}" alt="" decoding="async">
-      </div>
-      <div class="panel__txt wrap">
-        <p class="lbl" data-reveal>${n2(i)} / ${n2(projects.length - 1)} · ${esc(t(p.milieu))} · ${esc(p.year)}</p>
-        <h3 class="disp panel__title" id="pt-${p.slug}"><a href="#p-${p.slug}"><span class="line" data-reveal="line"><span>${esc(p.title)}</span></span></a></h3>
-        <p class="panel__lead" data-reveal style="--d:120ms">${esc(t(p.context))}</p>
-        <div data-reveal style="--d:200ms">${chips(p.spec)}</div>
-        <a class="btn btn--light" href="#p-${p.slug}" data-reveal style="--d:260ms">${esc(t(ui.open))}</a>
-        ${p.coverCredit ? `<p class="credit" data-reveal style="--d:300ms">${esc(t(p.coverCredit))}</p>` : ''}
-      </div>
-    </article>`
+  // un projet = une carte de la piste horizontale : l'image en trame de points, la lentille montre l'original
+  const card = (p, i) => `
+      <article class="card" id="projet-${p.slug}" aria-labelledby="pt-${p.slug}">
+        <a class="card__media" href="#p-${p.slug}" data-gl="card" data-cell="6" data-lens="58" data-rim="2.5" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(p.title)}">
+          <img src="${m(p.cover)}" alt="" decoding="async" loading="lazy">
+        </a>
+        <div class="card__meta">
+          <p class="lbl">${n2(i)} · ${esc(t(p.milieu))} · ${esc(p.year)}</p>
+          <h3 class="disp card__title" id="pt-${p.slug}"><a href="#p-${p.slug}">${esc(p.title)}</a></h3>
+          <p class="card__lead">${esc(t(p.context))}</p>
+          ${p.coverCredit ? `<p class="credit">${esc(t(p.coverCredit))}</p>` : ''}
+        </div>
+      </article>`
 
   const fiche = (p, i) => {
     const s = ui.sections
@@ -70,7 +79,7 @@ export function render(lang) {
               ${credits.map((c) => `<div${c.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.creditsLabel))}</dt><dd>${esc(t(c))}</dd></div>`).join('')}
             </dl>
           </section>
-          ${p.link ? `<a class="btn" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
+          ${p.link ? `<a class="btn btn--light" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
         </div>
         <div class="fiche__media">
           ${p.media.map((x) => `<figure><img src="${m(x.src)}" alt="${esc(t(x.alt))}" loading="lazy" decoding="async"></figure>`).join('')}
@@ -81,12 +90,15 @@ export function render(lang) {
   </section>`
   }
 
-  const studioWords = t(studio).split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
+  const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <header class="topbar wrap">
-  <a href="#top" class="topbar__logo" aria-label="Holosene"><img src="${root}media/logotype-white.svg" alt="Holosene" width="120" height="18"></a>
+  <a href="#top" class="brand" aria-label="Holosene">
+    <img class="brand__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
+    <img class="brand__word" src="${root}media/logotype-white.svg" alt="Holosene" width="4824" height="736">
+  </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#lab">${esc(t(ui.lab))}</a><a href="#studio">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
     <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" lang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}">${lang === 'fr' ? 'EN' : 'FR'}</a>
@@ -95,24 +107,34 @@ export function render(lang) {
 
 <main id="top">
   <section class="hero" aria-labelledby="hero-t">
-    <div class="hero__view" data-gl="mark" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
+    <div class="hero__view" data-gl="mark" data-cell="6" data-lens="62" data-rim="2.5" role="img" aria-label="${esc(t(ui.lensLabel))}">
       <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
     </div>
     <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
+    <h1 id="hero-t" class="sr">Holosene · ${esc(t(site.signature))}</h1>
     <div class="hero__bottom wrap">
-      <h1 id="hero-t" class="sr">Holosene</h1>
-      <p class="intent" data-reveal>${esc(t(site.intent))}</p>
+      <p class="lbl" data-reveal>${esc(t(site.signature))}</p>
       <p class="lbl" data-reveal style="--d:120ms">${esc(t(site.baseline))}</p>
     </div>
-    <p class="hero__hint lbl" aria-hidden="true">${lang === 'fr' ? 'Bougez le « o »' : 'Move the “o”'}</p>
   </section>
 
-  <section class="projects" id="projets" aria-labelledby="proj-t">
-    <div class="projects__head wrap">
-      <h2 class="disp" id="proj-t"><span class="line" data-reveal="line"><span>${esc(t(ui.projects))}</span></span></h2>
-      <p class="lbl" data-reveal>${n2(projects.length - 1)} · ${esc(t(ui.specHead))}</p>
+  <section class="studio" id="studio" aria-labelledby="studio-t">
+    <div class="studio__mark wrap">${logotype}</div>
+    <div class="row wrap">
+      <h2 class="lbl" id="studio-t">${esc(t(ui.studio))}</h2>
+      <p class="big disp" data-words>${words(t(studio))}</p>
     </div>
-    ${projects.map(panel).join('')}
+  </section>
+
+  <section class="work" id="projets" aria-labelledby="proj-t">
+    <div class="row wrap">
+      <h2 class="lbl" id="proj-t">${esc(t(ui.projects))} · ${n2(projects.length - 1)}</h2>
+      <p class="big disp work__index" data-words>${projects.map((p) => `<a href="#p-${p.slug}">${words(p.title)}</a>`).join('<span class="w">,</span> ')}</p>
+    </div>
+    <div class="work__scroller"><div class="work__pin">
+      <div class="work__track wrap">${projects.map(card).join('')}</div>
+      <div class="work__bar wrap" aria-hidden="true"><span class="lbl work__count">01 / ${n2(projects.length - 1)}</span><span class="work__line"><i></i></span><span class="lbl">${esc(t(ui.workHint))} →</span></div>
+    </div></div>
   </section>
 
   <section class="lab wrap" id="lab" aria-labelledby="lab-t">
@@ -125,26 +147,17 @@ export function render(lang) {
     <dl class="lab__data">${lab.data.map(([k, v], i) => `<div data-reveal style="--d:${i * 80}ms"><dt class="lbl">${esc(t(k))}</dt><dd>${esc(t(v))}</dd></div>`).join('')}</dl>
   </section>
 
-  <section class="studio" id="studio" aria-labelledby="studio-t">
-    <div class="studio__mark wrap" aria-hidden="true">${logotype}</div>
-    <div class="studio__body wrap">
-      <h2 class="lbl" id="studio-t">${esc(t(ui.studio))}</h2>
-      <p class="studio__txt disp" data-words>${studioWords}</p>
-    </div>
-  </section>
-
   <section class="contact wrap" id="contact" aria-labelledby="contact-t">
     <h2 class="lbl" id="contact-t" data-reveal>${esc(t(ui.contact))}</h2>
     <a class="mail disp" href="mailto:${esc(site.email)}" translate="no" data-reveal="line"><span>${esc(site.email)}</span></a>
     <div class="contact__row" data-reveal style="--d:120ms">
-      <button class="btn copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
+      <button class="btn btn--light copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
       <ul class="socials">${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
     </div>
   </section>
 </main>
 
 <footer class="foot wrap">
-  <img src="${root}media/monogram-white.svg" alt="" width="20" height="25">
   <p class="lbl">© ${new Date().getFullYear()} Holosene · Johann Arata</p>
   <a class="lbl" href="${root}mentions-legales.html">${esc(t(ui.legal))}</a>
 </footer>

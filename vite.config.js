@@ -18,7 +18,7 @@ function prerender() {
       const { render, esc } = await load('src/render.js')
       const { site } = await load('src/content.js')
       const url = lang === 'fr' ? SITE_URL : `${SITE_URL}en/`
-      const title = lang === 'fr' ? 'Holosene, studio de Johann Arata' : 'Holosene, Johann Arata’s studio'
+      const title = lang === 'fr' ? 'Holosene, portfolio de Johann Arata' : 'Holosene, Johann Arata’s portfolio'
       const desc = site.description[lang]
       const ld = {
         '@context': 'https://schema.org',
