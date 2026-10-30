@@ -92,7 +92,7 @@ addEventListener('hashchange', syncFiche)
    (pavé tactile, molette, glisser à la souris ou au doigt, clavier).
    Au bout, continuer à défiler remplit une jauge puis ouvre le projet suivant. */
 const wide = matchMedia('(min-width: 769px)')
-const PULL = 480
+const PULL = 1400
 const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
   const row = f.querySelector('.fiche__row'), next = f.querySelector('.fiche__next')
   const F = { f, row, x: 0, target: 0, max: 0, pull: 0, lastPull: 0 }
@@ -106,7 +106,7 @@ const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
     const before = F.target
     F.target = Math.max(0, Math.min(F.max, F.target + d))
     const rest = d - (F.target - before)
-    if (rest > 0 && F.target >= F.max - 1) pullBy(rest * 0.55)
+    if (rest > 0 && F.target >= F.max - 1) pullBy(rest * 0.35)
     else if (d < 0 && F.pull > 0) pullBy(d)
   }
   f.addEventListener('wheel', (e) => {
@@ -135,7 +135,7 @@ const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
     F.measure()
   }
   F.frame = (dt) => {
-    if (F.pull > 0 && performance.now() - F.lastPull > 160) setPull(F.pull * 0.9 - 2)
+    if (F.pull > 0 && performance.now() - F.lastPull > 160) setPull(F.pull * 0.86 - 4)
     F.x += (F.target - F.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.085))   // même douceur pour toutes les entrées
     if (Math.abs(F.target - F.x) < 0.3) F.x = F.target
     row.style.transform = wide.matches ? `translate3d(${(-F.x).toFixed(1)}px, 0, 0)` : ''
