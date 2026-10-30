@@ -50,12 +50,13 @@ a { color: inherit; }
    - « blanc de l'œil » : un aplat blanc dont les bords se teintent des couleurs irisées (boutons, grands lettrages)
    - lueur fine : un léger dédoublement irisé pendant les apparitions, qui s'efface pour laisser le blanc */
 :root { --iris-l: #ff97f0; --iris-r: #98e2b4; --iris-t: #99c1dd; --iris-b: #da9bc2; }
-.btn--light { background: #fff; color: var(--c-black); border-color: transparent;
-  box-shadow: inset 7px 0 9px -5px var(--iris-l), inset -7px 0 9px -5px var(--iris-r), inset 0 5px 7px -5px var(--iris-t), inset 0 -5px 7px -5px var(--iris-b), 0 0 0 1px rgb(255 255 255 / 0.9);
-  transition: box-shadow var(--dur-base) var(--ease-flow), transform var(--dur-base) var(--ease-flow); }
-.btn--light:hover { background: #fff; color: var(--c-black); transform: translateY(-1px);
-  box-shadow: inset 12px 0 14px -6px var(--iris-l), inset -12px 0 14px -6px var(--iris-r), inset 0 8px 10px -6px var(--iris-t), inset 0 -8px 10px -6px var(--iris-b), 0 0 0 1px #fff, -4px 0 18px -6px rgb(255 151 240 / 0.6), 4px 0 18px -6px rgb(152 226 180 / 0.6); }
-@keyframes chroma { from { text-shadow: -0.05em 0 0.1em rgb(255 151 240 / 0.85), 0.05em 0 0.1em rgb(152 226 180 / 0.85); } to { text-shadow: 0 0 0 rgb(255 151 240 / 0), 0 0 0 rgb(152 226 180 / 0); } }
+.btn--light { position: relative; isolation: isolate; color: var(--c-black); border-color: transparent;
+  background: repeating-linear-gradient(110deg, #e7bed7 0, #bdd7e9 12px, #bcecce 24px, #bed7ea 36px, #e6bfd8 48px, #fbbfe0 60px, #ffbbf5 72px, #febde4 84px, #e7bed7 96px);
+  transition: transform var(--dur-base) var(--ease-flow); }
+.btn--light::before { content: ''; position: absolute; inset: 2px; z-index: -1; border-radius: inherit; background: #fff; filter: blur(4px); transition: inset var(--dur-base) var(--ease-flow), filter var(--dur-base) var(--ease-flow); }
+.btn--light:hover { color: var(--c-black); background: repeating-linear-gradient(110deg, #e7bed7 0, #bdd7e9 12px, #bcecce 24px, #bed7ea 36px, #e6bfd8 48px, #fbbfe0 60px, #ffbbf5 72px, #febde4 84px, #e7bed7 96px); transform: translateY(-1px); }
+.btn--light:hover::before { inset: 5px; filter: blur(6px); }
+@keyframes chroma { from { text-shadow: -0.04em 0 0.1em rgb(255 151 240 / 0.45), 0.04em 0 0.1em rgb(152 226 180 / 0.45); } to { text-shadow: 0 0 0 rgb(255 151 240 / 0), 0 0 0 rgb(152 226 180 / 0); } }
 
 /* toile WebGL : fixe, derrière tout le contenu ; les vues [data-gl] y sont dessinées à leur place */
 .gl-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
@@ -101,7 +102,7 @@ main, .foot { position: relative; z-index: 1; }
 .studio { padding-block: 2vh var(--sp-9); display: grid; gap: var(--sp-7); }
 .studio__word { width: 100%; height: auto; overflow: visible; }
 .studio__word .w-edge, .studio__word .w-core { opacity: var(--fill, 1); }
-.studio__word .w-line path { stroke-width: 6; stroke-dasharray: 1; stroke-dashoffset: var(--draw, 0); opacity: calc(1 - var(--fill, 1) * 0.85); }
+.studio__word .w-line path { stroke-width: 6; stroke-dasharray: 1; stroke-dashoffset: var(--draw, 0); opacity: calc(1 - var(--fill, 1)); }
 
 /* 3. projets : index en grand texte, puis une piste horizontale (épinglée au défilement sur grand écran) */
 .work { padding-top: var(--sp-6); }

@@ -6,20 +6,23 @@
 import { readFileSync } from 'node:fs'
 import { site, ui, projects, lab, studio } from './content.js'
 
-// logotype en ligne (À propos) : le tracé irisé se dessine, puis le blanc se remplit avec un liseré irisé
-// sur ses bords, comme le blanc de l'œil du monogramme noir.
+// logotype en ligne (À propos) : le tracé irisé se dessine, puis le blanc se remplit ; ses bords se fondent dans une suite
+// répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir.
 const logoSrc = readFileSync(new URL('../public/media/logotype-white.svg', import.meta.url), 'utf8')
 const logoPaths = logoSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, '')).join('')
 const logoBox = logoSrc.match(/viewBox="([^"]+)"/)[1]
-const IRIS = ['#da9bc2', '#99c1dd', '#98e2b4', '#9bc1de', '#d99cc3', '#f99dd0', '#ff97f0', '#fe9ad5', '#da9bc2']
+// couleurs irisées éclaircies vers le blanc : l'irisé reste un reflet, pas une couleur franche
+const IRIS = ['#e7bed7', '#bdd7e9', '#bcecce', '#bed7ea', '#e6bfd8', '#fbbfe0', '#ffbbf5', '#febde4', '#e7bed7']
+const IRIS_LINE = ['#f0d7e7', '#d6e6f1', '#d6f3e1', '#d7e6f2', '#f0d7e7', '#fdd8ec', '#ffd5f9', '#ffd7ee', '#f0d7e7']
 const logotype = `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="true">
   <defs>
-    <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="98" y1="0" x2="4922" y2="0">${IRIS.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
-    <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="erode" radius="7"/><feGaussianBlur stdDeviation="5"/></filter>
+    <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
+    <linearGradient id="iris-l" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS_LINE.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
+    <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="erode" radius="4"/><feGaussianBlur stdDeviation="11"/></filter>
   </defs>
   <g class="w-edge" fill="url(#iris-g)">${logoPaths}</g>
   <g class="w-core" fill="#fff" filter="url(#core)">${logoPaths}</g>
-  <g class="w-line" fill="none" stroke="url(#iris-g)">${logoPaths.replace(/<path /g, '<path pathLength="1" ')}</g>
+  <g class="w-line" fill="none" stroke="url(#iris-l)">${logoPaths.replace(/<path /g, '<path pathLength="1" ')}</g>
 </svg>`
 
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
