@@ -52,9 +52,7 @@ a { color: inherit; }
 /* effets irisés de la marque
    - « blanc de l'œil » : un aplat blanc dont les bords se teintent des couleurs irisées (boutons, grands lettrages)
    - lueur fine : un léger dédoublement irisé pendant les apparitions, qui s'efface pour laisser le blanc */
-:root { --bg-rgb: 14 14 14; --card-bg: #151515; }
-/* essai : noir pur (touche Espace) */
-.pure-black { --c-black-deep: #000; --bg-rgb: 0 0 0; --card-bg: #0b0b0b; }
+:root { --c-black-deep: #000; --c-black: #000; --bg-rgb: 0 0 0; --card-bg: #000; }
 :root { --iris-line: linear-gradient(90deg, #da9bc2, #99c1dd, #98e2b4, #f99dd0, #ff97f0, #da9bc2); --iris-l: #ff97f0; --iris-r: #98e2b4; --iris-t: #99c1dd; --iris-b: #da9bc2; }
 .btn--light { position: relative; isolation: isolate; overflow: hidden; background: #fff; color: var(--c-black); border: 0; padding: 13px 21px; transition: transform var(--dur-base) var(--ease-flow); }
 /* bords teintés d'une suite de couleurs irisées claires, fondue vers le blanc du centre : sans contour, sans assombrir */
@@ -186,6 +184,8 @@ main, .foot { position: relative; z-index: 1; }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
 .work--research { padding-top: var(--sp-8); }
+.card__media--badge { display: grid; place-items: center; }
+.card__media--badge > .disp { position: relative; z-index: 1; font-size: clamp(2rem, 4vw, 3.6rem); color: #fff; text-shadow: 0 2px 24px rgb(0 0 0 / 0.5); pointer-events: none; }
 .card__media--text, .has-gl .card__media--text { display: grid; place-items: center;
   background: radial-gradient(120% 90% at 15% 10%, rgb(255 151 240 / 0.34), transparent 60%), radial-gradient(90% 80% at 85% 20%, rgb(153 193 221 / 0.34), transparent 60%),
     radial-gradient(110% 90% at 70% 100%, rgb(152 226 180 / 0.3), transparent 60%), radial-gradient(90% 80% at 10% 95%, rgb(218 155 194 / 0.3), transparent 60%), var(--card-bg); }

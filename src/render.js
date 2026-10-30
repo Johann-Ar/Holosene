@@ -47,7 +47,7 @@ export function render(lang) {
   const card = (c) => {
     const tag = c.href ? 'a' : 'div', href = c.href ? ` href="${c.href}"` : ''
     const media = c.image
-      ? `<${tag} class="card__media"${href} data-gl="card" data-cell="6" data-lens="74" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(c.title)}"><img src="${m(c.image)}" alt="" decoding="async" loading="lazy"></${tag}>`
+      ? `<${tag} class="card__media${c.overlay ? ' card__media--badge' : ''}"${href} data-gl="card" data-cell="6"${c.color ? ' data-color' : ''} data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(c.title)}"><img src="${m(c.image)}" alt="" decoding="async" loading="lazy">${c.overlay ? `<span class="disp">${esc(c.badge || '')}</span>` : ''}</${tag}>`
       : `<div class="card__media card__media--text"><span class="disp">${esc(c.badge || '')}</span></div>`
     return `
       <article class="card${c.todo ? ' todo' : ''}" id="${c.id}" aria-labelledby="${c.id}-t">
@@ -167,7 +167,7 @@ export function render(lang) {
       <h2 class="lbl" id="research-t">${esc(t(ui.research))}</h2>
       <p class="big disp" data-words>${words(t(research.intro))}</p>
     </div>
-    ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: r.image, badge: r.when && t(r.when), title: t(r.title), label: `${esc(t(r.kind))}${r.when ? ` · ${esc(t(r.when))}` : ''}`, lead: t(r.text), more: r.more && t(r.more), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
+    ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: r.image, color: r.color, overlay: r.overlay, badge: r.when && t(r.when), title: t(r.title), label: `${esc(t(r.kind))}${r.when ? ` · ${esc(t(r.when))}` : ''}`, lead: t(r.text), more: r.more && t(r.more), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
 
   <section class="contact wrap" id="contact" aria-labelledby="contact-t">

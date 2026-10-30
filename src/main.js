@@ -22,19 +22,6 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
   location.replace('en/' + location.hash)
 }
 
-/* Essai : la touche Espace bascule entre le noir actuel et le noir pur (choix mémorisé). */
-root.classList.toggle('pure-black', store.get('black') === 'pure')
-addEventListener('keydown', (e) => {
-  if (e.code !== 'Space' || e.repeat || root.classList.contains('fiche-open') || e.target.closest?.('input, textarea, button, a, [contenteditable]')) return
-  e.preventDefault()
-  const on = root.classList.toggle('pure-black')
-  store.set('black', on ? 'pure' : null)
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', on ? '#000000' : '#0e0e0e')
-})
-
-/* Verre liquide sur les bords : seulement sur Chromium (filtre SVG en arrière-plan) et sans réduction des animations. */
-if (navigator.userAgentData?.brands?.some((b) => /Chromium/.test(b.brand)) && !reduced) root.classList.add('liquid')
-
 /* Contact : copier l'adresse. */
 document.querySelectorAll('.copy').forEach((b) => {
   const label = b.textContent

@@ -47,6 +47,7 @@ uniform float uLensO;   // rayon extérieur de l'anneau
 uniform float uGlass;   // survol d'une carte : bord de verre (0 à 1)
 uniform vec4 uClip;     // piste horizontale : bords gauche et droit (px, dans la vue), largeur du fondu
 uniform float uCardBg;  // gris du fond des cartes
+uniform float uColor;   // 1 : points de la couleur de l'image (dégradé « En cours »)
 uniform vec4 uEye;      // accueil : le « o » du logo (centre, rayon extérieur, rayon intérieur), aplat irisé
 
 vec2 cover(vec2 p) {
@@ -81,7 +82,8 @@ vec4 halftone(vec2 p) {
   float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor) * m;
   float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
-  return vec4(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))) * dotA, dotA);
+  vec3 dc = uColor > 0.5 ? min(texture2D(uTex, cover(c)).rgb * 1.25, 1.0) : vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0)));
+  return vec4(dc * dotA, dotA);
 }
 // distance signée au rectangle aux coins arrondis de la carte (négative à l'intérieur)
 float sdCard(vec2 p) {
@@ -108,27 +110,25 @@ void main() {
   if (uRadius > 0.0) {
     sd = sdCard(p);
     col += vec3(uCardBg) * (1.0 - a); a = 1.0;
-    // survol : bord de verre épais. On y voit la photo d'origine (lisse, légèrement floue, courbée vers le bord),
-    // teintée d'irisé ; arête claire à l'extérieur, fine ligne là où le verre s'arrête, ombre douce à l'intérieur.
+    // survol : bord de verre fin et sobre. Les points se courbent le long du bord (réfraction), un voile clair
+    // s'éclaircit vers l'arête, une arête lumineuse fine (avec un léger décalage rose / vert) et un liseré irisé intérieur.
     if (uGlass > 0.001) {
-      float W = 22.0 * uGlass;
-      float t = -sd / W;                                // 0 au bord extérieur, 1 à la fin du verre
-      col *= 1.0 - 0.35 * uGlass * exp(-max(t - 1.0, 0.0) * W / 7.0) * step(1.0, t);   // ombre intérieure
+      float W = 12.0;
+      float t = -sd / W;                                   // 0 à l'arête, 1 à la fin du verre
       if (t < 1.0) {
         vec2 e = vec2(1.0, 0.0);
         vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy), sdCard(p + e.yx) - sdCard(p - e.yx)) + 1e-5);
-        vec2 q = p - n * 4.0 * (1.0 - clamp(t, 0.0, 1.0));            // la photo se courbe à peine vers le bord
-        vec3 g = vec3(0.0);
-        for (int i = 0; i < 4; i++) { vec2 o = vec2(i == 0 ? 1.5 : i == 1 ? -1.5 : 0.0, i == 2 ? 1.5 : i == 3 ? -1.5 : 0.0); g += texture2D(uTex, cover(q + o)).rgb; }
-        g *= 0.25;
+        float u = clamp(t, 0.0, 1.0);
+        vec4 hb = halftone(p - n * 7.0 * pow(1.0 - u, 2.0));   // réfraction : la trame se courbe vers l'intérieur
+        vec3 g = hb.rgb + vec3(uCardBg) * (1.0 - hb.a);
+        g += vec3(0.07) * pow(1.0 - u, 1.5);                   // voile du verre
         vec2 cp = p - uRes * 0.5;
-        vec3 ic = iris(atan(cp.x, -cp.y) / 6.28318 + t * 0.15);
-        g = mix(g, g * ic * 1.2 + ic * 0.1, 0.28);                                    // teinte irisée légère
-        g += vec3(0.6) * exp(-abs(sd + 1.2) / 0.9);                                    // arête extérieure
-        g += vec3(0.28) * exp(-abs(t - 1.0) * W / 0.8);                                // fin du verre
-        g += vec3(0.12) * (1.0 - t) * max(dot(n, normalize(vec2(-0.7, -0.7))), 0.0);   // reflet en haut à gauche
-        float band = (1.0 - smoothstep(0.97, 1.0, t)) * smoothstep(0.0, 0.25, uGlass);
-        col = mix(col, g, band);
+        vec3 ic = iris(atan(cp.x, -cp.y) / 6.28318);
+        g += ic * 0.16 * pow(1.0 - u, 2.0);
+        float edgeR = exp(-abs(sd + 1.0) / 0.7), edgeG = exp(-abs(sd + 1.7) / 0.7);
+        g += vec3(0.75, 0.55, 0.75) * edgeR * 0.55 + vec3(0.5, 0.75, 0.6) * edgeG * 0.35;   // arête
+        g += ic * 0.3 * exp(-abs(sd + W) / 0.9);                                             // liseré intérieur
+        col = mix(col, g, uGlass);
       }
     }
   }
@@ -202,7 +202,7 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uClip', 'uCardBg']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uClip', 'uCardBg', 'uColor']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
@@ -219,7 +219,7 @@ export function createGL(canvas, { reduced }) {
   document.documentElement.addEventListener('pointerleave', () => { ptr.t = -1e9 })
 
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
-    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0,
+    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0, color: el.hasAttribute('data-color'),
       mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
       radius: +el.dataset.radius || 0, clip: el.closest('[data-clip]'), fade: el.dataset.gl === 'panel', mask: null, maskKey: '' }
     const src = v.video || el.querySelector('img')
@@ -305,7 +305,8 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.42 : 0); gl.uniform1f(U.uRadius, v.radius)
-      gl.uniform1f(U.uCardBg, document.documentElement.classList.contains('pure-black') ? 0.043 : 0.075)
+      gl.uniform1f(U.uColor, v.color ? 1 : 0)
+      gl.uniform1f(U.uCardBg, 0)
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
