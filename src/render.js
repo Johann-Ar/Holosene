@@ -18,7 +18,7 @@ const logotype = `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="tr
   <defs>
     <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
     <linearGradient id="iris-l" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS_LINE.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
-    <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="erode" radius="4"/><feGaussianBlur stdDeviation="11"/></filter>
+    <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="erode" radius="4" result="e"/><feGaussianBlur in="e" stdDeviation="11" result="b"/><feComposite in="b" in2="SourceGraphic" operator="in"/></filter>
   </defs>
   <g class="w-edge" fill="url(#iris-g)">${logoPaths}</g>
   <g class="w-core" fill="#fff" filter="url(#core)">${logoPaths}</g>
@@ -43,7 +43,7 @@ export function render(lang) {
   // un projet = une carte de la piste horizontale : l'image en trame de points, la lentille montre l'original
   const card = (p, i) => `
       <article class="card" id="projet-${p.slug}" aria-labelledby="pt-${p.slug}">
-        <a class="card__media" href="#p-${p.slug}" data-gl="card" data-cell="6" data-lens="58" data-rim="2.5" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(p.title)}">
+        <a class="card__media" href="#p-${p.slug}" data-gl="card" data-cell="6" data-lens="56" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(p.title)}">
           <img src="${m(p.cover)}" alt="" decoding="async" loading="lazy">
         </a>
         <div class="card__meta">
@@ -60,12 +60,11 @@ export function render(lang) {
     const credits = [...(p.credits || []), ...(p.coverCredit ? [p.coverCredit] : [])]
     return `
   <section class="fiche" id="p-${p.slug}" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="p-${p.slug}-t" tabindex="-1">
+    <header class="fiche__head wrap">
+      <div><p class="lbl">${esc(t(p.milieu))} · ${esc(p.year)}</p><h2 class="disp" id="p-${p.slug}-t">${esc(p.title)}</h2></div>
+      <a class="fiche__close" href="#projet-${p.slug}">${esc(t(ui.close))}</a>
+    </header>
     <div class="fiche__inner wrap">
-      <header class="fiche__head">
-        <p class="lbl">${esc(t(p.milieu))} · ${esc(p.year)}</p>
-        <h2 class="disp" id="p-${p.slug}-t">${esc(p.title)}</h2>
-        <a class="fiche__close" href="#projet-${p.slug}">${esc(t(ui.close))}</a>
-      </header>
       <div class="fiche__body">
         <div class="fiche__text">
           ${sect(s.intent, p.intent)}
@@ -83,12 +82,12 @@ export function render(lang) {
             </dl>
           </section>
           ${p.link ? `<a class="btn btn--light" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
+          <a class="fiche__next" href="#p-${projects[(i + 1) % projects.length].slug}"><span class="lbl">${lang === 'fr' ? 'Projet suivant' : 'Next project'}</span><span class="disp">${esc(projects[(i + 1) % projects.length].title)} →</span></a>
         </div>
         <div class="fiche__media">
           ${p.media.map((x) => `<figure><img src="${m(x.src)}" alt="${esc(t(x.alt))}" loading="lazy" decoding="async"></figure>`).join('')}
         </div>
       </div>
-      <a class="fiche__next" href="#p-${projects[(i + 1) % projects.length].slug}"><span class="lbl">${lang === 'fr' ? 'Projet suivant' : 'Next project'}</span><span class="disp">${esc(projects[(i + 1) % projects.length].title)} →</span></a>
     </div>
   </section>`
   }
@@ -97,10 +96,14 @@ export function render(lang) {
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
+<svg class="defs" aria-hidden="true" focusable="false"><filter id="eye" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+  <feMorphology in="SourceAlpha" operator="erode" radius="1.2" result="e"/><feGaussianBlur in="e" stdDeviation="2.2" result="b"/>
+  <feFlood flood-color="#fff"/><feComposite in2="b" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="core"/>
+  <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="core"/></feMerge>
+</filter></svg>
 <header class="topbar wrap">
   <a href="#top" class="brand" aria-label="Holosene">
-    <img class="brand__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
-    <img class="brand__word" src="${root}media/logotype-white.svg" alt="Holosene" width="4824" height="736">
+    <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
   </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#lab">${esc(t(ui.lab))}</a><a href="#studio">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
@@ -110,7 +113,7 @@ export function render(lang) {
 
 <main id="top">
   <section class="hero" aria-labelledby="hero-t">
-    <div class="hero__view" data-gl="mark" data-cell="6" data-lens="62" data-rim="2.5" role="img" aria-label="${esc(t(ui.lensLabel))}">
+    <div class="hero__view" data-gl="mark" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
       <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
     </div>
     <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
@@ -131,13 +134,16 @@ export function render(lang) {
 
   <section class="work" id="projets" aria-labelledby="proj-t">
     <div class="row wrap">
-      <h2 class="lbl" id="proj-t">${esc(t(ui.projects))} · ${n2(projects.length - 1)}</h2>
+      <h2 class="lbl" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
       <p class="big disp work__index" data-words>${projects.map((p) => `<a href="#p-${p.slug}">${words(p.title)}</a>`).join('<span class="w">,</span> ')}</p>
     </div>
-    <div class="work__scroller"><div class="work__pin">
-      <div class="work__track wrap">${projects.map(card).join('')}</div>
-      <div class="work__bar wrap" aria-hidden="true"><span class="lbl work__count">01 / ${n2(projects.length - 1)}</span><span class="work__line"><i></i></span><span class="lbl">${esc(t(ui.workHint))} →</span></div>
-    </div></div>
+    <div class="work__pin">
+      <div class="work__track wrap" data-clip tabindex="0" aria-label="${lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll'}">${projects.map(card).join('')}</div>
+      <div class="work__bar wrap">
+        <span class="lbl work__count" aria-hidden="true">01 / ${n2(projects.length - 1)}</span><span class="work__line" aria-hidden="true"><i></i></span>
+        <button class="work__nav" type="button" data-dir="-1" aria-label="${lang === 'fr' ? 'Projet précédent' : 'Previous project'}">←</button><button class="work__nav" type="button" data-dir="1" aria-label="${lang === 'fr' ? 'Projet suivant' : 'Next project'}">→</button>
+      </div>
+    </div>
   </section>
 
   <section class="lab wrap" id="lab" aria-labelledby="lab-t">

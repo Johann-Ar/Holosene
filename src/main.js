@@ -61,14 +61,16 @@ function syncFiche() {
     lenis?.stop()
     lastFocus ??= document.activeElement
     open.scrollTop = 0
+    open.style.setProperty('--fh', open.querySelector('.fiche__head').offsetHeight + 'px')
     open.focus({ preventScroll: true })
   } else {
     lenis?.start()
     const back = /^#projet-/.test(location.hash) && document.querySelector(location.hash)
     if (back) {
-      const y = pinned ? cardScrollY(back) : null
-      if (y !== null) lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y)
-      else { back.scrollIntoView({ block: 'center' }); back.parentElement.scrollLeft = back.offsetLeft - back.parentElement.offsetLeft }
+      const tr = back.parentElement
+      tr.scrollLeft = back.offsetLeft - tr.firstElementChild.offsetLeft
+      const y = tr.getBoundingClientRect().top + scrollY - innerHeight * 0.12
+      lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y)
     }
     if (lastFocus) { lastFocus.focus?.({ preventScroll: true }); lastFocus = null }
   }
@@ -92,38 +94,31 @@ addEventListener('keydown', (e) => {
 const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target) } }), { threshold: 0.01 })
 document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el))
 
-/* Projets : sur grand écran, la piste horizontale avance pendant que l'on fait défiler la page. */
+/* Projets : piste horizontale indépendante du défilement de la page (pavé tactile, doigt, souris, flèches, clavier). */
 const work = document.querySelector('.work')
-const scroller = work?.querySelector('.work__scroller')
 const track = work?.querySelector('.work__track')
 const count = work?.querySelector('.work__count')
+const navs = work ? [...work.querySelectorAll('.work__nav')] : []
 const cards = track ? [...track.querySelectorAll('.card')] : []
-const pinMedia = matchMedia('(min-width: 761px)')
-let pinned = false, span = 0
-function layoutWork() {
-  if (!work) return
-  pinned = pinMedia.matches && !reduced
-  root.classList.toggle('is-pinned', pinned)
-  span = pinned ? Math.max(0, track.scrollWidth - innerWidth) : 0
-  scroller.style.height = pinned ? `${span + innerHeight}px` : ''
-}
-layoutWork(); addEventListener('resize', layoutWork); addEventListener('load', layoutWork)
-/** Défilement vertical qui amène la carte à l'écran. */
-function cardScrollY(card) {
-  const top = scroller.getBoundingClientRect().top + scrollY
-  return top + Math.min(span, Math.max(0, card.offsetLeft - cards[0].offsetLeft))
+const step = () => (cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : track.clientWidth * 0.8)
+navs.forEach((b) => b.addEventListener('click', () => track.scrollBy({ left: step() * +b.dataset.dir, behavior: reduced ? 'auto' : 'smooth' })))
+track?.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); track.scrollBy({ left: step() * (e.key === 'ArrowRight' ? 1 : -1), behavior: reduced ? 'auto' : 'smooth' }) } })
+// glisser à la souris ; un glissement n'ouvre pas la fiche
+if (track) {
+  let x0 = 0, s0 = 0, moved = false, down = false
+  track.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse' || e.button) return; down = true; moved = false; x0 = e.clientX; s0 = track.scrollLeft })
+  addEventListener('pointermove', (e) => { if (!down) return; const dx = e.clientX - x0; if (Math.abs(dx) > 5) { moved = true; track.classList.add('is-drag') } if (moved) track.scrollLeft = s0 - dx })
+  addEventListener('pointerup', () => { if (!down) return; down = false; track.classList.remove('is-drag') })
+  track.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false } }, true)
+  track.addEventListener('dragstart', (e) => e.preventDefault())
 }
 function workFrame() {
-  if (!work) return
-  let p
-  if (pinned) {
-    const start = scroller.getBoundingClientRect().top
-    const x = Math.min(span, Math.max(0, -start))
-    track.style.setProperty('--x', x.toFixed(1))
-    p = span ? x / span : 0
-  } else p = track.scrollWidth > track.clientWidth ? track.scrollLeft / (track.scrollWidth - track.clientWidth) : 0
+  if (!track) return
+  const max = track.scrollWidth - track.clientWidth
+  const p = max > 0 ? track.scrollLeft / max : 0
   work.style.setProperty('--p', p.toFixed(4))
   if (count) count.textContent = `${String(Math.min(cards.length, Math.round(p * (cards.length - 1)) + 1)).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`
+  if (navs.length) { navs[0].disabled = track.scrollLeft <= 2; navs[1].disabled = track.scrollLeft >= max - 2 }
 }
 
 /* À propos : le logotype se trace puis se remplit ; les grands textes s'allument mot à mot au défilement. */
