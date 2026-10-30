@@ -167,7 +167,7 @@ main, .foot { position: relative; z-index: 1; }
 /* survol : une ligne irisée fine se trace autour du cadre (pastilles, flèches), puis reste jusqu'à la sortie */
 @property --frame-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 :root { --iris-wheel: conic-gradient(#ff97f0, #fe9ad5, #da9bc2, #99c1dd, #98e2b4, #ff97f0); }
-.topbar .lang::after, .fiche__close::after, .work__nav::after {
+.no-frame::after {
   content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; padding: 1.5px; pointer-events: none; opacity: 0;
   background: var(--iris-wheel);
   -webkit-mask: conic-gradient(#000 var(--frame-a), transparent 0), linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -175,17 +175,16 @@ main, .foot { position: relative; z-index: 1; }
   mask: conic-gradient(#000 var(--frame-a), transparent 0), linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: intersect, exclude;
   transition: --frame-a 0.3s var(--ease-flow), opacity 0.2s var(--ease-flow); }
-.topbar .lang::after, .fiche__close::after, .work__nav::after { inset: -1px; }
-.topbar .lang:hover::after, .topbar .lang:focus-visible::after, .fiche__close:hover::after, .fiche__close:focus-visible::after,
-.work__nav:hover::after, .work__nav:focus-visible::after { --frame-a: 360deg; opacity: 0.9; transition: --frame-a 0.8s var(--ease-flow), opacity 0.15s; }
-.topbar .lang, .fiche__close, .work__nav { position: relative; }
+.no-frame::after { inset: -1px; }
+.no-frame:hover::after { --frame-a: 360deg; opacity: 0.9; transition: --frame-a 0.8s var(--ease-flow), opacity 0.15s; }
+.topbar .lang, .fiche__close, .work__nav { position: relative; transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast); }
+/* survol des pastilles et flèches : fond blanc, texte noir */
+.topbar .lang:hover, .topbar .lang:focus-visible, .fiche__close:hover, .fiche__close:focus-visible, .work__nav:hover, .work__nav:focus-visible { background: #fff; color: #000; border-color: #fff; }
 .fiche__media figure { position: relative; }
-@media (prefers-reduced-motion: reduce) { .topbar .lang::after, .fiche__close::after, .work__nav::after { transition: opacity 0.2s; } }
+@media (prefers-reduced-motion: reduce) { .no-frame::after { transition: opacity 0.2s; } }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
 .work--research { padding-top: var(--sp-8); }
-.card__media--badge { display: grid; place-items: center; }
-.card__media--badge > .disp { position: relative; z-index: 1; font-size: clamp(2rem, 4vw, 3.6rem); color: #fff; text-shadow: 0 2px 24px rgb(0 0 0 / 0.5); pointer-events: none; }
 .card__media--text, .has-gl .card__media--text { display: grid; place-items: center;
   background: radial-gradient(120% 90% at 15% 10%, rgb(255 151 240 / 0.34), transparent 60%), radial-gradient(90% 80% at 85% 20%, rgb(153 193 221 / 0.34), transparent 60%),
     radial-gradient(110% 90% at 70% 100%, rgb(152 226 180 / 0.3), transparent 60%), radial-gradient(90% 80% at 10% 95%, rgb(218 155 194 / 0.3), transparent 60%), var(--card-bg); }
