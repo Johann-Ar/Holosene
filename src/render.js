@@ -13,13 +13,13 @@ const logoSrc = readFileSync(new URL('../public/media/logotype-white.svg', impor
 const logoPaths = logoSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, '')).join('')
 const logoBox = logoSrc.match(/viewBox="([^"]+)"/)[1]
 // couleurs irisées éclaircies vers le blanc : l'irisé reste un reflet, pas une couleur franche
-const IRIS = ['#e7bed7', '#bdd7e9', '#bcecce', '#bed7ea', '#e6bfd8', '#fbbfe0', '#ffbbf5', '#febde4', '#e7bed7']
+const IRIS = ['#e1adcd', '#abcce3', '#abe7c2', '#adcce4', '#e0aece', '#faafd8', '#ffaaf3', '#feacdd', '#e1adcd']
 const IRIS_LINE = ['#f0d7e7', '#d6e6f1', '#d6f3e1', '#d7e6f2', '#f0d7e7', '#fdd8ec', '#ffd5f9', '#ffd7ee', '#f0d7e7']
 const logotype = `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="true">
   <defs>
     <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
     <linearGradient id="iris-l" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS_LINE.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
-    <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="erode" radius="4" result="e"/><feGaussianBlur in="e" stdDeviation="11" result="b"/><feComposite in="b" in2="SourceGraphic" operator="in"/></filter>
+    <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="erode" radius="6" result="e"/><feGaussianBlur in="e" stdDeviation="12" result="b"/><feComposite in="b" in2="SourceGraphic" operator="in"/></filter>
   </defs>
   <g class="w-edge" fill="url(#iris-g)">${logoPaths}</g>
   <g class="w-core" fill="#fff" filter="url(#core)">${logoPaths}</g>

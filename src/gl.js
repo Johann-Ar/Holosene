@@ -7,27 +7,6 @@
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 
-// anneau de la lentille, dessiné par-dessus toutes les vues (il n'est jamais coupé par le bord d'une carte)
-const RING = `precision highp float;
-uniform vec3 uL;      // centre (px écran, origine en haut à gauche), rayon extérieur
-uniform float uW;     // épaisseur
-uniform float uH;     // hauteur de la toile (px CSS)
-uniform float uDpr;
-vec3 iris(float t) {
-  vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
-  c[0] = vec3(1.000, 0.420, 0.930); c[1] = vec3(1.000, 0.450, 0.740); c[2] = vec3(0.860, 0.470, 0.700);
-  c[3] = vec3(0.420, 0.680, 0.960); c[4] = vec3(0.400, 0.920, 0.600); c[5] = c[0];
-  float x = fract(t) * 5.0; vec3 r = c[0];
-  for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
-  return r;
-}
-void main() {
-  vec2 p = vec2(gl_FragCoord.x, uH * uDpr - gl_FragCoord.y) / uDpr;
-  vec2 d = p - uL.xy; float r = length(d), aa = 0.9 / uDpr;
-  float a = smoothstep(uL.z - uW - aa, uL.z - uW + aa, r) * (1.0 - smoothstep(uL.z - aa, uL.z + aa, r));
-  if (a <= 0.0) discard;
-  gl_FragColor = vec4(iris(atan(d.x, -d.y) / 6.28318) * a, a);
-}`
 
 const FRAG = `precision highp float;
 uniform sampler2D uTex;
@@ -110,20 +89,24 @@ void main() {
   if (uRadius > 0.0) {
     sd = sdCard(p);
     col += vec3(uCardBg) * (1.0 - a); a = 1.0;
-    // bord de verre épais, en noir et blanc : la trame y est déviée vers le bord (réfraction), arête claire,
-    // liseré intérieur ; présent en permanence, plus marqué au survol (uGlass : 0,55 au repos, 1 au survol)
-    if (uGlass > 0.001) {
-      float W = 18.0 * uGlass;
+    // bord de verre épais : la trame y est déviée vers le bord (réfraction), voile, arête claire, liseré intérieur.
+    // Noir et blanc au repos ; au survol (uGlass 0 → 1), le verre prend les couleurs irisées et sépare légèrement les couleurs.
+    {
+      float W = 24.0;
       float t = clamp(-sd / W, 0.0, 1.0);
       if (t < 1.0) {
         vec2 e = vec2(1.0, 0.0);
         vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy), sdCard(p + e.yx) - sdCard(p - e.yx)) + 1e-5);
-        float bend = pow(1.0 - t, 2.0) * 22.0 * uGlass;
-        vec4 hb = halftone(p + n * bend * 0.8);
-        vec3 g = hb.rgb + vec3(uCardBg) * (1.0 - hb.a);
-        g += vec3(0.16) * pow(1.0 - t, 1.5);                              // voile du verre
-        g += vec3(0.55) * exp(-abs(sd + 1.6) / 1.1) * uGlass;               // arête claire
-        g += vec3(0.25) * exp(-abs(sd + W * 0.55) / 2.5) * uGlass;          // liseré intérieur
+        float bend = pow(1.0 - t, 2.0) * 30.0;
+        float sp = 0.18 * uGlass;
+        vec4 hr = halftone(p + n * bend * (0.8 + sp)), hg = halftone(p + n * bend * 0.8), hb = halftone(p + n * bend * (0.8 - sp));
+        vec3 g = vec3(hr.r, hg.g, hb.b) + vec3(uCardBg) * (1.0 - hg.a);
+        vec2 cp = p - uRes * 0.5;
+        vec3 ic = iris(atan(cp.x, -cp.y) / 6.28318 + t * 0.2);
+        vec3 tint = mix(vec3(1.0), ic, uGlass);
+        g = g * mix(vec3(1.0), tint, 0.7 * (1.0 - t)) + tint * 0.2 * pow(1.0 - t, 1.5);   // voile (teinté au survol)
+        g += tint * 0.7 * exp(-abs(sd + 1.6) / 1.1);                                       // arête claire
+        g += tint * 0.32 * exp(-abs(sd + W * 0.55) / 2.5);                                 // liseré intérieur
         float band = 1.0 - smoothstep(0.85, 1.0, t);
         col = mix(col, g, band);
       }
@@ -136,7 +119,7 @@ void main() {
   if (R > 0.5) {
     vec2 lp = p - uLens.xy;
     float d = length(lp);
-    if (d < R + 2.0) {
+    if (d < uLensO + 2.0) {
       float k = smoothstep(0.833, 1.0, d / R);   // effet loupe sur le dernier sixième du rayon seulement
       float bend = 0.2 * k * k * k;
       // échantillons moyennés là où l'image est comprimée (évite le moiré) ; séparation des couleurs très légère
@@ -153,6 +136,9 @@ void main() {
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);   // reflet
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       col = mix(col, orig, inner); a = mix(a, 1.0, inner);
+      // anneau irisé, rogné par le bord de la carte comme l'image
+      float ring = smoothstep(R - 2.0 - aa, R - 2.0 + aa, d) * (1.0 - smoothstep(uLensO - aa, uLensO + aa, d));
+      col = mix(col, iris(atan(lp.x, -lp.y) / 6.28318), ring); a = mix(a, 1.0, ring);
     }
   }
 
@@ -191,9 +177,6 @@ export function createGL(canvas, { reduced }) {
   const prog = gl.createProgram()
   gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG)); gl.bindAttribLocation(prog, 0, 'a'); gl.linkProgram(prog)
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
-  const ringProg = gl.createProgram()
-  gl.attachShader(ringProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(ringProg, sh(gl.FRAGMENT_SHADER, RING)); gl.bindAttribLocation(ringProg, 0, 'a'); gl.linkProgram(ringProg)
-  const RU = {}; for (const n of ['uL', 'uW', 'uH', 'uDpr']) RU[n] = gl.getUniformLocation(ringProg, n)
   gl.useProgram(prog)
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
@@ -275,7 +258,6 @@ export function createGL(canvas, { reduced }) {
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
     const sc = lens.s < 0.005 ? 0 : 1 - Math.pow(1 - lens.s, 2)
 
-    gl.useProgram(prog)
     for (const v of views) {
       const b = v.el.getBoundingClientRect()
       if (!v.ready || b.bottom < 0 || b.top > H || b.right < 0 || b.left > W || b.width < 2) continue
@@ -290,7 +272,7 @@ export function createGL(canvas, { reduced }) {
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
       if (v.mark) maskFor(v, w, h)
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
-      v.glass = reduced ? (hov ? 1 : 0.55) : follow(v.glass || 0.55, hov ? 1 : 0.55, hov ? 0.16 : 0.1, dt)
+      v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
       const x0 = Math.round(b.left * dpr), y0 = Math.round((H - b.bottom) * dpr)
       gl.viewport(x0, y0, Math.round(w * dpr), Math.round(h * dpr))
@@ -309,12 +291,6 @@ export function createGL(canvas, { reduced }) {
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v.mark ? 0 : (Ri + 2) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) { const m = markBox(w, h), e = Math.min(1, reveal * 1.4); gl.uniform4f(U.uEye, m.x + O.x * m.s, m.y + O.y * m.s, O.ro * m.s * e, O.ri * m.s * e) }
       else gl.uniform4f(U.uEye, 0, 0, 0, 0)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
-    }
-    if (sc > 0) {
-      gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
-      gl.useProgram(ringProg)
-      gl.uniform3f(RU.uL, lens.x, lens.y, Ro * sc); gl.uniform1f(RU.uW, (Ro - Ri) * sc); gl.uniform1f(RU.uH, H); gl.uniform1f(RU.uDpr, dpr)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
   }
