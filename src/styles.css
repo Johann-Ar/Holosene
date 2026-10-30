@@ -65,19 +65,13 @@ a { color: inherit; }
 .btn--light:hover::before { opacity: 1; }
 @keyframes chroma { from { text-shadow: -0.04em 0 0.1em rgb(255 151 240 / 0.45), 0.04em 0 0.1em rgb(152 226 180 / 0.45); } to { text-shadow: 0 0 0 rgb(255 151 240 / 0), 0 0 0 rgb(152 226 180 / 0); } }
 
-/* bords de l'écran et des pistes : « verre liquide » (filtre SVG en arrière-plan) sur tout ce qui passe dessous, texte compris.
-   La déformation part de zéro au bord intérieur de la bande et grandit vers le bord. Chromium seulement (classe .liquid). */
-.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.edge { display: none; }
-.liquid .edge { display: block; position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: transform var(--dur-base) var(--ease-flow); }
-.liquid .edge--top { top: 0; height: 140px; backdrop-filter: url(#liquid-top); }
-.liquid .edge--bottom { bottom: 0; height: 110px; backdrop-filter: url(#liquid-bottom); }
-.liquid.edge-bottom-off .edge--bottom { transform: translateY(100%); }
-.liquid.fiche-open .edge { display: none; }
+/* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
+.edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
+.edge--top { top: 0; height: 120px; background: linear-gradient(rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
+.edge--bottom { bottom: 0; height: 90px; background: linear-gradient(0deg, rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
+.edge-bottom-off .edge--bottom { opacity: 0; }
+.fiche-open .edge { display: none; }
 .work__pin { position: relative; }
-.liquid .work__pin::before, .liquid .work__pin::after { content: ''; position: absolute; top: 0; bottom: 0; z-index: 3; width: max(var(--edge-l), 80px); pointer-events: none; }
-.liquid .work__pin::before { left: 0; backdrop-filter: url(#liquid-left); }
-.liquid .work__pin::after { right: 0; backdrop-filter: url(#liquid-right); }
 
 /* toile WebGL : fixe, derrière tout le contenu ; les vues [data-gl] y sont dessinées à leur place */
 .gl-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
