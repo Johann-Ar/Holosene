@@ -37,7 +37,7 @@ a { color: inherit; }
 
 /* barre du haut : monogramme + logotype, fixe */
 .topbar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; padding-block: 22px; color: #fff; }
-.topbar::before { content: ''; position: absolute; inset: 0 0 -28px; z-index: -1; pointer-events: none; background: linear-gradient(rgb(var(--bg-rgb) / 0.88), rgb(var(--bg-rgb) / 0)); }
+.topbar::before { content: none; }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
 .brand__mark { height: 32px; width: auto; }
 .topbar__nav { display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); font-size: 14px; }
@@ -65,20 +65,13 @@ a { color: inherit; }
 .btn--light:hover::before { opacity: 1; }
 @keyframes chroma { from { text-shadow: -0.04em 0 0.1em rgb(255 151 240 / 0.45), 0.04em 0 0.1em rgb(152 226 180 / 0.45); } to { text-shadow: 0 0 0 rgb(255 151 240 / 0), 0 0 0 rgb(152 226 180 / 0); } }
 
-/* bords de l'écran et des pistes : « verre liquide ». La déformation part de zéro au bord intérieur de la bande et
-   grandit vers le bord de l'écran ; la bande n'est pas fondue en transparence (sinon le texte se dédouble).
-   Seulement là où le rendu est fiable (Chromium, classe .liquid) ; ailleurs, pas d'effet. */
-.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.edge { display: none; }
-.liquid .edge { display: block; position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: transform var(--dur-base) var(--ease-flow); }
-.liquid .edge--top { top: 0; height: 140px; backdrop-filter: url(#liquid-top); }
-.liquid .edge--bottom { bottom: 0; height: 110px; backdrop-filter: url(#liquid-bottom); }
-.liquid.edge-bottom-off .edge--bottom { transform: translateY(100%); }
-.liquid.fiche-open .edge { display: none; }
+/* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
+.edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
+.edge--top { top: 0; height: 76px; background: linear-gradient(#000 15%, transparent); }
+.edge--bottom { bottom: 0; height: 56px; background: linear-gradient(transparent, #000 90%); }
+.edge-bottom-off .edge--bottom { opacity: 0; }
+.fiche-open .edge { display: none; }
 .work__pin { position: relative; }
-.liquid .work__pin::before, .liquid .work__pin::after { content: ''; position: absolute; top: 0; bottom: 0; z-index: 3; width: max(var(--edge-l), 80px); pointer-events: none; }
-.liquid .work__pin::before { left: 0; backdrop-filter: url(#liquid-left); }
-.liquid .work__pin::after { right: 0; backdrop-filter: url(#liquid-right); }
 
 /* toile WebGL : fixe, derrière tout le contenu ; les vues [data-gl] y sont dessinées à leur place */
 .gl-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
@@ -98,7 +91,10 @@ main, .foot { position: relative; z-index: 1; }
 .js [data-reveal="clip"] { opacity: 1; transform: none; animation: none; clip-path: inset(14% 10% 14% 10% round var(--radius-l)); transition: clip-path 1.4s var(--ease-flow); }
 .js [data-reveal="clip"].in { clip-path: inset(0 round var(--radius-l)); }
 .js [data-words] .w { opacity: 0.16; transition: opacity 0.5s var(--ease-flow); }
-.js [data-words] .w.on { opacity: 1; animation: chroma 1.4s var(--ease-flow) backwards; }
+.js [data-words] .w.on { opacity: 1; }
+/* mot en cours d'apparition : blanc derrière le front, front irisé, encore éteint devant */
+.js [data-words] .w.lead { opacity: 1; color: transparent; -webkit-background-clip: text; background-clip: text;
+  background-image: linear-gradient(90deg, #fff calc(var(--f, 0) * 116% - 16%), #ffb3f4 calc(var(--f, 0) * 116% - 10%), #a9cdf7 calc(var(--f, 0) * 116% - 5%), #a6efc3 calc(var(--f, 0) * 116% - 1%), rgb(255 255 255 / 0.16) calc(var(--f, 0) * 116% + 2%)); }
 @media (prefers-reduced-motion: reduce) {
   .js [data-reveal], .js [data-reveal="line"] > span { transform: none !important; transition: opacity var(--dur-base); animation: none !important; }
   .js [data-reveal="clip"] { clip-path: none; }
@@ -222,10 +218,9 @@ main, .foot { position: relative; z-index: 1; }
 .fiche:target .fiche__next { animation-delay: 0.8s; }
 .fiche.is-under { z-index: 49; pointer-events: none; }
 .fiche.is-under .fiche__head, .fiche.is-under .fiche__row { animation: slide-away 0.6s var(--ease-in-out) forwards; }
-.fiche.is-closing { z-index: 51; pointer-events: none; animation: curtain-out 0.75s var(--ease-in-out) forwards; }
-.fiche.is-closing .fiche__head, .fiche.is-closing .fiche__row { animation: slide-away 0.5s var(--ease-in-out) forwards; }
+.fiche.is-closing { z-index: 51; pointer-events: none; animation: fiche-close 0.6s var(--ease-flow) forwards; }
 @keyframes curtain-in { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
-@keyframes curtain-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+@keyframes fiche-close { to { opacity: 0; transform: translateX(48px); } }
 @keyframes rise { from { opacity: 0; transform: translateX(56px); } }
 @keyframes slide-away { to { opacity: 0; transform: translateX(-64px); } }
 @media (prefers-reduced-motion: reduce) {

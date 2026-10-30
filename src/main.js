@@ -22,8 +22,8 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
   location.replace('en/' + location.hash)
 }
 
-/* Verre liquide sur les bords : seulement sur Chromium (filtre SVG en arrière-plan) et sans réduction des animations. */
-if (navigator.userAgentData?.brands?.some((b) => /Chromium/.test(b.brand)) && !reduced) root.classList.add('liquid')
+/* Verre liquide sur les bords (WebGL), sauf si l'utilisateur réduit les animations. */
+if (!reduced) root.classList.add('liquid')
 
 /* Contact : copier l'adresse. */
 document.querySelectorAll('.copy').forEach((b) => {
@@ -64,7 +64,7 @@ function leave(el, kind, ms) {
 function syncFiche() {
   const open = ficheOf()
   // transitions : d'un projet à l'autre, l'ancien glisse sous le nouveau rideau ; à la fermeture, le rideau se retire
-  if (prevFiche && prevFiche !== open && !reduced) leave(prevFiche, open ? 'is-under' : 'is-closing', open ? 1000 : 780)
+  if (prevFiche && prevFiche !== open && !reduced) leave(prevFiche, open ? 'is-under' : 'is-closing', open ? 1000 : 640)
   prevFiche = open
   root.classList.toggle('fiche-open', !!open)
   document.body.style.overflow = open ? 'hidden' : ''
@@ -268,8 +268,13 @@ function scrollEffects() {
   for (const b of wordBlocks) {
     const r = b.el.getBoundingClientRect()
     const p = Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (r.height + vh * 0.25)))
-    const on = Math.round(p * b.words.length)
-    if (on !== b.on) { b.words.forEach((w, i) => w.classList.toggle('on', i < on)); b.on = on }
+    // mots allumés ; le mot en cours d'apparition se remplit de gauche à droite, son front est irisé
+    const x = p * b.words.length, on = Math.floor(x), f = x - on
+    if (on !== b.on) {
+      b.words.forEach((w, i) => { w.classList.toggle('on', i < on); w.classList.toggle('lead', i === on) })
+      b.on = on
+    }
+    b.words[on]?.style.setProperty('--f', f.toFixed(3))
   }
 }
 if (reduced) { word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
