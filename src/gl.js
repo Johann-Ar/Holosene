@@ -120,7 +120,6 @@ void main() {
 /** Géométrie du monogramme (viewBox 816 × 1000) : le S et le « o ». */
 const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
 const O = { x: 639.25, y: 586.8, ro: 176.7, ri: 90.8 }
-const EYE = 0.7   // lentille du curseur : anneau plus fin que le « o » du logo (0,51), mieux adapté au suivi
 
 /** Place le monogramme dans la vue d'accueil (mêmes calculs que le CSS de .hero__mark). */
 export function markBox(w, h) {
@@ -227,7 +226,7 @@ export function createGL(canvas, { reduced }) {
 
       // lentille : au pointeur s'il est dans la vue ; sur écran tactile, elle dérive doucement dans les cartes
       const small = w < 600
-      const Ro = small ? v.r * 0.8 : v.r, R = Ro * EYE   // v.r : rayon extérieur
+      const Ro = small ? v.r * 0.8 : v.r, R = Ro - (small ? 4 : 5)   // v.r : rayon extérieur ; anneau fin
       const lx = ptr.x - b.left, ly = ptr.y - b.top
       const inside = lx >= 0 && ly >= 0 && lx <= w && ly <= h && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       const active = inside && (!ptr.touch || now - ptr.t < 1400)

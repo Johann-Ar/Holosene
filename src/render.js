@@ -5,9 +5,10 @@
  */
 import { readFileSync } from 'node:fs'
 import { site, ui, projects, research, studio } from './content.js'
+import sizes from './media-sizes.json' with { type: 'json' }
 
-// logotype en ligne (À propos) : le tracé irisé se dessine, puis le blanc se remplit ; ses bords se fondent dans une suite
-// répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir.
+// logotype en ligne (À propos) : le tracé se dessine, le blanc se remplit, puis ses bords se fondent dans une suite
+// répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir (étapes successives, pas en même temps).
 const logoSrc = readFileSync(new URL('../public/media/logotype-white.svg', import.meta.url), 'utf8')
 const logoPaths = logoSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, '')).join('')
 const logoBox = logoSrc.match(/viewBox="([^"]+)"/)[1]
@@ -22,6 +23,7 @@ const logotype = `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="tr
   </defs>
   <g class="w-edge" fill="url(#iris-g)">${logoPaths}</g>
   <g class="w-core" fill="#fff" filter="url(#core)">${logoPaths}</g>
+  <g class="w-white" fill="#fff">${logoPaths}</g>
   <g class="w-line" fill="none" stroke="url(#iris-l)">${logoPaths.replace(/<path /g, '<path pathLength="1" ')}</g>
 </svg>`
 
@@ -41,53 +43,75 @@ export function render(lang) {
   const n2 = (i) => String(i + 1).padStart(2, '0')
 
   // un projet = une carte de la piste horizontale : l'image en trame de points, la lentille montre l'original
-  const card = (p, i) => `
-      <article class="card" id="projet-${p.slug}" aria-labelledby="pt-${p.slug}">
-        <a class="card__media" href="#p-${p.slug}" data-gl="card" data-cell="6" data-lens="40" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(p.title)}">
-          <img src="${m(p.cover)}" alt="" decoding="async" loading="lazy">
-        </a>
+  // une carte de piste horizontale (projets, recherche) : l'image en trame de points, la lentille montre l'original
+  const card = (c) => {
+    const tag = c.href ? 'a' : 'div', href = c.href ? ` href="${c.href}"` : ''
+    const media = c.image
+      ? `<${tag} class="card__media"${href} data-gl="card" data-cell="6" data-lens="60" data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(c.title)}"><img src="${m(c.image)}" alt="" decoding="async" loading="lazy"></${tag}>`
+      : `<div class="card__media card__media--text"><span class="disp">${esc(c.badge || '')}</span></div>`
+    return `
+      <article class="card${c.todo ? ' todo' : ''}" id="${c.id}" aria-labelledby="${c.id}-t">
+        ${media}
         <div class="card__meta">
-          <p class="lbl">${n2(i)} · ${esc(t(p.milieu))} · ${esc(p.year)}</p>
-          <h3 class="disp card__title" id="pt-${p.slug}"><a href="#p-${p.slug}">${esc(p.title)}</a></h3>
-          <p class="card__lead">${esc(t(p.context))}</p>
-          ${p.coverCredit ? `<p class="credit">${esc(t(p.coverCredit))}</p>` : ''}
+          <p class="lbl">${c.label}</p>
+          <h3 class="disp card__title" id="${c.id}-t">${c.href ? `<a href="${c.href}">${esc(c.title)}</a>` : esc(c.title)}</h3>
+          <p class="card__lead">${esc(c.lead)}</p>
+          ${c.more ? `<p class="card__lead todo">${esc(c.more)}</p>` : ''}
+          ${c.credit ? `<p class="credit">${esc(c.credit)}</p>` : ''}
         </div>
       </article>`
+  }
+  // une piste : cartes, compteur, ligne de progression, flèches
+  const rail = (cards, label) => `
+    <div class="work__pin">
+      <div class="work__track wrap" data-clip tabindex="0" aria-label="${esc(label)}">${cards.join('')}</div>
+      <div class="work__bar wrap">
+        <span class="lbl work__count" aria-hidden="true">01 / ${n2(cards.length - 1)}</span><span class="work__gap"></span>
+        <button class="work__nav" type="button" data-dir="-1" aria-label="${lang === 'fr' ? 'Précédent' : 'Previous'}">←</button><button class="work__nav" type="button" data-dir="1" aria-label="${lang === 'fr' ? 'Suivant' : 'Next'}">→</button>
+      </div>
+    </div>`
 
+  // fiche projet : en-tête fixe, puis une rangée qui défile à l'horizontale (texte en colonnes, images, projet suivant)
   const fiche = (p, i) => {
     const s = ui.sections
     const sect = (label, v) => (v ? `<section class="fiche__part${v.todo ? ' todo' : ''}"><h3 class="lbl">${esc(t(label))}</h3><p>${esc(t(v))}</p></section>` : '')
     const credits = [...(p.credits || []), ...(p.coverCredit ? [p.coverCredit] : [])]
+    const next = projects[(i + 1) % projects.length]
+    // petites images (moins de 700 px de large) regroupées par deux, l'une sur l'autre
+    const fig = (x) => { const [w, h] = sizes[x.src] || [1200, 800]; return `<figure style="--r:${(w / h).toFixed(3)}"><img src="${m(x.src)}" alt="${esc(t(x.alt))}" width="${w}" height="${h}" loading="lazy" decoding="async"></figure>` }
+    const small = (x) => (sizes[x.src]?.[0] || 1200) < 700
+    const media = []
+    for (let k = 0; k < p.media.length; k++) {
+      const a = p.media[k], b = p.media[k + 1]
+      if (small(a) && b && small(b)) { media.push(`<div class="duo">${fig(a)}${fig(b)}</div>`); k++ } else media.push(fig(a))
+    }
     return `
   <section class="fiche" id="p-${p.slug}" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="p-${p.slug}-t" tabindex="-1">
     <header class="fiche__head wrap">
       <div><p class="lbl">${esc(t(p.milieu))} · ${esc(p.year)}</p><h2 class="disp" id="p-${p.slug}-t">${esc(p.title)}</h2></div>
-      <a class="fiche__close" href="#projet-${p.slug}">${esc(t(ui.close))}</a>
+      <a class="fiche__close" href="#${p.research ? 'recherche' : 'projet'}-${p.slug}">${esc(t(ui.close))}</a>
     </header>
-    <div class="fiche__inner wrap">
-      <div class="fiche__body">
-        <div class="fiche__text">
-          ${sect(s.intent, p.intent)}
-          ${sect(s.context, p.context)}
-          ${sect(s.capture, p.capture)}
-          ${sect(s.processing, p.processing)}
-          ${sect(s.staging, p.staging)}
-          ${sect(s.learned, p.learned)}
-          <section class="fiche__part"><h3 class="lbl">${esc(t(s.credits))}</h3>
-            <dl class="facts">
-              <div${p.role?.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.role))}</dt><dd>${esc(t(p.role))}</dd></div>
-              <div><dt class="lbl">${esc(t(ui.tools))}</dt><dd>${esc(p.tools)}</dd></div>
-              <div><dt class="lbl">${esc(t(ui.year))}</dt><dd>${esc(p.year)}</dd></div>
-              ${credits.map((c) => `<div${c.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.creditsLabel))}</dt><dd>${esc(t(c))}</dd></div>`).join('')}
-            </dl>
-          </section>
-          ${p.link ? `<a class="btn btn--light" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
-          <a class="fiche__next" href="#p-${projects[(i + 1) % projects.length].slug}"><span class="lbl">${lang === 'fr' ? 'Projet suivant' : 'Next project'}</span><span class="disp">${esc(projects[(i + 1) % projects.length].title)} →</span></a>
-        </div>
-        <div class="fiche__media">
-          ${p.media.map((x) => `<figure><img src="${m(x.src)}" alt="${esc(t(x.alt))}" loading="lazy" decoding="async"></figure>`).join('')}
-        </div>
+    <div class="fiche__row">
+      <div class="fiche__col">${sect(s.intent, p.intent)}${sect(s.context, p.context)}${sect(s.capture, p.capture)}${sect(s.processing, p.processing)}</div>
+      <div class="fiche__col">
+        ${sect(s.staging, p.staging)}${sect(s.learned, p.learned)}
+        <section class="fiche__part"><h3 class="lbl">${esc(t(s.credits))}</h3>
+          <dl class="facts">
+            <div${p.role?.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.role))}</dt><dd>${esc(t(p.role))}</dd></div>
+            <div><dt class="lbl">${esc(t(ui.tools))}</dt><dd>${esc(p.tools)}</dd></div>
+            <div><dt class="lbl">${esc(t(ui.year))}</dt><dd>${esc(p.year)}</dd></div>
+            ${credits.map((c) => `<div${c.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.creditsLabel))}</dt><dd>${esc(t(c))}</dd></div>`).join('')}
+          </dl>
+        </section>
+        ${p.link ? `<a class="btn btn--light" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
       </div>
+      <div class="fiche__media">${media.join('')}</div>
+      <a class="fiche__next" href="#p-${next.slug}">
+        <span class="lbl">${lang === 'fr' ? 'Projet suivant' : 'Next project'}</span>
+        <span class="disp">${esc(next.title)} →</span>
+        <span class="fiche__pull" aria-hidden="true"><i></i></span>
+        <span class="lbl fiche__hint" aria-hidden="true">${lang === 'fr' ? 'Continuez à faire défiler' : 'Keep scrolling'}</span>
+      </a>
     </div>
   </section>`
   }
@@ -97,11 +121,6 @@ export function render(lang) {
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
-<svg class="defs" aria-hidden="true" focusable="false"><filter id="eye" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-  <feMorphology in="SourceAlpha" operator="erode" radius="1.2" result="e"/><feGaussianBlur in="e" stdDeviation="2.2" result="b"/>
-  <feFlood flood-color="#fff"/><feComposite in2="b" operator="in"/><feComposite in2="SourceAlpha" operator="in" result="core"/>
-  <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="core"/></feMerge>
-</filter></svg>
 <header class="topbar wrap">
   <a href="#top" class="brand" aria-label="Holosene">
     <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
@@ -138,32 +157,15 @@ export function render(lang) {
       <h2 class="lbl" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
       <p class="big disp work__index" data-words>${selected.map((p) => `<a href="#p-${p.slug}">${words(p.title)}</a>`).join('<span class="w">,</span> ')}</p>
     </div>
-    <div class="work__pin">
-      <div class="work__track wrap" data-clip tabindex="0" aria-label="${lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll'}">${selected.map(card).join('')}</div>
-      <div class="work__bar wrap">
-        <span class="lbl work__count" aria-hidden="true">01 / ${n2(selected.length - 1)}</span><span class="work__line" aria-hidden="true"><i></i></span>
-        <button class="work__nav" type="button" data-dir="-1" aria-label="${lang === 'fr' ? 'Projet précédent' : 'Previous project'}">←</button><button class="work__nav" type="button" data-dir="1" aria-label="${lang === 'fr' ? 'Projet suivant' : 'Next project'}">→</button>
-      </div>
-    </div>
+    ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, label: `${n2(i)} · ${esc(t(p.milieu))} · ${esc(p.year)}`, lead: t(p.context), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
   </section>
 
-  <section class="research" id="recherche" aria-labelledby="research-t">
+  <section class="work work--research" id="recherche" aria-labelledby="research-t">
     <div class="row wrap">
       <h2 class="lbl" id="research-t">${esc(t(ui.research))}</h2>
       <p class="big disp" data-words>${words(t(research.intro))}</p>
     </div>
-    <ol class="rlist wrap">${research.items.map((r) => {
-      const tag = r.href ? 'a' : 'div'
-      return `
-      <li class="ritem${r.todo ? ' todo' : ''}" data-reveal>
-        <${tag} class="ritem__in"${r.href ? ` href="${r.href}"` : ''}>
-          <span class="lbl ritem__kind">${esc(t(r.kind))}${r.when ? ` · ${esc(t(r.when))}` : ''}</span>
-          <span class="ritem__body"><span class="disp ritem__title">${esc(t(r.title))}</span><span class="ritem__text">${esc(t(r.text))}</span>${r.more ? `<span class="ritem__text todo">${esc(t(r.more))}</span>` : ''}</span>
-          ${r.image ? `<span class="ritem__pic"><img src="${m(r.image)}" alt="${esc(t(r.alt))}" loading="lazy" decoding="async"></span>` : ''}
-        </${tag}>
-      </li>`
-    }).join('')}
-    </ol>
+    ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: r.image, badge: r.when && t(r.when), title: t(r.title), label: `${esc(t(r.kind))}${r.when ? ` · ${esc(t(r.when))}` : ''}`, lead: t(r.text), more: r.more && t(r.more), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
 
   <section class="contact wrap" id="contact" aria-labelledby="contact-t">

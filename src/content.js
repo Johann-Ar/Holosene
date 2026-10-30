@@ -16,7 +16,7 @@ export const site = {
     'Je capte le réel et le transforme en volumes et en espaces 3D à parcourir.',
     'I capture the real world and turn it into volumes and 3D spaces to explore.',
   ),
-  baseline: T('Captation, reconstruction, 3D temps réel', 'Capture, reconstruction, real-time 3D'),
+  baseline: T('Design interactif · WebGL · Captation du réel · Recherche en design', 'Interaction design · WebGL · Real-world capture · Design research'),
   signature: T('Portfolio de Johann Arata', 'Portfolio of Johann Arata'),
   description: T(
     'Holosene, portfolio de Johann Arata : captation du réel, nuages de points, Gaussian splatting et 3D temps réel.',
@@ -240,7 +240,7 @@ export const research = {
       kind: T('Article de recherche', 'Research paper'), when: '2024-25',
       title: T('Mondes Immergés', 'Mondes Immergés'),
       text: T('Comment le design immersif peut-il rendre sensibles des milieux aquatiques qui se dégradent ? Article édité pendant le DNMADe.', 'How can immersive design make damaged aquatic environments felt? A paper published during my design degree.'),
-      image: 'mondes-immerges/011.webp', alt: T('Couverture du livre Mondes Immergés', 'Cover of Mondes Immergés'),
+      slug: 'mondes-immerges', image: 'mondes-immerges/011.webp', alt: T('Couverture du livre Mondes Immergés', 'Cover of Mondes Immergés'),
       href: '#p-mondes-immerges',
     },
     {
