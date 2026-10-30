@@ -257,6 +257,6 @@ export const research = {
 }
 
 export const studio = T(
-  'Je suis Johann Arata, designer numérique, en master Design (Environnements numériques) à la Faculté des arts de Strasbourg. Holosene rassemble mes projets : captation du réel, reconstruction, 3D temps réel.',
-  'I am Johann Arata, a digital designer studying for a master’s in Design (Digital Environments) at the Faculty of Arts in Strasbourg. Holosene gathers my projects: real-world capture, reconstruction, real-time 3D.',
+  'Je suis Johann Arata, designer numérique, en master Design (Environnements numériques) à la Faculté des arts de Strasbourg. Holosene rassemble mes projets et travaux de recherche en design.',
+  'I am Johann Arata, a digital designer studying for a master’s in Design (Digital Environments) at the Faculty of Arts in Strasbourg. Holosene gathers my projects and my design research.',
 )

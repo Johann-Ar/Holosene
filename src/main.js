@@ -90,40 +90,37 @@ function syncFiche() {
 }
 addEventListener('hashchange', syncFiche)
 
-/* Fiches, grand écran : la rangée est déplacée par le script.
-   - pavé tactile (petits pas continus) : suit le geste directement, sans lissage ajouté ;
-   - molette de souris (grands pas) : glisse en douceur ;
-   - glisser à la souris ou au doigt, flèches du clavier.
+/* Fiches, grand écran : la rangée est déplacée par le script, avec une seule douceur pour toutes les entrées
+   (pavé tactile, molette, glisser à la souris ou au doigt, clavier).
    Au bout, continuer à défiler remplit une jauge puis ouvre le projet suivant. */
 const wide = matchMedia('(min-width: 769px)')
 const PULL = 480
 const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
   const row = f.querySelector('.fiche__row'), next = f.querySelector('.fiche__next')
-  const F = { f, row, x: 0, target: 0, max: 0, pull: 0, lastPull: 0, smooth: false }
+  const F = { f, row, x: 0, target: 0, max: 0, pull: 0, lastPull: 0 }
   const setPull = (v) => { F.pull = Math.max(0, v); f.style.setProperty('--pull', Math.min(F.pull / PULL, 1).toFixed(3)) }
   const pullBy = (d) => {
     setPull(F.pull + d); F.lastPull = performance.now()
     if (F.pull >= PULL) { setPull(0); location.hash = next.getAttribute('href') }
   }
   F.measure = () => { F.max = Math.max(0, row.scrollWidth - innerWidth); F.target = Math.min(F.target, F.max) }
-  const by = (d, smooth) => {
+  const by = (d) => {
     const before = F.target
     F.target = Math.max(0, Math.min(F.max, F.target + d))
-    F.smooth = smooth; if (!smooth) F.x = F.target
     const rest = d - (F.target - before)
     if (rest > 0 && F.target >= F.max - 1) pullBy(rest * 0.55)
     else if (d < 0 && F.pull > 0) pullBy(d)
   }
   f.addEventListener('wheel', (e) => {
-    if (!wide.matches || e.ctrlKey || e.target.closest('.fiche__col') && e.target.closest('.fiche__col').scrollHeight > e.target.closest('.fiche__col').clientHeight + 2 && Math.abs(e.deltaY) > Math.abs(e.deltaX)) return
+    if (!wide.matches || e.ctrlKey) return
     e.preventDefault()
     const d = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? innerWidth : 1)
-    by(d, e.deltaMode !== 0 || Math.abs(d) >= 50)   // grands pas : molette ; petits pas : pavé tactile
+    by(d)
   }, { passive: false })
   f.addEventListener('keydown', (e) => {
     if (!wide.matches) return
     const k = { ArrowRight: 1, ArrowDown: 1, PageDown: 1, ' ': 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1 }[e.key]
-    if (k && !e.target.closest('a, button')) { e.preventDefault(); by(k * innerWidth * 0.6, true) }
+    if (k && !e.target.closest('a, button')) { e.preventDefault(); by(k * innerWidth * 0.6) }
   })
   let down = null
   row.addEventListener('pointerdown', (e) => { if (!wide.matches || e.button || e.target.closest('a, button')) return; down = { x: e.clientX, t: F.target, id: e.pointerId, moved: false } })
@@ -131,7 +128,7 @@ const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
     if (!down || e.pointerId !== down.id) return
     const dx = e.clientX - down.x
     if (!down.moved && Math.abs(dx) > 6) { down.moved = true; row.classList.add('is-drag') }
-    if (down.moved) { F.target = F.x = Math.max(0, Math.min(F.max, down.t - dx)); F.smooth = false }
+    if (down.moved) F.target = F.x = Math.max(0, Math.min(F.max, down.t - dx))
   })
   addEventListener('pointerup', () => { if (down) { row.classList.remove('is-drag'); down = null } })
   F.reset = () => {
@@ -141,7 +138,7 @@ const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
   }
   F.frame = (dt) => {
     if (F.pull > 0 && performance.now() - F.lastPull > 160) setPull(F.pull * 0.9 - 2)
-    if (F.smooth) F.x += (F.target - F.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.12))
+    F.x += (F.target - F.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.085))   // même douceur pour toutes les entrées
     if (Math.abs(F.target - F.x) < 0.3) F.x = F.target
     row.style.transform = wide.matches ? `translate3d(${(-F.x).toFixed(1)}px, 0, 0)` : ''
   }

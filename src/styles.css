@@ -31,8 +31,8 @@ a { color: inherit; }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
 .skip:focus-visible { transform: none; }
 
-/* sélection de texte : le rose irisé de la marque, translucide (le navigateur n'accepte qu'un aplat), texte blanc */
-::selection { background: rgb(255 151 240 / 0.42); color: #fff; }
+/* sélection de texte : violet #4800FF, texte blanc */
+::selection { background: #4800ff; color: #fff; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* barre du haut : monogramme + logotype, fixe */
@@ -166,10 +166,10 @@ main, .foot { position: relative; z-index: 1; }
 .work__nav[data-dir="-1"]:hover svg { transform: translateX(-2px); }
 @media (max-width: 760px) { .card { width: 84vw; } }
 
-/* survol : une ligne irisée fine se trace autour du cadre (images, pastilles, flèches), puis reste jusqu'à la sortie */
+/* survol : une ligne irisée fine se trace autour du cadre (pastilles, flèches), puis reste jusqu'à la sortie */
 @property --frame-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 :root { --iris-wheel: conic-gradient(#ff97f0, #fe9ad5, #da9bc2, #99c1dd, #98e2b4, #ff97f0); }
-.card__media::after, .fiche__media figure::after, .topbar .lang::after, .fiche__close::after, .work__nav::after {
+.topbar .lang::after, .fiche__close::after, .work__nav::after {
   content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; padding: 1.5px; pointer-events: none; opacity: 0;
   background: var(--iris-wheel);
   -webkit-mask: conic-gradient(#000 var(--frame-a), transparent 0), linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -178,12 +178,11 @@ main, .foot { position: relative; z-index: 1; }
   mask-composite: intersect, exclude;
   transition: --frame-a 0.3s var(--ease-flow), opacity 0.2s var(--ease-flow); }
 .topbar .lang::after, .fiche__close::after, .work__nav::after { inset: -1px; }
-.card__media:hover::after, .card__media:focus-visible::after, .fiche__media figure:hover::after,
 .topbar .lang:hover::after, .topbar .lang:focus-visible::after, .fiche__close:hover::after, .fiche__close:focus-visible::after,
 .work__nav:hover::after, .work__nav:focus-visible::after { --frame-a: 360deg; opacity: 0.9; transition: --frame-a 0.8s var(--ease-flow), opacity 0.15s; }
 .topbar .lang, .fiche__close, .work__nav { position: relative; }
 .fiche__media figure { position: relative; }
-@media (prefers-reduced-motion: reduce) { .card__media::after, .fiche__media figure::after { transition: opacity 0.2s; } }
+@media (prefers-reduced-motion: reduce) { .topbar .lang::after, .fiche__close::after, .work__nav::after { transition: opacity 0.2s; } }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
 .work--research { padding-top: var(--sp-8); }
@@ -232,12 +231,14 @@ main, .foot { position: relative; z-index: 1; }
 /* grand écran : une seule rangée, qui défile à l'horizontale (molette, pavé tactile, doigt) */
 @media (min-width: 769px) {
   .fiche { overflow: hidden; }
-  .fiche__row { display: flex; align-items: center; gap: clamp(32px, 4vw, 64px); width: max-content; height: calc(100svh - var(--fh, 120px)); padding: 0 var(--edge-r) 40px var(--edge-l); will-change: transform; }
-  .fiche__col { flex: 0 0 clamp(280px, 25vw, 380px); align-self: stretch; padding-top: 8px; overflow-y: auto; scrollbar-width: none; }
-  /* images : hauteur de l'écran moins 240 px, comme le portfolio V1 */
-  .fiche__media { flex: none; display: flex; gap: 24px; height: min(calc(100svh - 240px), calc(100% - 20px)); }
+  .fiche__row { display: flex; align-items: center; gap: clamp(28px, 3vw, 48px); width: max-content; height: calc(100svh - var(--fh, 120px)); padding: 0 var(--edge-r) 40px var(--edge-l); will-change: transform; }
+  .fiche__col { flex: 0 0 clamp(260px, 21vw, 320px); align-self: center; font-size: 15px; line-height: 1.5; }
+  .fiche__col .fiche__part p { font-size: 15px; }
+  /* images : environ 72 % de la hauteur d'écran, serrées, coins doux (comme la page projet de dorianlods.com) */
+  .fiche__media { flex: none; display: flex; gap: 16px; height: min(72svh, calc(100% - 24px)); margin-left: 2vw; }
+  .fiche__media figure, .duo figure { border-radius: 18px; }
   .fiche__media > figure { flex: none; height: 100%; width: auto; aspect-ratio: var(--r); }
-  .duo { flex: none; display: grid; grid-template-rows: 1fr 1fr; gap: 20px; height: 100%; aspect-ratio: 0.72; }
+  .duo { flex: none; display: grid; grid-template-rows: 1fr 1fr; gap: 16px; height: 100%; aspect-ratio: 0.72; }
   .duo figure { min-height: 0; }
   .fiche__next { flex: none; align-self: center; padding: 0 4vw 0 2vw; transform: translateX(calc(var(--pull, 0) * -60px)); }
 }

@@ -43,7 +43,8 @@ uniform float uHasMask;
 uniform float uFloor;   // taille minimale des points dans le masque
 uniform float uRadius;  // coins arrondis (0 : aucun)
 uniform vec3 uLens;     // centre (px CSS), rayon intérieur
-uniform float uRim;     // épaisseur de l'anneau
+uniform float uLensO;   // rayon extérieur de l'anneau
+uniform float uGlass;   // survol d'une carte : bord de verre (0 à 1)
 uniform vec4 uClip;     // piste horizontale : bords gauche et droit (px, dans la vue), largeur du fondu
 uniform float uCardBg;  // gris du fond des cartes
 uniform vec4 uEye;      // accueil : le « o » du logo (centre, rayon extérieur, rayon intérieur), aplat irisé
@@ -65,22 +66,10 @@ vec3 iris(float t) {
   return r;
 }
 
-void main() {
-  vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
-  p.y = uRes.y - p.y;
+// trame en un point : un point par cellule, sa taille suit la lumière de l'image (couleur prémultipliée, alpha)
+vec4 halftone(vec2 p) {
   float aa = 0.9 / uDpr;
-
-  // lentille : un anneau aux proportions du « o » du logo
-  float R = uLens.z, Ro = R + uRim;
-  vec2 lp = p - uLens.xy;
-  float d = length(lp);
-  vec2 dir = length(lp) > 0.001 ? normalize(lp) : vec2(0.0);
-  float ang = atan(lp.x, -lp.y) / 6.28318;
-  vec3 ic = iris(ang);
-
-  // trame : un point par cellule, sa taille suit la lumière de l'image
-  vec2 pw = p;
-  vec2 cell = floor(pw / uCell);
+  vec2 cell = floor(p / uCell);
   vec2 c = (cell + 0.5) * uCell;
   float l = lum(texture2D(uTex, cover(c)).rgb);
   float m = 1.0;
@@ -91,20 +80,71 @@ void main() {
   float rev = smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
   float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor) * m;
   float r = uCell * 0.49 * kk * rev * edge;
-  float dotA = (1.0 - smoothstep(r - aa, r + aa, length(pw - c))) * clamp(r / aa, 0.0, 1.0);
-  vec3 col = vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0)));
-  col *= dotA;
-  float a = dotA;
+  float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
+  return vec4(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))) * dotA, dotA);
+}
+// distance signée au rectangle aux coins arrondis de la carte (négative à l'intérieur)
+float sdCard(vec2 p) {
+  vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
+}
 
+void main() {
+  vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
+  p.y = uRes.y - p.y;
+  float aa = 0.9 / uDpr;
+
+  // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
+  vec2 hp = p;
+  if (uLens.z > 0.5) {
+    vec2 lq = p - uLens.xy; float dl = length(lq);
+    float g = exp(-pow(max(dl - uLensO, 0.0) / (uLensO * 0.45), 2.0)) * step(uLensO, dl);
+    hp = p - lq / max(dl, 1.0) * g * uCell * 0.7;
+  }
+  vec4 h = halftone(hp);
+  vec3 col = h.rgb; float a = h.a;
+  float sd = 0.0;
+  if (uRadius > 0.0) {
+    sd = sdCard(p);
+    col += vec3(uCardBg) * (1.0 - a); a = 1.0;
+    // survol : bord de verre épais ; l'image y est déviée, les couleurs se séparent, un reflet court le long du bord
+    if (uGlass > 0.001) {
+      float W = 26.0 * uGlass;
+      float t = clamp(-sd / W, 0.0, 1.0);          // 0 au bord, 1 à l'intérieur du verre
+      if (t < 1.0) {
+        vec2 e = vec2(1.0, 0.0);
+        vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy), sdCard(p + e.yx) - sdCard(p - e.yx)) + 1e-5);
+        float bend = pow(1.0 - t, 2.0) * 30.0 * uGlass;
+        vec3 g = vec3(halftone(p + n * bend * 1.15).r, halftone(p + n * bend * 0.8).g, halftone(p + n * bend * 0.45).b) + vec3(uCardBg);
+        vec2 cp = p - uRes * 0.5;
+        vec3 ic = iris(atan(cp.x, -cp.y) / 6.28318 + sd * 0.004);
+        g = g * mix(vec3(1.0), ic, 0.6 * (1.0 - t)) + ic * 0.42 * pow(1.0 - t, 1.4);
+        g += vec3(0.55) * exp(-abs(sd + 1.6) / 1.1) * uGlass;                      // arête claire
+        g += ic * 0.35 * exp(-abs(sd + W * 0.55) / 2.5) * uGlass;                    // liseré intérieur irisé
+        float band = (1.0 - smoothstep(0.85, 1.0, t)) * uGlass;
+        col = mix(col, g, band);
+      }
+    }
+  }
+
+  // lentille : l'image d'origine, nette au centre ; près du bord intérieur, déformation « verre liquide » :
+  // l'image se courbe vers le bord, les couleurs se séparent légèrement, un reflet fin longe l'anneau
+  float R = uLens.z;
   if (R > 0.5) {
-    if (d < Ro + 2.0) {
-      // intérieur : l'image d'origine, à plat
-      vec3 orig = texture2D(uTex, cover(p)).rgb;
+    vec2 lp = p - uLens.xy;
+    float d = length(lp);
+    if (d < R + 2.0) {
+      float k = smoothstep(0.5, 1.0, d / R);
+      float bend = 0.32 * k * k * k;
+      vec2 c0 = uLens.xy;
+      vec3 orig = vec3(texture2D(uTex, cover(c0 + lp * (1.0 - bend * 1.04))).r,
+                       texture2D(uTex, cover(c0 + lp * (1.0 - bend))).g,
+                       texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.96))).b);
+      vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
+      orig += vec3(0.32) * exp(-(R - d) / 2.2) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);   // reflet
+      orig *= 1.0 - 0.12 * k * k;                                                                  // épaisseur du verre
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
-      float rim = smoothstep(R - aa, R + aa, d) * (1.0 - smoothstep(Ro - aa, Ro + aa, d));
-      vec3 ring = ic;   // anneau plein, aux couleurs du « o » du logo
       col = mix(col, orig, inner); a = mix(a, 1.0, inner);
-      col = mix(col, ring, rim); a = mix(a, 1.0, rim);
     }
   }
 
@@ -116,14 +156,8 @@ void main() {
     col = mix(col, iris(atan(ep.x, -ep.y) / 6.28318), eye); a = mix(a, 1.0, eye);
   }
 
-  // carte aux coins arrondis, fond légèrement plus clair que la page
-  if (uRadius > 0.0) {
-    vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
-    float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
-    float cov = 1.0 - smoothstep(-aa, aa, sd);
-    col += vec3(uCardBg) * (1.0 - a); a = 1.0;
-    col *= cov; a *= cov;
-  }
+  // carte : coins arrondis
+  if (uRadius > 0.0) { float cov = 1.0 - smoothstep(-aa, aa, sd); col *= cov; a *= cov; }
   // bords latéraux fondus de la piste des projets
   if (uClip.z > 0.0) { float f = smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)); col *= f; a *= f; }
   gl_FragColor = vec4(col, a);
@@ -156,7 +190,7 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uRim', 'uEye', 'uClip', 'uCardBg']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uClip', 'uCardBg']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
@@ -173,7 +207,7 @@ export function createGL(canvas, { reduced }) {
   document.documentElement.addEventListener('pointerleave', () => { ptr.t = -1e9 })
 
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
-    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0,
+    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0,
       mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
       radius: +el.dataset.radius || 0, clip: el.closest('[data-clip]'), fade: el.dataset.gl === 'panel', mask: null, maskKey: '' }
     const src = v.video || el.querySelector('img')
@@ -207,6 +241,7 @@ export function createGL(canvas, { reduced }) {
 
   // une seule lentille pour toute la page : elle suit le pointeur de près (sans dépassement), apparaît sur les cartes
   const lens = { x: 0, y: 0, s: 0, init: false }
+  const hoverDevice = matchMedia('(hover: hover)').matches
   const follow = (a, b, tau, dt) => a + (b - a) * (1 - Math.exp(-dt / tau))
 
   let last = performance.now(), time = 0
@@ -246,6 +281,8 @@ export function createGL(canvas, { reduced }) {
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.55)))
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
       if (v.mark) maskFor(v, w, h)
+      const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
+      v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.1, dt)
 
       const x0 = Math.round(b.left * dpr), y0 = Math.round((H - b.bottom) * dpr)
       gl.viewport(x0, y0, Math.round(w * dpr), Math.round(h * dpr))
@@ -260,7 +297,7 @@ export function createGL(canvas, { reduced }) {
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
-      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v.mark ? 0 : Ri * sc); gl.uniform1f(U.uRim, 0)
+      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v.mark ? 0 : Ri * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) { const m = markBox(w, h), e = Math.min(1, reveal * 1.4); gl.uniform4f(U.uEye, m.x + O.x * m.s, m.y + O.y * m.s, O.ro * m.s * e, O.ri * m.s * e) }
       else gl.uniform4f(U.uEye, 0, 0, 0, 0)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
