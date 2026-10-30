@@ -135,11 +135,17 @@ void main() {
     float d = length(lp);
     if (d < R + 2.0) {
       float k = smoothstep(0.5, 1.0, d / R);
-      float bend = 0.32 * k * k * k;
-      vec2 c0 = uLens.xy;
-      vec3 orig = vec3(texture2D(uTex, cover(c0 + lp * (1.0 - bend * 1.04))).r,
-                       texture2D(uTex, cover(c0 + lp * (1.0 - bend))).g,
-                       texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.96))).b);
+      float bend = 0.2 * k * k * k;
+      // échantillons moyennés là où l'image est comprimée (évite le moiré) ; séparation des couleurs très légère
+      vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
+      vec3 orig = vec3(0.0);
+      for (int i = 0; i < 4; i++) {
+        vec2 o = (i == 0 ? t1 : i == 1 ? -t1 : i == 2 ? t2 : -t2);
+        orig += vec3(texture2D(uTex, cover(c0 + lp * (1.0 - bend * 1.012) + o)).r,
+                     texture2D(uTex, cover(c0 + lp * (1.0 - bend) + o)).g,
+                     texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.988) + o)).b);
+      }
+      orig *= 0.25;
       vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
       orig += vec3(0.32) * exp(-(R - d) / 2.2) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);   // reflet
       orig *= 1.0 - 0.12 * k * k;                                                                  // épaisseur du verre
