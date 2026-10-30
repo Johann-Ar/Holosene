@@ -158,7 +158,8 @@ void main() {
       vec2 e = vec2(1.0, 0.0);
       vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy) + sdInner(p + e.xy, W) - sdInner(p - e.xy, W),
                               sdCard(p + e.yx) - sdCard(p - e.yx) + sdInner(p + e.yx, W) - sdInner(p - e.yx, W)) + 1e-5);
-      col *= 1.0 - 0.4 * exp(-max(-di, 0.0) / 9.0) * step(0.0, -di);   // ombre intérieure, juste après le verre
+      float shade = 1.0 - 0.3 * exp(-abs(di) / 10.0);                     // ombre douce de part et d'autre du bord intérieur, continue
+      col *= shade;
       if (t < 1.0) {
         float s1 = 1.0 - t;
         float bend = W * 0.85 * s1 * s1;              // réfraction : on lit l'image plus à l'intérieur
@@ -172,7 +173,7 @@ void main() {
         vec3 tint = mix(vec3(1.0), ic, uGlass);
         g = g * mix(vec3(1.0), tint, 0.75 * s1) + tint * 0.1 * s1;
         g *= 0.62 + 0.38 * smoothstep(0.0, 0.9, t);                                   // le verre assombrit l'image (visible aussi sur le clair)
-        g *= 1.0 - 0.55 * exp(-abs(di) / 2.0);                                         // fine ligne sombre où le verre s'arrête
+        g *= shade;
         // lumière spéculaire selon l'orientation du bord
         vec2 L = normalize(vec2(-0.65, -0.76));
         float facing = dot(n, L);
@@ -180,7 +181,7 @@ void main() {
         float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(sd + 3.0) / 3.0) * 0.35;
         float sheen = exp(-abs(t - 0.5) * 6.0) * 0.06 * (0.5 + 0.5 * facing);
         g += mix(vec3(1.0), tint, 0.5) * (spec + back + sheen);
-        col = mix(col, g, 1.0 - smoothstep(0.92, 1.0, t));
+        col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
       }
     }
   }
