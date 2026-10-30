@@ -65,9 +65,17 @@ document.addEventListener('click', (e) => {
 })
 
 /* Fiches projet : ouvertes par l'ancre #p-<slug> ; focus, Échap, focus piégé, défilement de la page bloqué. */
-let lastFocus = null
+let lastFocus = null, prevFiche = null
+const ficheOf = () => (/^#p-/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null)
+function leave(el, kind, ms) {
+  el.classList.add('is-leaving', kind)
+  setTimeout(() => el.classList.remove('is-leaving', kind), ms)
+}
 function syncFiche() {
-  const open = document.querySelector('.fiche:target')
+  const open = ficheOf()
+  // transitions : d'un projet à l'autre, l'ancien glisse sous le nouveau rideau ; à la fermeture, le rideau se retire
+  if (prevFiche && prevFiche !== open && !reduced) leave(prevFiche, open ? 'is-under' : 'is-closing', open ? 1000 : 780)
+  prevFiche = open
   root.classList.toggle('fiche-open', !!open)
   document.body.style.overflow = open ? 'hidden' : ''
   if (open) {
@@ -149,12 +157,12 @@ addEventListener('resize', () => fiches.forEach((F) => F.measure()))
 let ficheT = performance.now()
 function ficheFrame(now) {
   const dt = Math.min(0.05, (now - ficheT) / 1000); ficheT = now
-  const open = document.querySelector('.fiche:target')
+  const open = ficheOf()
   const F = open && fiches.find((x) => x.f === open)
   F?.frame(dt)
 }
 addEventListener('keydown', (e) => {
-  const open = document.querySelector('.fiche:target')
+  const open = ficheOf()
   if (!open) return
   if (e.key === 'Escape') { e.preventDefault(); location.hash = open.querySelector('.fiche__close').getAttribute('href') }
   if (e.key === 'Tab') {
@@ -227,6 +235,8 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
   track.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false } }, true)
   track.addEventListener('dragstart', (e) => e.preventDefault())
   r.isDown = () => !!down
+  // la piste n'a pas de défilement natif : le navigateur ne doit pas la décaler (ancre, focus)
+  track.addEventListener('scroll', () => { if (track.scrollLeft) track.scrollLeft = 0 }, { passive: true })
   return r
 })
 addEventListener('resize', () => rails.forEach((r) => r.measure()))
@@ -236,6 +246,7 @@ function workFrame(now = performance.now()) {
   const dt = Math.min(0.05, (now - railT) / 1000); railT = now
   for (const r of rails) {
     if (!r.setW) continue
+    if (r.track.scrollLeft) r.track.scrollLeft = 0
     // à l'arrêt, la piste se cale doucement sur la carte la plus proche
     if (!r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
     if (!r.isDown()) r.x += (r.target - r.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.11))

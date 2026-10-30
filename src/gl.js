@@ -98,30 +98,36 @@ void main() {
   vec2 hp = p;
   if (uLens.z > 0.5) {
     vec2 lq = p - uLens.xy; float dl = length(lq);
-    float g = exp(-pow(max(dl - uLensO, 0.0) / (uLensO * 0.45), 2.0)) * step(uLensO, dl);
-    hp = p - lq / max(dl, 1.0) * g * uCell * 0.7;
+    float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.22)) * step(uLensO, dl);   // très forte sur la lisière, décroissance exponentielle
+    hp = p - lq / max(dl, 1.0) * g * uCell * 1.6;
   }
   vec4 h = halftone(hp);
+  if (uLens.z > 0.5) { float dl = length(p - uLens.xy); float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.18)) * step(uLensO, dl); h *= 1.0 + 0.35 * g; }
   vec3 col = h.rgb; float a = h.a;
   float sd = 0.0;
   if (uRadius > 0.0) {
     sd = sdCard(p);
     col += vec3(uCardBg) * (1.0 - a); a = 1.0;
-    // survol : bord de verre épais ; l'image y est déviée, les couleurs se séparent, un reflet court le long du bord
+    // survol : bord de verre épais. On y voit la photo d'origine (lisse, légèrement floue, courbée vers le bord),
+    // teintée d'irisé ; arête claire à l'extérieur, fine ligne là où le verre s'arrête, ombre douce à l'intérieur.
     if (uGlass > 0.001) {
-      float W = 26.0 * uGlass;
-      float t = clamp(-sd / W, 0.0, 1.0);          // 0 au bord, 1 à l'intérieur du verre
+      float W = 22.0 * uGlass;
+      float t = -sd / W;                                // 0 au bord extérieur, 1 à la fin du verre
+      col *= 1.0 - 0.35 * uGlass * exp(-max(t - 1.0, 0.0) * W / 7.0) * step(1.0, t);   // ombre intérieure
       if (t < 1.0) {
         vec2 e = vec2(1.0, 0.0);
         vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy), sdCard(p + e.yx) - sdCard(p - e.yx)) + 1e-5);
-        float bend = pow(1.0 - t, 2.0) * 30.0 * uGlass;
-        vec3 g = vec3(halftone(p + n * bend * 1.15).r, halftone(p + n * bend * 0.8).g, halftone(p + n * bend * 0.45).b) + vec3(uCardBg);
+        vec2 q = p - n * 4.0 * (1.0 - clamp(t, 0.0, 1.0));            // la photo se courbe à peine vers le bord
+        vec3 g = vec3(0.0);
+        for (int i = 0; i < 4; i++) { vec2 o = vec2(i == 0 ? 1.5 : i == 1 ? -1.5 : 0.0, i == 2 ? 1.5 : i == 3 ? -1.5 : 0.0); g += texture2D(uTex, cover(q + o)).rgb; }
+        g *= 0.25;
         vec2 cp = p - uRes * 0.5;
-        vec3 ic = iris(atan(cp.x, -cp.y) / 6.28318 + sd * 0.004);
-        g = g * mix(vec3(1.0), ic, 0.6 * (1.0 - t)) + ic * 0.42 * pow(1.0 - t, 1.4);
-        g += vec3(0.55) * exp(-abs(sd + 1.6) / 1.1) * uGlass;                      // arête claire
-        g += ic * 0.35 * exp(-abs(sd + W * 0.55) / 2.5) * uGlass;                    // liseré intérieur irisé
-        float band = (1.0 - smoothstep(0.85, 1.0, t)) * uGlass;
+        vec3 ic = iris(atan(cp.x, -cp.y) / 6.28318 + t * 0.15);
+        g = mix(g, g * ic * 1.2 + ic * 0.1, 0.28);                                    // teinte irisée légère
+        g += vec3(0.6) * exp(-abs(sd + 1.2) / 0.9);                                    // arête extérieure
+        g += vec3(0.28) * exp(-abs(t - 1.0) * W / 0.8);                                // fin du verre
+        g += vec3(0.12) * (1.0 - t) * max(dot(n, normalize(vec2(-0.7, -0.7))), 0.0);   // reflet en haut à gauche
+        float band = (1.0 - smoothstep(0.97, 1.0, t)) * smoothstep(0.0, 0.25, uGlass);
         col = mix(col, g, band);
       }
     }

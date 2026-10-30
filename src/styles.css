@@ -73,12 +73,12 @@ a { color: inherit; }
 .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .edge { display: none; }
 .liquid .edge { display: block; position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: transform var(--dur-base) var(--ease-flow); }
-.liquid .edge--top { top: 0; height: 96px; backdrop-filter: url(#liquid-top); }
-.liquid .edge--bottom { bottom: 0; height: 72px; backdrop-filter: url(#liquid-bottom); }
+.liquid .edge--top { top: 0; height: 140px; backdrop-filter: url(#liquid-top); }
+.liquid .edge--bottom { bottom: 0; height: 110px; backdrop-filter: url(#liquid-bottom); }
 .liquid.edge-bottom-off .edge--bottom { transform: translateY(100%); }
 .liquid.fiche-open .edge { display: none; }
 .work__pin { position: relative; }
-.liquid .work__pin::before, .liquid .work__pin::after { content: ''; position: absolute; top: 0; bottom: 0; z-index: 3; width: max(var(--edge-l), 48px); pointer-events: none; }
+.liquid .work__pin::before, .liquid .work__pin::after { content: ''; position: absolute; top: 0; bottom: 0; z-index: 3; width: max(var(--edge-l), 80px); pointer-events: none; }
 .liquid .work__pin::before { left: 0; backdrop-filter: url(#liquid-left); }
 .liquid .work__pin::after { right: 0; backdrop-filter: url(#liquid-right); }
 
@@ -149,7 +149,7 @@ main, .foot { position: relative; z-index: 1; }
 .is-rail .work__track { overflow: hidden; cursor: grab; touch-action: pan-y; }
 .is-rail .work__strip { will-change: transform; }
 .work__track.is-drag { cursor: grabbing; user-select: none; }
-.work__track:focus-visible { outline-offset: -2px; }
+.work__track:focus-visible { outline: none; }
 .work__track::-webkit-scrollbar { display: none; }
 .card { flex: 0 0 auto; width: min(84vw, 46vw + 60px, (100svh - 380px) * 1.6); scroll-snap-align: start; display: grid; gap: 22px; align-content: start; }
 .card__media { aspect-ratio: 16 / 10; border-radius: 26px; background: var(--card-bg); }
@@ -186,8 +186,10 @@ main, .foot { position: relative; z-index: 1; }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
 .work--research { padding-top: var(--sp-8); }
-.card__media--text { display: grid; place-items: center; background: var(--card-bg); }
-.card__media--text .disp { font-size: clamp(2rem, 4vw, 3.6rem); color: var(--c-grey-text); }
+.card__media--text, .has-gl .card__media--text { display: grid; place-items: center;
+  background: radial-gradient(120% 90% at 15% 10%, rgb(255 151 240 / 0.34), transparent 60%), radial-gradient(90% 80% at 85% 20%, rgb(153 193 221 / 0.34), transparent 60%),
+    radial-gradient(110% 90% at 70% 100%, rgb(152 226 180 / 0.3), transparent 60%), radial-gradient(90% 80% at 10% 95%, rgb(218 155 194 / 0.3), transparent 60%), var(--card-bg); }
+.card__media--text .disp { font-size: clamp(2rem, 4vw, 3.6rem); color: #fff; }
 
 /* 5. contact, pied de page */
 .contact { padding-block: var(--sp-9); display: grid; justify-items: start; gap: 26px; }
@@ -206,8 +208,31 @@ main, .foot { position: relative; z-index: 1; }
 /* fiches projet : ouvertes par l'ancre (:target), sans JavaScript ; le script ajoute focus, Échap et le défilement */
 .fiche { position: fixed; inset: 0; z-index: 50; background: var(--c-black-deep); overflow-y: auto; overscroll-behavior: contain; display: none; scrollbar-width: none; }
 .fiche::-webkit-scrollbar { display: none; }
-.fiche:target, .fiche.is-open { display: block; animation: fiche-in var(--dur-base) var(--ease-flow); }
-@keyframes fiche-in { from { opacity: 0; transform: translateX(40px); } }
+/* transitions des fiches : un rideau entre par la droite, puis le contenu arrive en séquence ;
+   d'un projet à l'autre, l'ancien contenu glisse à gauche sous le nouveau rideau ; à la fermeture, le rideau se retire */
+.fiche:target, .fiche.is-leaving { display: block; }
+.fiche:target { animation: curtain-in 0.95s var(--ease-flow) both; }
+.fiche:target .fiche__head > *, .fiche:target .fiche__col, .fiche:target .fiche__media > *, .fiche:target .fiche__next { animation: rise 0.9s var(--ease-flow) both; }
+.fiche:target .fiche__head > * { animation-delay: 0.3s; }
+.fiche:target .fiche__col { animation-delay: 0.42s; }
+.fiche:target .fiche__col + .fiche__col { animation-delay: 0.5s; }
+.fiche:target .fiche__media > :nth-child(1) { animation-delay: 0.5s; }
+.fiche:target .fiche__media > :nth-child(2) { animation-delay: 0.58s; }
+.fiche:target .fiche__media > :nth-child(3) { animation-delay: 0.66s; }
+.fiche:target .fiche__media > :nth-child(n + 4) { animation-delay: 0.74s; }
+.fiche:target .fiche__next { animation-delay: 0.8s; }
+.fiche.is-under { z-index: 49; pointer-events: none; }
+.fiche.is-under .fiche__head, .fiche.is-under .fiche__row { animation: slide-away 0.6s var(--ease-in-out) forwards; }
+.fiche.is-closing { z-index: 51; pointer-events: none; animation: curtain-out 0.75s var(--ease-in-out) forwards; }
+.fiche.is-closing .fiche__head, .fiche.is-closing .fiche__row { animation: slide-away 0.5s var(--ease-in-out) forwards; }
+@keyframes curtain-in { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+@keyframes curtain-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+@keyframes rise { from { opacity: 0; transform: translateX(56px); } }
+@keyframes slide-away { to { opacity: 0; transform: translateX(-64px); } }
+@media (prefers-reduced-motion: reduce) {
+  .fiche:target, .fiche:target *, .fiche.is-under *, .fiche.is-closing, .fiche.is-closing * { animation: none !important; }
+  .fiche.is-leaving { display: none; }
+}
 /* en-tête : catégorie, titre et Fermer restent visibles, comme la barre de menu */
 .fiche__head { position: sticky; top: 0; z-index: 3; display: flex; justify-content: space-between; align-items: end; gap: 20px; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 18px; background: linear-gradient(rgb(var(--bg-rgb) / 0.96) 70%, rgb(var(--bg-rgb) / 0)); }
 .fiche__head > div { display: grid; gap: 8px; min-width: 0; }
