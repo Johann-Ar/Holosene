@@ -126,7 +126,7 @@ void main() {
   float wT = 1.0 - smoothstep(0.0, 85.0, sc.y), wB = 1.0 - smoothstep(0.0, 65.0, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 55.0, p.x); wR = smoothstep(uClip.y - 55.0, uClip.y, p.x); }
-  vec2 suck = vec2(0.0);   // aspiration désactivée : le verre liquide SVG s'en charge (évite le cumul)
+  vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
   vec2 hp = p;
@@ -158,12 +158,10 @@ void main() {
       vec2 e = vec2(1.0, 0.0);
       vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy) + sdInner(p + e.xy, W) - sdInner(p - e.xy, W),
                               sdCard(p + e.yx) - sdCard(p - e.yx) + sdInner(p + e.yx, W) - sdInner(p - e.yx, W)) + 1e-5);
-      float shade = 1.0 - 0.3 * exp(-abs(di) / 10.0);                     // ombre douce de part et d'autre du bord intérieur, continue
-      col *= shade;
       if (t < 1.0) {
         float s1 = 1.0 - t;
         float bend = W * 0.85 * s1 * s1;              // réfraction : on lit l'image plus à l'intérieur
-        float sp = 0.06 + 0.1 * uGlass;
+        float sp = 0.16 * uGlass;   // séparation des couleurs : seulement au survol
         vec4 hr = halftoneS(p, suck - n * bend * (1.0 + sp)), hg = halftoneS(p, suck - n * bend), hb = halftoneS(p, suck - n * bend * (1.0 - sp));
         vec3 g = vec3(hr.r, hg.g, hb.b) + vec3(uCardBg) * (1.0 - hg.a);
         g = withLens(p - n * bend * 0.7, g);                                         // la lentille se voit à travers le verre, déviée
@@ -172,8 +170,7 @@ void main() {
         vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
         vec3 tint = mix(vec3(1.0), ic, uGlass);
         g = g * mix(vec3(1.0), tint, 0.75 * s1) + tint * 0.1 * s1;
-        g *= 0.62 + 0.38 * smoothstep(0.0, 0.9, t);                                   // le verre assombrit l'image (visible aussi sur le clair)
-        g *= shade;
+        g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);                                   // le verre assombrit l'image (visible aussi sur le clair)
         // lumière spéculaire selon l'orientation du bord
         vec2 L = normalize(vec2(-0.65, -0.76));
         float facing = dot(n, L);

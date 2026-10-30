@@ -22,8 +22,8 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
   location.replace('en/' + location.hash)
 }
 
-/* Verre liquide sur les bords : seulement sur Chromium (filtre SVG en arrière-plan) et sans réduction des animations. */
-if (navigator.userAgentData?.brands?.some((b) => /Chromium/.test(b.brand)) && !reduced) root.classList.add('liquid')
+/* Aspiration des images aux bords de l'écran (WebGL), sauf si l'utilisateur réduit les animations. */
+if (!reduced) root.classList.add('liquid')
 
 /* Contact : copier l'adresse. */
 document.querySelectorAll('.copy').forEach((b) => {
@@ -256,13 +256,15 @@ function scrollEffects() {
   for (const b of wordBlocks) {
     const r = b.el.getBoundingClientRect()
     const p = Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (r.height + vh * 0.25)))
-    // mots allumés ; le mot en cours d'apparition se remplit de gauche à droite, son front est irisé
-    const x = p * b.words.length, on = Math.floor(x), f = x - on
+    // mots allumés ; le mot en cours d'apparition se remplit de gauche à droite, son front est irisé.
+    // Mis à jour à chaque image pour que l'état suive exactement le défilement, dans les deux sens.
+    const x = p * b.words.length, on = Math.min(b.words.length, Math.floor(x)), f = x - on
     if (on !== b.on) {
       b.words.forEach((w, i) => { w.classList.toggle('on', i < on); w.classList.toggle('lead', i === on) })
       b.on = on
     }
-    b.words[on]?.style.setProperty('--f', f.toFixed(3))
+    const lead = b.words[on]
+    if (lead) { const v = f.toFixed(3); if (lead.dataset.f !== v) { lead.dataset.f = v; lead.style.setProperty('--f', v) } }
   }
 }
 if (reduced) { word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
