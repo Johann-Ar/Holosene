@@ -126,7 +126,7 @@ void main() {
   float wT = 1.0 - smoothstep(0.0, 85.0, sc.y), wB = 1.0 - smoothstep(0.0, 65.0, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 55.0, p.x); wR = smoothstep(uClip.y - 55.0, uClip.y, p.x); }
-  vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;
+  vec2 suck = vec2(0.0);   // pas d'aspiration : le verre liquide SVG des bords s'en charge
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
   vec2 hp = p;
