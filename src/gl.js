@@ -83,17 +83,13 @@ void main() {
   p.y = uRes.y - p.y;
   float aa = 0.9 / uDpr;
 
-  // verre liquide : près des bords de l'écran (haut, bas) et de la piste (gauche, droite), l'image est déviée
-  // par un champ d'ondes lisse, de plus en plus fort vers le bord ; calcul par pixel, net à toute résolution
+  // verre liquide : près des bords de l'écran (haut, bas) et de la piste (gauche, droite), l'image est aspirée vers
+  // l'intérieur (on lit l'image plus loin du bord). La forme de la vignette ne bouge pas : rien ne sort du cadre.
   vec2 sc = uScr.xy + p;
-  float wy = max(1.0 - smoothstep(0.0, 150.0, sc.y), 1.0 - smoothstep(0.0, 120.0, uScr.w - sc.y));
-  float wx = uClip.z > 0.0 ? max(1.0 - smoothstep(uClip.x, uClip.x + 90.0, p.x), smoothstep(uClip.y - 90.0, uClip.y, p.x)) : 0.0;
-  float w = pow(max(wy, wx), 1.7);
-  if (w > 0.0) {
-    vec2 q = sc * vec2(0.006, 0.012) + vec2(uTime * 0.05, 0.0);
-    vec2 dv = vec2(vnoise(q) - 0.5, vnoise(q + 17.3) - 0.5);
-    p += dv * 70.0 * w;
-  }
+  float wT = 1.0 - smoothstep(0.0, 170.0, sc.y), wB = 1.0 - smoothstep(0.0, 130.0, uScr.w - sc.y);
+  float wL = 0.0, wR = 0.0;
+  if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 110.0, p.x); wR = smoothstep(uClip.y - 110.0, uClip.y, p.x); }
+  vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
   vec2 hp = p;
@@ -102,7 +98,7 @@ void main() {
     float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.22)) * step(uLensO, dl);   // très forte sur la lisière, décroissance exponentielle
     hp = p - lq / max(dl, 1.0) * g * uCell * 1.6;
   }
-  vec4 h = halftone(hp);
+  vec4 h = halftoneS(hp, suck);
   if (uLens.z > 0.5) { float dl = length(p - uLens.xy); float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.18)) * step(uLensO, dl); h *= 1.0 + 0.35 * g; }
   vec3 col = h.rgb; float a = h.a;
   float sd = 0.0;
@@ -148,18 +144,20 @@ void main() {
       float t = clamp(-sd / W, 0.0, 1.0);                  // 0 à l'arête, 1 à la fin du verre
       vec2 e = vec2(1.0, 0.0);
       vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy), sdCard(p + e.yx) - sdCard(p - e.yx)) + 1e-5);
-      col *= 1.0 - 0.28 * exp(-max(-sd - W, 0.0) / 10.0) * step(W, -sd);   // ombre intérieure, juste après le verre
+      col *= 1.0 - 0.4 * exp(-max(-sd - W, 0.0) / 9.0) * step(W, -sd);   // ombre intérieure, juste après le verre
       if (t < 1.0) {
         float s1 = 1.0 - t;
         float bend = W * 0.85 * s1 * s1;              // réfraction : on lit l'image plus à l'intérieur
         float sp = 0.06 + 0.1 * uGlass;
-        vec4 hr = halftoneS(p, -n * bend * (1.0 + sp)), hg = halftoneS(p, -n * bend), hb = halftoneS(p, -n * bend * (1.0 - sp));
+        vec4 hr = halftoneS(p, suck - n * bend * (1.0 + sp)), hg = halftoneS(p, suck - n * bend), hb = halftoneS(p, suck - n * bend * (1.0 - sp));
         vec3 g = vec3(hr.r, hg.g, hb.b) + vec3(uCardBg) * (1.0 - hg.a);
         // irisé au survol : suite de couleurs répétée le long du bord
         vec2 cp = p - uRes * 0.5;
         vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
         vec3 tint = mix(vec3(1.0), ic, uGlass);
         g = g * mix(vec3(1.0), tint, 0.75 * s1) + tint * 0.1 * s1;
+        g *= 0.62 + 0.38 * smoothstep(0.0, 0.9, t);                                   // le verre assombrit l'image (visible aussi sur le clair)
+        g *= 1.0 - 0.55 * exp(-abs(-sd - W) / 2.0);                                   // fine ligne sombre où le verre s'arrête
         // lumière spéculaire selon l'orientation du bord
         vec2 L = normalize(vec2(-0.65, -0.76));
         float facing = dot(n, L);

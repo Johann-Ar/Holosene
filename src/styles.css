@@ -67,8 +67,8 @@ a { color: inherit; }
 
 /* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
 .edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
-.edge--top { top: 0; height: 76px; background: linear-gradient(#000 15%, transparent); }
-.edge--bottom { bottom: 0; height: 56px; background: linear-gradient(transparent, #000 90%); }
+.edge--top { top: 0; height: 120px; background: linear-gradient(rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
+.edge--bottom { bottom: 0; height: 90px; background: linear-gradient(0deg, rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
 .edge-bottom-off .edge--bottom { opacity: 0; }
 .fiche-open .edge { display: none; }
 .work__pin { position: relative; }

@@ -123,7 +123,7 @@ export function render(lang) {
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
   <a href="#top" class="brand" aria-label="Holosene">
-    <img class="brand__mark" src="${root}media/monogram-iris.svg" alt="Holosene" width="816" height="1000">
+    <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
   </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#studio">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
