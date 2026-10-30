@@ -120,11 +120,6 @@ export function render(lang) {
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
-<svg class="defs" aria-hidden="true" focusable="false"><filter id="liquid" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-  <feTurbulence type="fractalNoise" baseFrequency="0.008 0.022" numOctaves="2" seed="7" result="n"/>
-  <feDisplacementMap in="SourceGraphic" in2="n" scale="34" xChannelSelector="R" yChannelSelector="G"/>
-</filter></svg>
-<div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
   <a href="#top" class="brand" aria-label="Holosene">
     <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">

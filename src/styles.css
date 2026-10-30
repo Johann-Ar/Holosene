@@ -67,17 +67,7 @@ a { color: inherit; }
 .btn--light:hover::before { opacity: 1; }
 @keyframes chroma { from { text-shadow: -0.04em 0 0.1em rgb(255 151 240 / 0.45), 0.04em 0 0.1em rgb(152 226 180 / 0.45); } to { text-shadow: 0 0 0 rgb(255 151 240 / 0), 0 0 0 rgb(152 226 180 / 0); } }
 
-/* bords de l'écran et des pistes : fondu « verre liquide » qui déforme ce qui passe dessous
-   (déformation : navigateurs Chromium ; ailleurs, simple flou) */
-.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; backdrop-filter: blur(3px); backdrop-filter: url(#liquid) blur(1.2px); }
-.edge--top { top: 0; height: 120px; -webkit-mask: linear-gradient(#000 35%, transparent); mask: linear-gradient(#000 35%, transparent); }
-.edge--bottom { bottom: 0; height: 90px; -webkit-mask: linear-gradient(transparent, #000 75%); mask: linear-gradient(transparent, #000 75%); }
 .work__pin { position: relative; }
-.work__pin::before, .work__pin::after { content: ''; position: absolute; top: 0; bottom: 0; z-index: 3; width: max(var(--edge-l), 40px); pointer-events: none; backdrop-filter: blur(3px); backdrop-filter: url(#liquid) blur(1.2px); }
-.work__pin::before { left: 0; -webkit-mask: linear-gradient(90deg, #000 30%, transparent); mask: linear-gradient(90deg, #000 30%, transparent); }
-.work__pin::after { right: 0; -webkit-mask: linear-gradient(270deg, #000 30%, transparent); mask: linear-gradient(270deg, #000 30%, transparent); }
-.fiche-open .edge { display: none; }
 
 /* toile WebGL : fixe, derrière tout le contenu ; les vues [data-gl] y sont dessinées à leur place */
 .gl-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
