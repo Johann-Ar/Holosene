@@ -4,7 +4,7 @@
  * #p-<slug> (CSS :target), le JavaScript ajoute focus, Échap et piégeage du focus.
  */
 import { readFileSync } from 'node:fs'
-import { site, ui, projects, lab, studio } from './content.js'
+import { site, ui, projects, research, studio } from './content.js'
 
 // logotype en ligne (À propos) : le tracé irisé se dessine, puis le blanc se remplit ; ses bords se fondent dans une suite
 // répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir.
@@ -92,6 +92,7 @@ export function render(lang) {
   </section>`
   }
 
+  const selected = projects.filter((p) => !p.research)
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
@@ -106,7 +107,7 @@ export function render(lang) {
     <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
   </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
-    <a href="#projets">${esc(t(ui.projects))}</a><a href="#lab">${esc(t(ui.lab))}</a><a href="#studio">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
+    <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#studio">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
     <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" lang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}">${lang === 'fr' ? 'EN' : 'FR'}</a>
   </nav>
 </header>
@@ -135,25 +136,34 @@ export function render(lang) {
   <section class="work" id="projets" aria-labelledby="proj-t">
     <div class="row wrap">
       <h2 class="lbl" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
-      <p class="big disp work__index" data-words>${projects.map((p) => `<a href="#p-${p.slug}">${words(p.title)}</a>`).join('<span class="w">,</span> ')}</p>
+      <p class="big disp work__index" data-words>${selected.map((p) => `<a href="#p-${p.slug}">${words(p.title)}</a>`).join('<span class="w">,</span> ')}</p>
     </div>
     <div class="work__pin">
-      <div class="work__track wrap" data-clip tabindex="0" aria-label="${lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll'}">${projects.map(card).join('')}</div>
+      <div class="work__track wrap" data-clip tabindex="0" aria-label="${lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll'}">${selected.map(card).join('')}</div>
       <div class="work__bar wrap">
-        <span class="lbl work__count" aria-hidden="true">01 / ${n2(projects.length - 1)}</span><span class="work__line" aria-hidden="true"><i></i></span>
+        <span class="lbl work__count" aria-hidden="true">01 / ${n2(selected.length - 1)}</span><span class="work__line" aria-hidden="true"><i></i></span>
         <button class="work__nav" type="button" data-dir="-1" aria-label="${lang === 'fr' ? 'Projet précédent' : 'Previous project'}">←</button><button class="work__nav" type="button" data-dir="1" aria-label="${lang === 'fr' ? 'Projet suivant' : 'Next project'}">→</button>
       </div>
     </div>
   </section>
 
-  <section class="lab wrap" id="lab" aria-labelledby="lab-t">
-    <div class="lab__intro">
-      <p class="lbl" data-reveal>${esc(t(ui.lab))} · ${lang === 'fr' ? 'relevé n° 01' : 'record no. 01'}</p>
-      <h2 class="disp" id="lab-t"><span class="line" data-reveal="line"><span>${esc(t(lab.title))}</span></span></h2>
-      <div data-reveal style="--d:120ms">${txt(lab.memoire)}${txt(lab.releve)}</div>
+  <section class="research" id="recherche" aria-labelledby="research-t">
+    <div class="row wrap">
+      <h2 class="lbl" id="research-t">${esc(t(ui.research))}</h2>
+      <p class="big disp" data-words>${words(t(research.intro))}</p>
     </div>
-    <figure class="lab__win" data-reveal="clip"><img src="${m(lab.image)}" alt="${lang === 'fr' ? 'Essai de 4D Gaussian splatting sur le tournage de 4Dérives' : '4D Gaussian splatting test on the 4Dérives footage'}" loading="lazy"></figure>
-    <dl class="lab__data">${lab.data.map(([k, v], i) => `<div data-reveal style="--d:${i * 80}ms"><dt class="lbl">${esc(t(k))}</dt><dd>${esc(t(v))}</dd></div>`).join('')}</dl>
+    <ol class="rlist wrap">${research.items.map((r) => {
+      const tag = r.href ? 'a' : 'div'
+      return `
+      <li class="ritem${r.todo ? ' todo' : ''}" data-reveal>
+        <${tag} class="ritem__in"${r.href ? ` href="${r.href}"` : ''}>
+          <span class="lbl ritem__kind">${esc(t(r.kind))}${r.when ? ` · ${esc(t(r.when))}` : ''}</span>
+          <span class="ritem__body"><span class="disp ritem__title">${esc(t(r.title))}</span><span class="ritem__text">${esc(t(r.text))}</span>${r.more ? `<span class="ritem__text todo">${esc(t(r.more))}</span>` : ''}</span>
+          ${r.image ? `<span class="ritem__pic"><img src="${m(r.image)}" alt="${esc(t(r.alt))}" loading="lazy" decoding="async"></span>` : ''}
+        </${tag}>
+      </li>`
+    }).join('')}
+    </ol>
   </section>
 
   <section class="contact wrap" id="contact" aria-labelledby="contact-t">

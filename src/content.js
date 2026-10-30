@@ -29,7 +29,7 @@ export const site = {
 
 export const ui = {
   projects: T('Projets', 'Work'),
-  lab: T('Lab', 'Lab'),
+  research: T('Recherche', 'Research'),
   studio: T('À propos', 'About'),
   workHint: T('Faites défiler', 'Scroll'),
   contact: T('Contact', 'Contact'),
@@ -179,6 +179,7 @@ export const projects = [
   },
   {
     slug: 'mondes-immerges',
+    research: true, // présenté dans Recherche, pas dans Projets choisis
     title: 'Mondes Immergés',
     year: '2024-25',
     milieu: T('Recherche', 'Research'),
@@ -215,22 +216,38 @@ export const projects = [
   },
 ]
 
-export const lab = {
-  title: T('Essais 4DGS', '4DGS tests'),
-  memoire: T(
-    'Mémoire en cours : la reconstruction volumétrique du réel capturé (Gaussian splatting 3D et 4D) et la frontière entre captation, reconstruction et génération par IA.',
-    'Thesis in progress: the volumetric reconstruction of captured reality (3D and 4D Gaussian splatting) and the line between capture, reconstruction and AI generation.',
+/** Recherche : le profil de chercheur, au-delà des projets. Uniquement des éléments fournis par Johann. */
+export const research = {
+  intro: T(
+    'Mon mémoire porte sur la reconstruction volumétrique du réel capturé (Gaussian splatting 3D et 4D) et sur la frontière entre captation, reconstruction et génération par IA.',
+    'My thesis looks at the volumetric reconstruction of captured reality (3D and 4D Gaussian splatting) and at the line between capture, reconstruction and AI generation.',
   ),
-  releve: T(
-    'Premier relevé : les essais en 4D Gaussian splatting de 4Dérives, qui prolongent l’espace hors du cadre.',
-    'First record: the 4D Gaussian splatting tests from 4Dérives, which extend the space beyond the frame.',
-  ),
-  image: '4derives/073.webp',
-  data: [
-    [T('Source', 'Source'), T('Tournage 4Dérives', '4Dérives footage')],
-    [T('Outil', 'Tool'), T('Luma AI', 'Luma AI')],
-    [T('Technique', 'Technique'), T('4D Gaussian splatting', '4D Gaussian splatting')],
-    [T('Constat', 'Finding'), T('Montre les limites des outils accessibles aujourd’hui', 'Shows the limits of today’s accessible tools')],
+  items: [
+    {
+      kind: T('Mémoire de master', 'Master’s thesis'), when: T('En cours', 'In progress'),
+      title: T('Reconstruction volumétrique du réel capturé', 'Volumetric reconstruction of captured reality'),
+      text: T('Gaussian splatting 3D et 4D ; ce qui sépare captation, reconstruction et génération par IA.', '3D and 4D Gaussian splatting; what separates capture, reconstruction and AI generation.'),
+      more: TODO('titre du mémoire, direction, échéance', 'thesis title, supervisor, deadline'),
+    },
+    {
+      kind: T('Relevé', 'Record'), when: '2025-26',
+      title: T('Essais 4DGS', '4DGS tests'),
+      text: T('Les essais en 4D Gaussian splatting (Luma AI) tirés du tournage de 4Dérives, qui prolongent l’espace hors du cadre. Ils montrent les limites des outils accessibles aujourd’hui.', 'The 4D Gaussian splatting tests (Luma AI) drawn from the 4Dérives footage, which extend the space beyond the frame. They show the limits of today’s accessible tools.'),
+      image: '4derives/073.webp', alt: T('Essai de 4D Gaussian splatting sur le tournage de 4Dérives', '4D Gaussian splatting test on the 4Dérives footage'),
+      href: '#p-4derives',
+    },
+    {
+      kind: T('Article de recherche', 'Research paper'), when: '2024-25',
+      title: T('Mondes Immergés', 'Mondes Immergés'),
+      text: T('Comment le design immersif peut-il rendre sensibles des milieux aquatiques qui se dégradent ? Article édité pendant le DNMADe.', 'How can immersive design make damaged aquatic environments felt? A paper published during my design degree.'),
+      image: 'mondes-immerges/011.webp', alt: T('Couverture du livre Mondes Immergés', 'Cover of Mondes Immergés'),
+      href: '#p-mondes-immerges',
+    },
+    {
+      todo: true,
+      kind: TODO('autre recherche personnelle (texte, expérimentation, communication…)', 'other personal research'), when: '',
+      title: TODO('titre', 'title'), text: TODO('une ou deux phrases', 'one or two sentences'),
+    },
   ],
 }
 

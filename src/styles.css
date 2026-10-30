@@ -42,13 +42,13 @@ a { color: inherit; }
 .topbar__nav a { text-decoration: none; }
 .topbar__nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .topbar .lang { font: 400 var(--fs-label) var(--font-mono); letter-spacing: 0.06em; border: 1px solid rgb(255 255 255 / 0.4); border-radius: var(--radius-pill); padding: 6px 10px; }
-@media (max-width: 640px) { .topbar__nav a[href="#lab"] { display: none; } .topbar__nav { gap: 12px; font-size: 13px; } .brand__mark { height: 28px; } }
+@media (max-width: 640px) { .topbar__nav a[href="#recherche"] { display: none; } .topbar__nav { gap: 12px; font-size: 13px; } .brand__mark { height: 28px; } }
 @media (max-width: 420px) { .topbar__nav a[href="#studio"] { display: none; } }
 
 /* effets irisés de la marque
    - « blanc de l'œil » : un aplat blanc dont les bords se teintent des couleurs irisées (boutons, grands lettrages)
    - lueur fine : un léger dédoublement irisé pendant les apparitions, qui s'efface pour laisser le blanc */
-:root { --iris-l: #ff97f0; --iris-r: #98e2b4; --iris-t: #99c1dd; --iris-b: #da9bc2; }
+:root { --iris-text: repeating-linear-gradient(110deg, #e7bed7 0, #bdd7e9 0.09em, #bcecce 0.18em, #bed7ea 0.27em, #e6bfd8 0.36em, #fbbfe0 0.45em, #ffbbf5 0.54em, #febde4 0.63em, #e7bed7 0.72em); --iris-l: #ff97f0; --iris-r: #98e2b4; --iris-t: #99c1dd; --iris-b: #da9bc2; }
 .btn--light { position: relative; isolation: isolate; overflow: hidden; background: #fff; color: var(--c-black); border: 0; padding: 13px 21px; transition: transform var(--dur-base) var(--ease-flow); }
 /* bords teintés d'une suite de couleurs irisées claires, fondue vers le blanc du centre : sans contour, sans assombrir */
 .btn--light::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; opacity: 0.75; pointer-events: none;
@@ -113,7 +113,7 @@ main, .foot { position: relative; z-index: 1; }
    cœur blanc via le filtre #eye) */
 .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .work__index a:hover .w, .work__index a:focus-visible .w, .card__title a:hover, .fiche__next:hover .disp {
-  background-image: repeating-linear-gradient(110deg, #e7bed7 0, #bdd7e9 0.09em, #bcecce 0.18em, #bed7ea 0.27em, #e6bfd8 0.36em, #fbbfe0 0.45em, #ffbbf5 0.54em, #febde4 0.63em, #e7bed7 0.72em); -webkit-background-clip: text; background-clip: text; color: transparent; filter: url(#eye); }
+  background-image: var(--iris-text); -webkit-background-clip: text; background-clip: text; color: transparent; filter: url(#eye); }
 /* piste horizontale indépendante : glisser à deux doigts (pavé tactile), au doigt, à la souris ou avec les flèches ;
    bords latéraux fondus comme le haut et le bas des images */
 .work__pin { padding-block: var(--sp-7) var(--sp-8); }
@@ -138,18 +138,22 @@ main, .foot { position: relative; z-index: 1; }
 .work__line i { position: absolute; inset: 0 auto 0 0; width: calc(var(--p, 0) * 100%); background: linear-gradient(90deg, #da9bc2, #99c1dd, #98e2b4, #f99dd0, #ff97f0); box-shadow: 0 0 8px rgb(255 151 240 / 0.5); }
 @media (max-width: 760px) { .card { width: 84vw; } }
 
-/* 4. lab */
-.lab { padding-block: var(--sp-9); display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-5) 20px; align-items: start; }
-.lab__intro { grid-column: 1 / 6; display: grid; gap: 18px; }
-.lab__intro h2 { font-size: var(--fs-h1); }
-.lab__intro p:not(.lbl) { max-width: 46ch; margin-bottom: 12px; }
-.lab__win { grid-column: 7 / -1; aspect-ratio: 3 / 2; border-radius: var(--radius-l); overflow: hidden; background: var(--c-black); }
-.lab__win img { width: 100%; height: 100%; object-fit: cover; }
-.lab__data { grid-column: 7 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
-.lab__data dd { font-weight: 500; font-size: 14px; color: var(--c-white); margin-top: 4px; }
+/* 4. recherche : même gabarit que À propos, puis une liste de travaux de recherche */
+.research { padding-block: var(--sp-8) 0; display: grid; gap: var(--sp-6); }
+.rlist { list-style: none; display: grid; gap: var(--sp-5); }
+.ritem__in { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; text-decoration: none; color: inherit; }
+.ritem__kind { grid-column: 1 / 3; padding-top: 0.5em; }
+.ritem__body { grid-column: 3 / 9; display: grid; gap: 10px; }
+.ritem__title { font-size: clamp(1.6rem, 2.8vw, 2.6rem); }
+.ritem__text { max-width: 52ch; }
+.ritem__pic { grid-column: 9 / -1; aspect-ratio: 4 / 3; border-radius: var(--radius-m); overflow: hidden; background: var(--c-black); }
+.ritem__pic img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-slow) var(--ease-flow); }
+a.ritem__in:hover .ritem__pic img { transform: scale(1.04); }
+a.ritem__in:hover .ritem__title { background-image: var(--iris-text); -webkit-background-clip: text; background-clip: text; color: transparent; filter: url(#eye); }
+@media (max-width: 760px) { .ritem__in { grid-template-columns: 1fr; } .ritem__kind, .ritem__body, .ritem__pic { grid-column: 1 / -1; } }
 
 /* 5. contact, pied de page */
-.contact { padding-block: var(--sp-8) var(--sp-9); display: grid; justify-items: start; gap: 26px; }
+.contact { padding-block: var(--sp-9); display: grid; justify-items: start; gap: 26px; }
 .mail { display: block; overflow: hidden; font-size: clamp(1.3rem, 6vw, 6.2rem); text-decoration: none; overflow-wrap: anywhere; padding-bottom: 0.08em; }
 .mail > span { display: block; background: linear-gradient(90deg, #da9bc2, #99c1dd, #98e2b4, #f99dd0) 0 100% / 0 2px no-repeat; transition: background-size var(--dur-slow) var(--ease-flow); }
 .mail:hover > span { background-size: 100% 2px; }
@@ -199,9 +203,6 @@ main, .foot { position: relative; z-index: 1; }
 @media (max-width: 860px) {
   .fiche__body { grid-template-columns: 1fr; }
   .fiche__text { position: static; max-height: none; overflow: visible; }
-  .lab { grid-template-columns: 1fr; padding-block: var(--sp-8); }
-  .lab__intro, .lab__win, .lab__data { grid-column: 1 / -1; }
-  .lab__data { grid-template-columns: 1fr 1fr; }
   .contact { padding-block: var(--sp-8); }
 }
 @media (max-width: 480px) { .facts { grid-template-columns: 1fr; } .fiche__media { grid-template-columns: 1fr; } }
