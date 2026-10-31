@@ -498,8 +498,6 @@ export function createGL(canvas, { reduced }) {
   const follow = (a, b, tau, dt) => a + (b - a) * (1 - Math.exp(-dt / tau))
 
   let last = performance.now(), time = 0
-  let colorMode = 0
-  const setColorMode = (m) => { colorMode = m }
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
@@ -583,7 +581,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       if (v.text) { textFor(v, w, h); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.textTex) }
       gl.uniform1f(U.uHasText, v.text ? 1 : 0)
-      gl.uniform1f(U.uColor, v.color ? 1 : v.mark ? 0 : colorMode === 1 ? 1 : colorMode === 2 ? v.glass : 0)   // mode 2 : couleur au survol, en fondu
+      gl.uniform1f(U.uColor, v.color ? 1 : 0)
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
@@ -600,7 +598,7 @@ export function createGL(canvas, { reduced }) {
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, Math.max(colorMode === 2 ? 0.55 : 0.25, v.glass))   // léger irisé même hors survol; gl.uniform1f(GU.uBg, 0)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, 0.6)   // irisé du verre : une seule intensité, entre l'ancien repos et l'ancien survol ; pas de changement au survol
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
@@ -608,5 +606,5 @@ export function createGL(canvas, { reduced }) {
     }
   }
   document.documentElement.classList.add('has-gl')
-  return { frame, setColorMode }
+  return { frame }
 }
