@@ -449,7 +449,7 @@ export function createGL(canvas, { reduced }) {
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, colorMode === 2 ? Math.max(0.4, v.glass) : v.glass); gl.uniform1f(GU.uBg, 0)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, colorMode === 2 ? Math.max(0.55, v.glass) : v.glass); gl.uniform1f(GU.uBg, 0)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
