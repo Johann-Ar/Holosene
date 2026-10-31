@@ -59,6 +59,17 @@ vec3 iris(float t) {
 // off : décalage de la lecture de l'image seulement (la grille de points reste en place : réfraction sans traînées)
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
+  if (uHasMask > 0.5) {
+    // accueil : le monogramme en aplat (pas de trame) : S blanc, « o » irisé ; apparaît en fondu
+    vec2 d = p - uMarkXf.xy;
+    vec2 muv = d / uMarkXf.z / vec2(0.816, 1.0) + 0.5;
+    vec4 mk = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
+    float cov = smoothstep(0.35, 0.65, max(mk.r, mk.g));
+    vec2 ep = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
+    vec3 col = mix(vec3(1.0), iris(atan(ep.x, -ep.y) / 6.28318), step(mk.r, mk.g));
+    float al = cov * (mk.g > mk.r ? 1.0 : smoothstep(0.0, 1.0, uReveal));
+    return vec4(col * al, al);
+  }
   vec2 cell = floor(p / uCell);
   vec2 c = (cell + 0.5) * uCell;
   float l = lum(texture2D(uTex, cover(c + off)).rgb);
@@ -355,8 +366,8 @@ export function createGL(canvas, { reduced }) {
   // le placement, la taille et la rotation sont appliqués dans le shader (uMarkXf).
   function maskFor(v) {
     if (v.mask) return
-    const c = document.createElement('canvas'); c.width = 816; c.height = 1000
-    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 816, 1000)
+    const c = document.createElement('canvas'); c.width = 1632; c.height = 2000
+    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 1632, 2000); x.scale(2, 2)
     x.fillStyle = '#ff0000'; x.fill(new Path2D(S_PATH))
     x.fillStyle = '#00ff00'; x.fill(new Path2D(O_PATH), 'evenodd')
     v.mask = newTex(); upload(v.mask, c)

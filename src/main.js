@@ -286,8 +286,8 @@ function scrollEffects() {
 }
 if (reduced) { heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
-/* Chargeur : le « o » du logo en miniature, avec la trame du site (points entiers de 5 px, pas de 6 px).
-   Un arc à bouts arrondis tourne ; il s'assombrit vers la queue et n'est irisé qu'à son bout. */
+/* Chargeur : le « o » du logo en miniature. Un arc lisse à bout arrondi tourne ; il s'éteint vers la queue et n'est
+   irisé qu'à son bout ; en fin de chargement, il se referme en « o » irisé. */
 const spin = document.querySelector('.loader__spin')
 let finishLoader = (done) => done()
 if (spin) {
@@ -308,27 +308,28 @@ if (spin) {
     const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
     const ARC = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe
     const head = (t / 1000) * TAU * 0.9
-    for (let gy = STEP / 2; gy < S; gy += STEP) for (let gx = STEP / 2; gx < S; gx += STEP) {
-      const dx = gx - S / 2, dy = gy - S / 2
-      let a = Math.atan2(dx, -dy) - head; a = ((a % TAU) + TAU * 2) % TAU
-      const back = TAU - a
-      const along = Math.min(back, ARC)
-      const full = fe > 0.999
-      if (!full && back > ARC + half / mid && a > half / mid) continue
-      const ang = head - along
-      const px = S / 2 + Math.sin(ang) * mid, py = S / 2 - Math.cos(ang) * mid
-      const onArc = full || (back <= ARC && a > 0.001) ? Math.abs(Math.hypot(dx, dy) - mid) : Math.hypot(gx - px, gy - py)
-      const capHead = Math.hypot(gx - (S / 2 + Math.sin(head) * mid), gy - (S / 2 - Math.cos(head) * mid))
-      if (Math.min(onArc, full ? 1e9 : capHead) > half) continue
-      const k = 1 - Math.min(1, back > ARC ? 1 : back / ARC)
-      const v = Math.round(255 * Math.pow(Math.min(1, k / 0.72), 1.3))
-      const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))   // irisé sur le dernier quart de l'arc
-      const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
-      const ic = IR[i].map((c, j) => c + (IR[i + 1][j] - c) * w)
+    // arc lisse (sans trame) : il s'éteint vers la queue, irisé au bout ; en fin de chargement, il devient le « o »
+    const N = 140
+    x.lineWidth = half * 2; x.lineCap = 'butt'
+    for (let i = 0; i < N; i++) {
+      const k0 = i / N, k1 = (i + 1.4) / N
+      const a0 = head - ARC * (1 - k0), a1 = Math.min(head, head - ARC * (1 - k1))
+      const k = (i + 0.5) / N
+      const v = 255 * Math.pow(Math.min(1, k / 0.72), 1.3)
+      const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))
+      const f = u * (IR.length - 1), j = Math.min(IR.length - 2, Math.floor(f)), w = f - j
+      const ic = IR[j].map((c, n) => c + (IR[j + 1][n] - c) * w)
       let col = ic.map((c) => v + (c - v) * Math.min(1, u * 2.2))
-      const lc = wheel(Math.atan2(dx, -dy) / TAU)                   // en fin de chargement : les couleurs du « o »
-      col = col.map((c, j) => Math.round(c + (lc[j] - c) * fe))
-      x.fillStyle = `rgb(${col})`; x.beginPath(); x.arc(gx, gy, 2.5, 0, TAU); x.fill()
+      const lc = wheel((((a0 + a1) / 2) / TAU))
+      col = col.map((c, n) => Math.round(c + (lc[n] - c) * fe))
+      const al = Math.min(1, k * 3 + fe)
+      x.strokeStyle = `rgba(${col},${al})`
+      x.beginPath(); x.arc(S / 2, S / 2, mid, a0 - Math.PI / 2, a1 - Math.PI / 2); x.stroke()
+    }
+    // bout arrondi
+    if (fe < 0.999) {
+      const hc = IR[IR.length - 1].map((c, n) => Math.round(c + (wheel(head / TAU)[n] - c) * fe))
+      x.fillStyle = `rgb(${hc})`; x.beginPath(); x.arc(S / 2 + Math.sin(head) * mid, S / 2 - Math.cos(head) * mid, half, 0, TAU); x.fill()
     }
     if (fin >= 1 && onDone) { const d = onDone; onDone = null; d() }
     requestAnimationFrame(draw)
