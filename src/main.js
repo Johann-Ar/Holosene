@@ -348,7 +348,7 @@ if (spin) {
       const [dq, , , kq] = shape(gx, gy)
       const dotR = dq > 0 ? 2.5 : 0
       const dotA = Math.min(1, Math.max(0, (dotR - Math.hypot(qx - gx, qy - gy)) * dpr + 0.5))
-      const dcol = colorAt(kq, gx, gy).map((c) => c + (0.95 - c) * fe)   // en fin de chargement : points blancs, comme le « o » du logo
+      const dcol = colorAt(kq, gx, gy)   // en fin de chargement : entièrement irisé, comme le « o » du logo
       // verre du bord : teinte (gris clair, irisée vers le bout), arête claire, reflets
       const tint = colorAt(Math.max(k, 0.0001), px, py).map((c, n) => 0.82 + (c - 0.82) * Math.min(1, Math.max(0, (k - 0.72) / 0.28) * 2 + fe))
       const facing = nx * L[0] + ny * L[1]

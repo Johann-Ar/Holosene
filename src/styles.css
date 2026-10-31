@@ -84,8 +84,12 @@ a { color: inherit; }
 .work__pin { position: relative; }
 
 /* toile WebGL : fixe, derrière tout le contenu ; les vues [data-gl] y sont dessinées à leur place */
+.bg-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
+/* la scène d'accueil passe sous la toile WebGL : le logo est dessiné devant le mot HOLO / SENE */
+.hero__pin { z-index: -1; }
 .gl-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-main, .foot { position: relative; z-index: 1; }
+main { position: relative; }   /* pas de contexte d'empilement : le mot de l'accueil peut passer sous le logo WebGL */
+.foot, main > section:not(.hero) { position: relative; z-index: 1; }
 [data-gl] { position: relative; overflow: hidden; display: block; }
 [data-gl] > img, [data-gl] > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity var(--dur-slow); }
 .has-gl [data-gl] > img, .has-gl [data-gl] > video { opacity: 0; }
@@ -133,12 +137,12 @@ main, .foot { position: relative; z-index: 1; }
 .hero__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
 /* accueil : le logotype sur toute la largeur, fait de points (la rivière) ; ses deux « o » sont l'œil irisé du monogramme.
    Positions partagées avec le WebGL (wordBox dans gl.js) : marges --edge, centre vertical à 42 % (38 % sur mobile). */
-.hero__copy { position: absolute; left: var(--edge-l); top: 50%; transform: translateY(-50%); display: grid; justify-items: start; gap: clamp(18px, 3svh, 32px); }
-/* HOLO au-dessus de SENE, sur le bord gauche, même hauteur de lettres */
-.hero__word { display: grid; justify-items: start; gap: 0; line-height: 0; }
-.hero__word .studio__word { width: auto; height: min(17svh, 10.5vw); }
-.hero__line { max-width: 40ch; text-align: left !important; font-size: clamp(0.85rem, 1.05vw, 1rem); line-height: 1.5; }
-@media (max-width: 760px) { .hero__copy { top: auto; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: none; right: var(--edge-r); } .hero__word .studio__word { height: min(11svh, 20vw); } }
+.hero__copy { position: absolute; inset: 0; pointer-events: none; }
+/* HOLO / SENE en grand, centrés, sous le logo (qui est dessiné devant) ; la présentation centrée en bas, devant */
+.hero__word { position: absolute; left: 0; right: 0; top: 46%; transform: translateY(-50%); display: grid; justify-items: center; gap: 0; line-height: 0; }
+.hero__word .studio__word { width: auto; height: min(25svh, 15vw); }
+.hero__line { position: absolute; left: 0; right: 0; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); z-index: 2; margin-inline: auto; max-width: 52ch; text-align: center !important; font-size: clamp(0.85rem, 1.05vw, 1rem); line-height: 1.5; padding-inline: var(--edge-l); }
+@media (max-width: 760px) { .hero__word { top: 44%; } .hero__word .studio__word { height: min(14svh, 26vw); } }
 .js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
 .js .hero__line .w.on { opacity: 1; }
 .about { padding-block: var(--sp-9) var(--sp-6); display: grid; justify-items: center; gap: 18px; }

@@ -113,6 +113,7 @@ export function render(lang) {
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <div class="loader" aria-hidden="true"><canvas class="loader__spin" width="96" height="96"></canvas></div>
+<canvas class="bg-canvas" aria-hidden="true"></canvas>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">

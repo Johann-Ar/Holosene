@@ -86,8 +86,15 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float gy = isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r;
     vec2 n = -normalize(vec2(gx, gy) + 1e-6);
     float dist = dd * 90.0;                                // unités
-    float W = 18.0;                                        // épaisseur du verre (unités)
+    float W = 25.0;                                        // épaisseur du verre (unités) : même rapport à la largeur du trait que sur le chargeur
     float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
+    if (!isO) {
+      // le S : blanc plein, bords irisés légers comme le logotype (suite de couleurs répétée, fondue vers le blanc)
+      vec3 edgeC = mix(iris((lp.x + lp.y * 0.5) / 460.0 * 1.6), vec3(1.0), 0.45);
+      vec3 sc = mix(edgeC, vec3(1.0), smoothstep(1.0, 12.0, dist));
+      float shapeRevS = smoothstep(0.0, 1.0, uReveal);
+      return vec4(sc * cov * shapeRevS, cov * shapeRevS);
+    }
     // réfraction (même loi que les vignettes) puis trame fixée à la forme
     vec2 q = lp - n * W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);
     float STEP = 24.0;
@@ -98,7 +105,8 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float rev = mk.g > mk.r ? 1.0 : smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
     float r = STEP * 0.42 * inShape * rev, aU = aa / upx;
     float dotA = (1.0 - smoothstep(r - aU, r + aU, length(q - c))) * clamp(r / aU, 0.0, 1.0);
-    vec3 g = vec3(0.95) * dotA;
+    vec2 pc = c - vec2(639.25, 586.8);
+    vec3 g = (mk.g > mk.r ? iris(atan(pc.x, -pc.y) / 6.28318) : vec3(0.95)) * dotA;   // « o » entièrement irisé
     // verre du bord (comme les vignettes et le chargeur)
     vec2 pe = lp - vec2(639.25, 586.8);
     vec3 tint = isO ? iris(atan(pe.x, -pe.y) / 6.28318) : vec3(0.82, 0.83, 0.88);
@@ -111,7 +119,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
     g += mix(vec3(1.0), tint, 0.5) * (spec + back);
     g += mix(vec3(1.0), tint, isO ? 0.6 : 0.2) * exp(-dpx / 1.3) * 0.5;
     float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
-    float al = max(dotA, s1 * 0.35) * cov * shapeRev;
+    float al = cov * shapeRev;   // le « o » est un disque de verre plein : entre les points, le fond sombre (comme le chargeur)
     return vec4(g * cov * shapeRev, al);
   }
   vec2 cell = floor(p / uCell);
@@ -384,13 +392,15 @@ export function createGL(canvas, { reduced }) {
   const LU = { src: gl.getUniformLocation(blitProg, 'uSrc'), size: gl.getUniformLocation(blitProg, 'uSize') }
   const bgFbo = gl.createFramebuffer(), bgTex = gl.createTexture()
   let bgW = 0, bgH = 0
+  const bgCanvas = document.querySelector('.bg-canvas')
   function ensureBg() {
-    if (bgW === canvas.width && bgH === canvas.height) return
+    if (bgW === canvas.width && bgH === canvas.height) return false
     bgW = canvas.width; bgH = canvas.height
     gl.bindTexture(gl.TEXTURE_2D, bgTex)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, bgW, bgH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
     for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
     gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, bgTex, 0); gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    return true
   }
 
   // passe « verre » et texture intermédiaire (contenu des vignettes)
@@ -463,12 +473,11 @@ export function createGL(canvas, { reduced }) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const small = w < 760
     const big = Math.min(h * 0.62, w * (small ? 0.62 : 0.8) * 1000 / 816)
-    const end = small ? Math.min(h * 0.46, w * 0.78 * 1000 / 816) : Math.min(h * 0.66, w * 0.34 * 1000 / 816)
+    // fin : centré sur le mot HOLO / SENE (dessiné derrière), au-dessus de la présentation
+    const end = small ? Math.min(h * 0.5, w * 0.8 * 1000 / 816) : Math.min(h * 0.64, w * 0.4 * 1000 / 816)
     const q = e(k(0, 0.55))
     let size = big + (end - big) * q
-    const edge = Math.max(16, Math.min(56, w * 0.04))
-    const cxEnd = small ? w / 2 + 0.04 * w : w - edge * 1.6 - 0.408 * end   // le « o » garde une marge sur le bord droit
-    let cx = w / 2 + (cxEnd - w / 2) * q, cy = h / 2 + (small ? -0.18 : 0.02) * h * q
+    let cx = w / 2, cy = h / 2 + (small ? -0.06 : -0.05) * h * q
     // intro : le « o » prend la place du chargeur (rayon extérieur 44 px, au centre), puis le monogramme s'agrandit
     const i = e(Math.min(1, intro))
     const s0 = 44 / O_R, c0 = [w / 2 - O_OFF[0] * s0, h / 2 - O_OFF[1] * s0]
@@ -515,16 +524,22 @@ export function createGL(canvas, { reduced }) {
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
-    ensureBg()
-    gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo)
-    gl.useProgram(bgProg); gl.disable(gl.BLEND)
-    gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, 12)   // fond fixe
-    gl.drawArrays(gl.TRIANGLES, 0, 3)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-    gl.useProgram(blitProg); gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, bgTex)
-    gl.uniform1i(LU.src, 4); gl.uniform2f(LU.size, canvas.width, canvas.height)
-    gl.drawArrays(gl.TRIANGLES, 0, 3)
-    gl.enable(gl.BLEND)
+    if (ensureBg()) {
+      // le fond est fixe : rendu une fois (et à chaque redimensionnement) dans la texture, que le verre du logo réfracte,
+      // puis recopié dans une toile 2D posée tout au fond de la page (le mot de l'accueil passe entre les deux)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo)
+      gl.useProgram(bgProg); gl.disable(gl.BLEND)
+      gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, 12)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      const px = new Uint8Array(bgW * bgH * 4); gl.readPixels(0, 0, bgW, bgH, gl.RGBA, gl.UNSIGNED_BYTE, px)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      bgCanvas.width = bgW; bgCanvas.height = bgH
+      const img = new ImageData(bgW, bgH)
+      for (let y = 0; y < bgH; y++) img.data.set(px.subarray((bgH - 1 - y) * bgW * 4, (bgH - y) * bgW * 4), y * bgW * 4)
+      bgCanvas.getContext('2d').putImageData(img, 0, 0)
+      gl.enable(gl.BLEND)
+    }
+    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, bgTex)
     if (document.documentElement.classList.contains('fiche-open')) {
       // fiche projet ouverte : le curseur reste toujours visible
       if (lens.hidden) { document.documentElement.classList.remove('lens-on'); lens.hidden = false }
@@ -560,7 +575,7 @@ export function createGL(canvas, { reduced }) {
       const w = b.width, h = b.height
       // apparition : les points poussent, puis rétrécissent quand la vue sort de l'écran
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
-      const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.8)))   // apparition plus tardive, disparition plus précoce
+      const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
       if (v.mark) maskFor(v)
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
