@@ -61,6 +61,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
   vec2 cell = floor(p / uCell);
   vec2 c = (cell + 0.5) * uCell;
   float l = lum(texture2D(uTex, cover(c + off)).rgb);
+  if (uHasText > 0.5) l = max(l, texture2D(uText, (c + off) / uRes).a);   // texte de la vignette : fait partie de l'image
   float m = 1.0;
   if (uHasMask > 0.5) m = texture2D(uMask, c / uRes).r;
   float edge = 1.0;
@@ -106,6 +107,7 @@ vec3 withLens(vec2 q, vec3 base) {
                      texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.988) + o)).b);
       }
       orig *= 0.25;
+      if (uHasText > 0.5) orig = mix(orig, vec3(1.0), texture2D(uText, q / uRes).a);
       vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
@@ -141,9 +143,6 @@ void main() {
   if (uLens.z > 0.5) { float dl = length(p - uLens.xy); float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.18)) * step(uLensO, dl); h *= 1.0 + 0.35 * g; }
   vec3 col = h.rgb; float a = h.a;
   col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
-
-  // texte de la vignette (« En cours ») : net, dans l'image, sous le verre
-  if (uHasText > 0.5) { float ta = texture2D(uText, vec2(p.x / uRes.x, p.y / uRes.y)).a; col = mix(col, vec3(1.0), ta); a = max(a, ta); }
 
   // accueil : le « o » du logo, en aplat irisé comme sur le monogramme
   if (uEye.z > 0.5) {
@@ -437,7 +436,7 @@ export function createGL(canvas, { reduced }) {
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, v.glass); gl.uniform1f(GU.uBg, 0)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, colorMode === 2 ? 1 : v.glass); gl.uniform1f(GU.uBg, 0)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
