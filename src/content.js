@@ -182,6 +182,7 @@ export const projects = [
   },
   {
     slug: 'mondes-immerges',
+    research: true,   // présenté seulement dans Recherche
     genre: T('Article de recherche', 'Research paper'),   // repris du portfolio
     title: 'Mondes Immergés',
     year: '2024-25',

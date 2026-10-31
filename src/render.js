@@ -104,7 +104,7 @@ export function render(lang) {
   </section>`
   }
 
-  const selected = projects
+  const selected = projects.filter((p) => !p.research)
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>

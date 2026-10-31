@@ -288,9 +288,10 @@ gl?.setColorMode(colorMode)
 
 function loop(t) {
   lenis?.raf(t)
-  gl?.frame(t)
+  // pistes et fiches d'abord, puis le WebGL : les images sont dessinées à la position finale des titres (même image)
   workFrame(t)
   ficheFrame(t)
+  gl?.frame(t)
   if (!reduced) scrollEffects()
   requestAnimationFrame(loop)
 }
