@@ -129,7 +129,7 @@ export function render(lang) {
       </div>
       <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
       <h1 id="hero-t" class="hero__word wrap"><span class="sr">Holosene · ${esc(t(site.signature))}</span>${logotype}</h1>
-      <p class="hero__line" data-hwords>${words(t(studio))}</p>
+      <p class="hero__line wrap" data-hwords>${words(t(studio))}</p>
     </div>
   </section>
 

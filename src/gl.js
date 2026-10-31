@@ -365,9 +365,9 @@ export function createGL(canvas, { reduced }) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const q = e(k(0, 0.5))
     const small = w < 760
-    const big = Math.min(h * 0.74, w * (small ? 0.7 : 0.9) * 1000 / 816), end = Math.min(h * (small ? 0.4 : 0.44), w * 0.6 * 1000 / 816)
+    const big = Math.min(h * 0.74, w * (small ? 0.7 : 0.9) * 1000 / 816), end = Math.min(h * (small ? 0.42 : 0.38), w * 0.6 * 1000 / 816)
     const size = big + (end - big) * q
-    const cy = h * (0.5 + (small ? -0.16 : -0.14) * q)
+    const cy = h * (0.5 + (small ? -0.12 : -0.2) * q)
     const rot = 0   // pas de rotation
     return [w / 2, cy, size, rot]
   }
