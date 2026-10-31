@@ -224,6 +224,9 @@ void main() {
     // la couleur n'est plus appliquée à l'image (sinon une image claire se colore sur toute l'épaisseur du verre) :
     // elle n'est portée que par la lumière du verre, d'une largeur fixe, identique sur image claire ou sombre
     float rim = exp(-abs(sd + 1.5) / 1.6);
+    // entre-deux : une bande irisée de largeur fixe (≈ 9 px depuis l'arête), même sur image claire
+    float band9 = 1.0 - smoothstep(4.0, 11.0, -sd);
+    g = mix(g, g * tint * 1.15 + tint * 0.12, band9 * 0.75 * uGlass);
     g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);       // le verre assombrit un peu (visible sur les images claires)
     vec2 L = normalize(vec2(-0.65, -0.76));
     float facing = dot(n, L);
