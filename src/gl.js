@@ -123,9 +123,9 @@ void main() {
   // verre liquide : près des bords de l'écran (haut, bas) et de la piste (gauche, droite), l'image est aspirée vers
   // l'intérieur (on lit l'image plus loin du bord). La forme de la vignette ne bouge pas : rien ne sort du cadre.
   vec2 sc = uScr.xy + p;
-  float wT = 1.0 - smoothstep(0.0, 170.0, sc.y), wB = 1.0 - smoothstep(0.0, 130.0, uScr.w - sc.y);
+  float wT = 1.0 - smoothstep(0.0, 85.0, sc.y), wB = 1.0 - smoothstep(0.0, 65.0, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
-  if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 110.0, p.x); wR = smoothstep(uClip.y - 110.0, uClip.y, p.x); }
+  if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + 55.0, p.x); wR = smoothstep(uClip.y - 55.0, uClip.y, p.x); }
   vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
