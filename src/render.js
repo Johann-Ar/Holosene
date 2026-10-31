@@ -60,9 +60,6 @@ export function render(lang) {
   const rail = (cards, label) => `
     <div class="work__pin">
       <div class="work__track wrap" data-clip tabindex="0" aria-label="${esc(label)}"><div class="work__strip">${cards.join('')}</div></div>
-      <div class="work__bar wrap">
-        <button class="work__nav" type="button" data-dir="-1" aria-label="${lang === 'fr' ? 'Précédent' : 'Previous'}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="work__nav" type="button" data-dir="1" aria-label="${lang === 'fr' ? 'Suivant' : 'Next'}"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      </div>
     </div>`
 
   // fiche projet : en-tête fixe, puis une rangée qui défile à l'horizontale (texte en colonnes, images, projet suivant)

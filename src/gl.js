@@ -223,6 +223,8 @@ void main() {
     vec3 tint = mix(vec3(1.0), ic, uGlass);
     // la couleur n'est plus appliquée à l'image (sinon une image claire se colore sur toute l'épaisseur du verre) :
     // elle n'est portée que par la lumière du verre, d'une largeur fixe, identique sur image claire ou sombre
+    // l'image sous le verre est aussi teintée, plus fort vers l'arête (décroissance rapide : reste fin sur image claire)
+    g = g * mix(vec3(1.0), tint * 1.15, 0.9 * pow(s1, 1.1)) + tint * 0.14 * s1 * uGlass;
     float rim = exp(-abs(sd + 1.5) / 1.6);
     // entre-deux : une bande irisée de largeur fixe (≈ 9 px depuis l'arête), même sur image claire
     float band9 = 1.0 - smoothstep(4.0, 11.0, -sd);
@@ -364,7 +366,12 @@ export function createGL(canvas, { reduced }) {
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
-    if (document.documentElement.classList.contains('fiche-open')) return
+    if (document.documentElement.classList.contains('fiche-open')) {
+      // fiche projet ouverte : le curseur reste toujours visible
+      if (lens.hidden) { document.documentElement.classList.remove('lens-on'); lens.hidden = false }
+      lens.s = 0
+      return
+    }
     // la lentille : visible quand le pointeur est sur une carte (pas sur l'accueil)
     const small = W < 600
     const Ro = small ? 60 : 74, Ri = Ro - (small ? 9 : 12)
