@@ -64,7 +64,12 @@ vec4 halftoneS(vec2 p, vec2 off) {
   if (uHasText > 0.5) l = max(l, texture2D(uText, (c + off) / uRes).a);   // texte de la vignette : fait partie de l'image
   float m = 1.0;
   float inWord = 0.0;
-  if (uHasMask > 0.5) { inWord = texture2D(uMask, c / uRes).r; m = mix(0.42, 1.0, inWord); }   // autour du mot : trame atténuée
+  if (uHasMask > 0.5) {
+    // accueil : pas d'image, seulement le logotype en points ; une vague lente fait respirer la taille des points
+    inWord = texture2D(uMask, c / uRes).r; m = inWord;
+    float wv = sin(c.x * 0.018 - uTime * 1.4 + sin(c.y * 0.035 + uTime * 0.6) * 1.2);
+    l = 0.62 + 0.38 * wv * wv * sign(wv);
+  }
   float edge = 1.0;
   if (uFade > 0.5) edge = smoothstep(0.0, 0.2 * uRes.y, c.y) * smoothstep(0.0, 0.2 * uRes.y, uRes.y - c.y);
   float rnd = hash(cell);
@@ -73,7 +78,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
   float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
   vec3 dc = mix(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))), min(texture2D(uTex, cover(c + off)).rgb * 1.25, 1.0), uColor);   // uColor : 0 gris, 1 couleur
-  if (uHasMask > 0.5) dc = max(dc * mix(0.4, 1.0, inWord), vec3(0.62 * inWord));   // le mot reste lisible même sur une zone sombre de l'image
+  if (uHasMask > 0.5) dc = vec3(mix(0.7, 1.0, l));
   return vec4(dc * dotA, dotA);
 }
 vec4 halftone(vec2 p) { return halftoneS(p, vec2(0.0)); }
@@ -153,7 +158,7 @@ void main() {
     if (og > 0.001) {
       vec2 oc = length(p - uEye.xy) < length(p - uEye.zw) ? uEye.xy : uEye.zw;
       vec2 ep = p - oc;
-      col = mix(col, iris(atan(ep.x, -ep.y) / 6.28318), og); a = max(a, og);
+      col = mix(col, iris(atan(ep.x, -ep.y) / 6.28318 + uTime * 0.06), og); a = max(a, og);   // les « o » tournent lentement
     }
   }
 
@@ -466,7 +471,7 @@ export function createGL(canvas, { reduced }) {
       if (v.text) { textFor(v, w, h); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.textTex) }
       gl.uniform1f(U.uHasText, v.text ? 1 : 0)
       gl.uniform1f(U.uColor, v.color ? 1 : v.mark ? 0 : colorMode === 1 ? 1 : colorMode === 2 ? v.glass : 0)   // mode 2 : couleur au survol, en fondu
-      gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced || !document.documentElement.classList.contains('liquid') ? 0 : time)
+      gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
