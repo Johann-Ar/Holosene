@@ -154,7 +154,7 @@ void main() {
   }
 
   // bords latéraux fondus de la piste (vues sans verre ; sinon la passe « verre » s'en charge)
-  if (uClip.z > 0.0 && uRadius < 0.5) { float f = smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)); col *= f; a *= f; }
+  if (uClip.z > 0.0 && uRadius < 0.5) { float f = (0.12 + 0.88 * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6)); col *= f; a *= f; }
   gl_FragColor = vec4(col, a);
 }`
 
@@ -240,7 +240,7 @@ void main() {
     col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
   }
   float a = 1.0 - smoothstep(-aa, aa, sd);
-  if (uClip.z > 0.0) a *= smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x));
+  if (uClip.z > 0.0) a *= (0.12 + 0.88 * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6));
   gl_FragColor = vec4(col * a, a);
 }`
 

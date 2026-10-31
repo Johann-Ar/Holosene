@@ -68,8 +68,8 @@ a { color: inherit; }
 
 /* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
 .edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
-.edge--top { top: 0; height: 120px; background: linear-gradient(rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
-.edge--bottom { bottom: 0; height: 120px; background: linear-gradient(0deg, rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
+.edge--top { top: 0; height: 120px; background: linear-gradient(180deg, rgb(0 0 0 / 0.880) 0%, rgb(0 0 0 / 0.698) 10%, rgb(0 0 0 / 0.539) 20%, rgb(0 0 0 / 0.402) 30%, rgb(0 0 0 / 0.286) 40%, rgb(0 0 0 / 0.192) 50%, rgb(0 0 0 / 0.117) 60%, rgb(0 0 0 / 0.062) 70%, rgb(0 0 0 / 0.026) 80%, rgb(0 0 0 / 0.006) 90%, rgb(0 0 0 / 0.000) 100%); }
+.edge--bottom { bottom: 0; height: 120px; background: linear-gradient(0deg, rgb(0 0 0 / 0.880) 0%, rgb(0 0 0 / 0.698) 10%, rgb(0 0 0 / 0.539) 20%, rgb(0 0 0 / 0.402) 30%, rgb(0 0 0 / 0.286) 40%, rgb(0 0 0 / 0.192) 50%, rgb(0 0 0 / 0.117) 60%, rgb(0 0 0 / 0.062) 70%, rgb(0 0 0 / 0.026) 80%, rgb(0 0 0 / 0.006) 90%, rgb(0 0 0 / 0.000) 100%); }
 .edge-bottom-off .edge--bottom { opacity: 0; }
 .fiche-open .edge { display: none; }
 .work__pin { position: relative; }
@@ -145,7 +145,7 @@ main, .foot { position: relative; z-index: 1; }
    bords latéraux fondus comme le haut et le bas des images */
 .work__pin { padding-block: var(--sp-7) var(--sp-8); }
 .work__track { --fade: 120px;   /* même largeur que le fondu du haut */ overflow-x: auto; scrollbar-width: none; padding-bottom: 8px;
-  -webkit-mask: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); mask: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); }
+  -webkit-mask: linear-gradient(90deg, rgb(0 0 0 / 0.12), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / 0.12)); mask: linear-gradient(90deg, rgb(0 0 0 / 0.12), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / 0.12)); }
 .work__strip { display: flex; gap: clamp(24px, 4vw, 64px); width: max-content; }
 /* avec le script : la piste est déplacée par le script (glisser, pavé tactile, flèches), en boucle */
 .is-rail .work__track { overflow: hidden; cursor: grab; touch-action: pan-y; }
