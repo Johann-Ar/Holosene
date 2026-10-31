@@ -253,15 +253,25 @@ function showCard(card) {
 }
 
 /* À propos : le logotype se trace puis se remplit ; les grands textes s'allument mot à mot au défilement. */
+const hero = document.querySelector('.hero')
+const heroWords = [...document.querySelectorAll('.hero__line .w')]
+let heroOn = -1
 const word = document.querySelector('.studio__word')
-const wordBlocks = [...document.querySelectorAll('[data-words]')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
+const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 function scrollEffects() {
   const vh = innerHeight
   // la bande du bas s'efface en haut de page (mots-clés de l'accueil) et en fin de page (pied de page)
   root.classList.toggle('edge-bottom-off', scrollY < 40 || scrollY + vh > document.documentElement.scrollHeight - 120)
+  // accueil épinglé : avancée hp (0 à 1) ; le mot se trace puis se remplit, puis la présentation s'allume
+  const hr = hero?.getBoundingClientRect()
+  const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
+  const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
+  if (heroWords.length) {
+    const on = Math.round(k(0.62, 0.92) * heroWords.length)
+    if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
+  }
   if (word) {
-    const r = word.getBoundingClientRect()
-    const p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.75)))
+    const p = k(0.32, 0.68)
     word.style.setProperty('--draw', (1 - Math.min(1, p * 1.5)).toFixed(3))
     word.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.5) / 0.5)).toFixed(3))
   }
@@ -279,7 +289,19 @@ function scrollEffects() {
     if (lead) { const v = f.toFixed(3); if (lead.dataset.f !== v) { lead.dataset.f = v; lead.style.setProperty('--f', v) } }
   }
 }
-if (reduced) { word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
+if (reduced) { heroWords.forEach((w) => w.classList.add('on')); word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
+
+/* Écran de chargement : polices, image de l'accueil, au moins 1 s ; au plus 6 s. Le défilement est bloqué pendant ce temps. */
+lenis?.stop(); scrollTo(0, 0)
+const heroImg = document.querySelector('.hero__view img')
+Promise.race([
+  Promise.all([
+    document.fonts?.ready,
+    heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
+    new Promise((r) => setTimeout(r, reduced ? 0 : 1000)),
+  ]),
+  new Promise((r) => setTimeout(r, 6000)),
+]).then(() => requestAnimationFrame(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
 
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null

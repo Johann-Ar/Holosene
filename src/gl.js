@@ -31,7 +31,8 @@ uniform float uHasText;
 uniform float uColor;   // 1 : points de la couleur de l'image (dégradé « En cours »)
 uniform vec4 uScr;      // coin haut gauche de la vue à l'écran (px), taille de l'écran (px)
 uniform float uTime;
-uniform vec4 uEye;      // accueil : centres des deux « o » du logotype (xy, zw)
+uniform vec4 uMarkXf;   // accueil : monogramme, centre (px), hauteur (px), rotation (rad)
+uniform vec4 uEye;      // inutilisé (xy, zw)
 
 vec2 cover(vec2 p) {
   float s = max(uRes.x / uImg.x, uRes.y / uImg.y);
@@ -64,9 +65,15 @@ vec4 halftoneS(vec2 p, vec2 off) {
   if (uHasText > 0.5) l = max(l, texture2D(uText, (c + off) / uRes).a);   // texte de la vignette : fait partie de l'image
   float m = 1.0;
   float inWord = 0.0;
+  float inO = 0.0;
   if (uHasMask > 0.5) {
-    // accueil : pas d'image, seulement le logotype en points ; une vague lente fait respirer la taille des points
-    inWord = texture2D(uMask, c / uRes).r; m = inWord;
+    // accueil : le monogramme entier en points (S en r, « o » en g), placé et tourné par le défilement ;
+    // une vague lente fait respirer la taille des points
+    vec2 d = c - uMarkXf.xy; float cs = cos(uMarkXf.w), sn = sin(uMarkXf.w);
+    vec2 lc = vec2(cs * d.x + sn * d.y, -sn * d.x + cs * d.y) / uMarkXf.z;
+    vec2 muv = lc / vec2(0.816, 1.0) + 0.5;
+    vec4 mk = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
+    inWord = max(mk.r, mk.g); inO = mk.g; m = inWord;
     float wv = sin(c.x * 0.018 - uTime * 1.4 + sin(c.y * 0.035 + uTime * 0.6) * 1.2);
     l = 0.62 + 0.38 * wv * wv * sign(wv);
   }
@@ -78,7 +85,15 @@ vec4 halftoneS(vec2 p, vec2 off) {
   float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
   vec3 dc = mix(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))), min(texture2D(uTex, cover(c + off)).rgb * 1.25, 1.0), uColor);   // uColor : 0 gris, 1 couleur
-  if (uHasMask > 0.5) dc = vec3(mix(0.7, 1.0, l));
+  if (uHasMask > 0.5) {
+    // le « o » : points irisés (la couleur tourne lentement) ; le S : points blancs
+    float cs = cos(uMarkXf.w), sn = sin(uMarkXf.w);
+    vec2 ol = vec2(0.23125, 0.0868) * uMarkXf.z;
+    vec2 oc = uMarkXf.xy + vec2(cs * ol.x - sn * ol.y, sn * ol.x + cs * ol.y);
+    vec2 ep = c - oc;
+    vec3 ic = iris(atan(ep.x, -ep.y) / 6.28318 - uMarkXf.w / 6.28318 + uTime * 0.05);
+    dc = mix(vec3(mix(0.7, 1.0, l)), ic * mix(0.8, 1.05, l), step(0.5, inO));
+  }
   return vec4(dc * dotA, dotA);
 }
 vec4 halftone(vec2 p) { return halftoneS(p, vec2(0.0)); }
@@ -152,15 +167,6 @@ void main() {
   vec3 col = h.rgb; float a = h.a;
   col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
 
-  // accueil : le « o » du logo, en aplat irisé comme sur le monogramme
-  if (uHasMask > 0.5) {
-    float og = texture2D(uMask, p / uRes).g * min(1.0, uReveal * 1.4);
-    if (og > 0.001) {
-      vec2 oc = length(p - uEye.xy) < length(p - uEye.zw) ? uEye.xy : uEye.zw;
-      vec2 ep = p - oc;
-      col = mix(col, iris(atan(ep.x, -ep.y) / 6.28318 + uTime * 0.06), og); a = max(a, og);   // les « o » tournent lentement
-    }
-  }
 
   // bords latéraux fondus de la piste (vues sans verre ; sinon la passe « verre » s'en charge)
   if (uClip.z > 0.0 && uRadius < 0.5) { float f = (0.12 + 0.88 * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6)); col *= f; a *= f; }
@@ -279,6 +285,10 @@ void main() {
   gl_FragColor = vec4(max(col, 0.0), 1.0);
 }`
 
+/** Monogramme (viewBox 816 × 1000) : le S et le « o ». */
+const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
+const O_PATH = 'M462.5 586.8a176.7 176.7 0 1 0 353.5 0a176.7 176.7 0 1 0 -353.5 0ZM548.4 586.8a90.8 90.8 0 1 0 181.7 0a90.8 90.8 0 1 0 -181.7 0Z'
+
 export function createGL(canvas, { reduced }) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
   if (!gl) return null
@@ -290,7 +300,7 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
@@ -331,7 +341,7 @@ export function createGL(canvas, { reduced }) {
 
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
     const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0, color: el.hasAttribute('data-color'), text: el.dataset.text || '', textTex: null, textKey: '',
-      mark: el.dataset.gl === 'word', cell: +el.dataset.cell || 7,
+      mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
       radius: +el.dataset.radius || 0, clip: el.closest('[data-clip]'), fade: el.dataset.gl === 'panel', mask: null, maskKey: '' }
     const src = v.video || el.querySelector('img')
     const done = () => { upload(v.tex, src); v.img = [src.videoWidth || src.naturalWidth, src.videoHeight || src.naturalHeight]; v.ready = v.img[0] > 0 }
@@ -342,23 +352,26 @@ export function createGL(canvas, { reduced }) {
   })
   if (!views.length) return null
 
-  // masque du logotype (r) et de ses deux « o » (g), dessiné à la taille de la vue d'accueil
-  const wordSvg = document.querySelector('.hero__word svg')
-  const wordPaths = wordSvg ? [...wordSvg.querySelectorAll('path')] : []
-  function maskFor(v, w, h) {
-    const key = `${w}x${h}`
-    if (v.maskKey === key) return
-    // position du logotype : celle du SVG de l'accueil (même mise en page que le CSS, aucune valeur dupliquée)
-    const r = wordSvg.getBoundingClientRect(), vr = v.el.getBoundingClientRect()
-    const b = { x: r.left - vr.left, y: r.top - vr.top, s: r.width / 4824, vx: 98, vy: -724 }
-    const dpr = Math.min(devicePixelRatio || 1, 2)
-    const c = document.createElement('canvas'); c.width = Math.round(w * dpr); c.height = Math.round(h * dpr)
-    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height)
-    x.setTransform(b.s * dpr, 0, 0, b.s * dpr, (b.x - b.vx * b.s) * dpr, (b.y - b.vy * b.s) * dpr)
-    wordPaths.forEach((pa, i) => { x.fillStyle = i === 1 || i === 3 ? '#ffff00' : '#ff0000'; x.fill(new Path2D(pa.getAttribute('d'))) })
-    // centres des deux « o »
-    v.oc = [1, 3].map((i) => { const bb = wordPaths[i]?.getBBox(); return bb ? [b.x + (bb.x + bb.width / 2 - b.vx) * b.s, b.y + (bb.y + bb.height / 2 - b.vy) * b.s] : [0, 0] })
-    v.mask ??= newTex(); upload(v.mask, c); v.maskKey = key
+  // masque du monogramme en espace local (816 × 1000) : le S en rouge, le « o » en vert. Dessiné une fois ;
+  // le placement, la taille et la rotation sont appliqués dans le shader (uMarkXf).
+  function maskFor(v) {
+    if (v.mask) return
+    const c = document.createElement('canvas'); c.width = 816; c.height = 1000
+    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 816, 1000)
+    x.fillStyle = '#ff0000'; x.fill(new Path2D(S_PATH))
+    x.fillStyle = '#00ff00'; x.fill(new Path2D(O_PATH), 'evenodd')
+    v.mask = newTex(); upload(v.mask, c)
+  }
+  /** Placement du monogramme selon l'avancée p (0 à 1) dans la scène d'accueil épinglée. */
+  function markXf(w, h, p, time) {
+    const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
+    const q = e(k(0, 0.5))
+    const small = w < 760
+    const big = Math.min(h * 0.74, w * (small ? 0.7 : 0.9) * 1000 / 816), end = Math.min(h * (small ? 0.42 : 0.38), w * 0.6 * 1000 / 816)
+    const size = big + (end - big) * q
+    const cy = h * (0.5 + (small ? -0.12 : -0.2) * q)
+    const rot = -0.35 * (1 - q) + (reduced ? 0 : Math.sin(time * 0.35) * 0.03) + q * 0.0
+    return [w / 2, cy, size, rot]
   }
 
   // texte net d'une vignette, redessiné à la taille exacte de la vignette et à la densité de l'écran
@@ -436,13 +449,13 @@ export function createGL(canvas, { reduced }) {
       const cr = v.clip?.getBoundingClientRect()
       if (cr && (b.right < cr.left || b.left > cr.right)) continue
       if (v.video && !v.video.paused && v.video.readyState >= 2) upload(v.tex, v.video)
-      if (!v.seen) v.seen = now
+      if (!v.seen) { if (!document.documentElement.classList.contains('is-loaded')) continue; v.seen = now }
       const w = b.width, h = b.height
       // apparition : les points poussent, puis rétrécissent quand la vue sort de l'écran
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.55)))
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
-      if (v.mark) maskFor(v, w, h)
+      if (v.mark) maskFor(v)
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
@@ -477,8 +490,7 @@ export function createGL(canvas, { reduced }) {
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 2) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
-      if (v.mark) gl.uniform4f(U.uEye, v.oc[0][0], v.oc[0][1], v.oc[1][0], v.oc[1][1])
-      else gl.uniform4f(U.uEye, 0, 0, 0, 0)
+      if (v.mark) { const hr = v.el.closest('.hero').getBoundingClientRect(); const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H))); gl.uniform4f(U.uMarkXf, ...markXf(w, h, p, time)) }
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       if (glassy) {
         // passe 2 : le bord de verre, qui réfracte ce contenu, sur la toile

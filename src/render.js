@@ -108,6 +108,7 @@ export function render(lang) {
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
+<div class="loader" aria-hidden="true"><span class="loader__spin"></span></div>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
@@ -121,15 +122,15 @@ export function render(lang) {
 </header>
 
 <main id="top">
-  <section class="hero" aria-labelledby="hero-t">
-    <div class="hero__view" data-gl="word" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
-      <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
+  <section class="hero" id="accueil" aria-labelledby="hero-t">
+    <div class="hero__pin">
+      <div class="hero__view" data-gl="mark" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
+        <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
+      </div>
+      <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
+      <h1 id="hero-t" class="hero__word wrap"><span class="sr">Holosene · ${esc(t(site.signature))}</span>${logotype}</h1>
+      <p class="hero__line wrap" data-hwords>${words(t(studio))}</p>
     </div>
-    <h1 id="hero-t" class="hero__word wrap">
-      <span class="sr">Holosene · ${esc(t(site.signature))}</span>
-      <svg viewBox="${logoBox}" aria-hidden="true" focusable="false">${logoPaths}</svg>
-    </h1>
-    <p class="hero__line" data-reveal>${esc(t(studio))}</p>
   </section>
 
   <section class="work" id="projets" aria-labelledby="proj-t">

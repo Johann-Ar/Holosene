@@ -28,6 +28,15 @@ a { color: inherit; }
 .todo { display: none !important; }
 .is-dev .todo { display: revert !important; color: #ffb36b; outline: 1px dashed #ffb36b; outline-offset: 4px; }
 
+.loader { display: none; }
+/* écran de chargement : un astérisque tramé (mêmes points que le site) qui tourne, puis fondu */
+.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: #000; transition: opacity 0.9s var(--ease-flow), visibility 0.9s; }
+.is-loaded .loader { opacity: 0; visibility: hidden; }
+.loader__spin { width: 72px; height: 72px; background: conic-gradient(from 0deg, #ff4ded, #ff54a3, #c754ff, #4799ff, #38ed8f, #ff4ded);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%27-50%20-50%20100%20100%27%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%280%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%2845%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%2890%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28135%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28180%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28225%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28270%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28315%29%27/%3E%3C/svg%3E") center / contain no-repeat, radial-gradient(circle, #000 1.7px, transparent 2.1px) 0 0 / 6px 6px; -webkit-mask-composite: source-in;
+  mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%27-50%20-50%20100%20100%27%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%280%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%2845%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%2890%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28135%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28180%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28225%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28270%29%27/%3E%3Crect%20x%3D%27-7%27%20y%3D%27-46%27%20width%3D%2714%27%20height%3D%2738%27%20rx%3D%277%27%20transform%3D%27rotate%28315%29%27/%3E%3C/svg%3E") center / contain no-repeat intersect, radial-gradient(circle, #000 1.7px, transparent 2.1px) 0 0 / 6px 6px;
+  animation: spin 1.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
 .skip:focus-visible { transform: none; }
 
@@ -103,7 +112,11 @@ main, .foot { position: relative; z-index: 1; }
 }
 
 /* 1. accueil : le monogramme en trame de points ; avec la partie À propos, il forme l'ouverture */
-.hero { position: relative; height: 100svh; min-height: 560px; }
+.hero { position: relative; height: 280svh; }   /* scène épinglée : le défilement anime le monogramme, puis le mot et la présentation */
+.hero__pin { position: sticky; top: 0; height: 100svh; min-height: 560px; overflow: hidden; }
+.hero__mark { position: absolute; left: 50%; top: 50%; height: 70svh; width: auto; transform: translate(-50%, -50%); }
+.has-gl .hero__mark { display: none; }
+@media (prefers-reduced-motion: reduce) { .hero { height: 100svh; } }
 .hero__view { position: absolute; inset: 0; }
 .hero__view > img { opacity: 0 !important; }
 .hero__bottom { position: absolute; left: 0; right: 0; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; gap: 16px; }
@@ -120,11 +133,11 @@ main, .foot { position: relative; z-index: 1; }
 .hero__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
 /* accueil : le logotype sur toute la largeur, fait de points (la rivière) ; ses deux « o » sont l'œil irisé du monogramme.
    Positions partagées avec le WebGL (wordBox dans gl.js) : marges --edge, centre vertical à 42 % (38 % sur mobile). */
-.hero__word { position: absolute; left: 0; right: 0; top: 42%; transform: translateY(-50%); line-height: 0; }
-.hero__word svg { width: 100%; height: auto; fill: #fff; transition: opacity var(--dur-slow); }
-.has-gl .hero__word svg { opacity: 0; }
-@media (max-width: 760px) { .hero__word { top: 38%; } .hero__line { top: calc(38% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 22px); } }
-.hero__line { position: absolute; left: var(--edge-l); right: var(--edge-r); top: calc(42% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 28px); max-width: 46ch; text-align: left !important; font-size: clamp(0.9rem, 1.15vw, 1.1rem); line-height: 1.45; }
+.hero__word { position: absolute; left: 0; right: 0; top: 64%; transform: translateY(-50%); line-height: 0; }
+.hero__line { position: absolute; left: 0; right: 0; top: calc(64% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 26px); margin-inline: auto; max-width: 62ch; font-size: clamp(0.9rem, 1.15vw, 1.1rem); line-height: 1.45; }
+.js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
+.js .hero__line .w.on { opacity: 1; }
+@media (max-width: 760px) { .hero__word { top: 70%; } .hero__line { top: calc(70% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 20px); } }
 .about { padding-block: var(--sp-9) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
 .about h2 { margin-bottom: 10px; }
 .about p { max-width: 64ch; font-size: clamp(0.95rem, 1.25vw, 1.15rem); line-height: 1.55; }

@@ -42,7 +42,7 @@ export const ui = {
   copy: T('Copier l’adresse', 'Copy address'),
   copied: T('Adresse copiée', 'Address copied'),
   legal: T('Mentions légales et confidentialité', 'Legal notice and privacy'),
-  lensLabel: T('Le monogramme Holosene : le S en trame de points, le « o » irisé', 'The Holosene monogram: the S as a dot screen, the iridescent “o”'),
+  lensLabel: T('Le monogramme Holosene en trame de points : le S en blanc, le « o » irisé', 'The Holosene monogram as a dot screen: the S in white, the iridescent “o”'),
   panelLabel: T('Image du projet en trame de points ; la lentille montre l’image d’origine', 'Project image as a dot screen; the lens shows the original image'),
   index: T('Projets', 'Work'),
   sections: {
