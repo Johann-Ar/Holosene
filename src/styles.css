@@ -181,7 +181,7 @@ main, .foot { position: relative; z-index: 1; }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
 .work--research { padding-top: var(--sp-8); }
-.lens-on .card__media, .lens-on .card__media * { cursor: none; }
+.lens-on, .lens-on * { cursor: none !important; }
 .card__media--text, .has-gl .card__media--text { display: grid; place-items: center;
   background: radial-gradient(120% 90% at 15% 10%, rgb(255 151 240 / 0.34), transparent 60%), radial-gradient(90% 80% at 85% 20%, rgb(153 193 221 / 0.34), transparent 60%),
     radial-gradient(110% 90% at 70% 100%, rgb(152 226 180 / 0.3), transparent 60%), radial-gradient(90% 80% at 10% 95%, rgb(218 155 194 / 0.3), transparent 60%), var(--card-bg); }

@@ -350,8 +350,8 @@ export function createGL(canvas, { reduced }) {
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
     const sc = lens.s < 0.005 ? 0 : 1 - Math.pow(1 - lens.s, 2)
-    // le « o » remplace le curseur : flèche masquée seulement quand le « o » est affiché (souris uniquement)
-    const hide = show && hoverDevice && !ptr.touch
+    // le « o » remplace le curseur : flèche masquée partout tant que le « o » est affiché (souris uniquement)
+    const hide = sc > 0.02 && hoverDevice && !ptr.touch   // tant que le « o » est visible, même en train de disparaître
     if (hide !== lens.hidden) { document.documentElement.classList.toggle('lens-on', hide); lens.hidden = hide }
 
     for (const v of views) {
