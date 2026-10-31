@@ -204,9 +204,16 @@ void main() {
     vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy) + sdInner(p + e.xy, W) - sdInner(p - e.xy, W),
                             sdCard(p + e.yx) - sdCard(p - e.yx) + sdInner(p + e.yx, W) - sdInner(p - e.yx, W)) + 1e-5);
     float s1 = 1.0 - t;
-    float bend = W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1); // réfraction douce : la trame est grossie vers l'arête, sans traînées
-    float sp = 0.16 * uGlass;                           // séparation des couleurs : au survol seulement
-    vec3 g = vec3(at(p - n * bend * (1.0 + sp)).r, at(p - n * bend).g, at(p - n * bend * (1.0 - sp)).b);
+    // réfraction à la manière du « Liquid Glass » d'Apple : le bord est une lentille convexe (profil en squircle,
+    // h(x) = (1 - (1 - x)^4)^(1/4)). Sa pente donne l'angle de la surface ; la loi de Snell (indice 1,5) donne la
+    // déviation. Forte au ras de l'arête, nulle à l'intérieur : l'image est comprimée puis grossie vers le bord.
+    float x = clamp(t, 0.001, 1.0);
+    float h = pow(1.0 - pow(1.0 - x, 4.0), 0.25);
+    float slope = pow(1.0 - x, 3.0) / max(pow(h, 3.0), 0.02);          // dh/dx
+    float th = atan(slope * 0.9);                                     // angle de la surface
+    float tr = asin(sin(th) / 1.5);                                   // angle réfracté
+    float bend = W * 1.15 * tan(th - tr);                             // déviation (px)
+    vec3 g = at(p - n * bend);                                        // une seule lecture : aucune image dédoublée
     vec2 cp = p - uRes * 0.5;
     vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
     vec3 tint = mix(vec3(1.0), ic, uGlass);
