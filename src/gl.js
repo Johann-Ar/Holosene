@@ -68,14 +68,12 @@ vec4 halftoneS(vec2 p, vec2 off) {
   float inO = 0.0;
   if (uHasMask > 0.5) {
     // accueil : le monogramme entier en points (S en r, « o » en g), placé et tourné par le défilement ;
-    // une vague lente fait respirer la taille des points
     vec2 d = c - uMarkXf.xy; float cs = cos(uMarkXf.w), sn = sin(uMarkXf.w);
     vec2 lc = vec2(cs * d.x + sn * d.y, -sn * d.x + cs * d.y) / uMarkXf.z;
     vec2 muv = lc / vec2(0.816, 1.0) + 0.5;
     vec4 mk = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
     inWord = max(mk.r, mk.g); inO = mk.g; m = inWord;
-    float wv = sin(c.x * 0.018 - uTime * 1.4 + sin(c.y * 0.035 + uTime * 0.6) * 1.2);
-    l = 0.62 + 0.38 * wv * wv * sign(wv);
+    l = 0.85;   // logo fixe : points de taille régulière
   }
   float edge = 1.0;
   if (uFade > 0.5) edge = smoothstep(0.0, 0.2 * uRes.y, c.y) * smoothstep(0.0, 0.2 * uRes.y, uRes.y - c.y);
@@ -91,7 +89,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
     vec2 ol = vec2(0.23125, 0.0868) * uMarkXf.z;
     vec2 oc = uMarkXf.xy + vec2(cs * ol.x - sn * ol.y, sn * ol.x + cs * ol.y);
     vec2 ep = c - oc;
-    vec3 ic = iris(atan(ep.x, -ep.y) / 6.28318 - uMarkXf.w / 6.28318 + uTime * 0.05);
+    vec3 ic = iris(atan(ep.x, -ep.y) / 6.28318);
     dc = mix(vec3(mix(0.7, 1.0, l)), ic * mix(0.8, 1.05, l), step(0.5, inO));
   }
   return vec4(dc * dotA, dotA);
@@ -367,10 +365,10 @@ export function createGL(canvas, { reduced }) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const q = e(k(0, 0.5))
     const small = w < 760
-    const big = Math.min(h * 0.74, w * (small ? 0.7 : 0.9) * 1000 / 816), end = Math.min(h * (small ? 0.42 : 0.38), w * 0.6 * 1000 / 816)
+    const big = Math.min(h * 0.74, w * (small ? 0.7 : 0.9) * 1000 / 816), end = Math.min(h * (small ? 0.4 : 0.44), w * 0.6 * 1000 / 816)
     const size = big + (end - big) * q
-    const cy = h * (0.5 + (small ? -0.12 : -0.2) * q)
-    const rot = -0.35 * (1 - q) + (reduced ? 0 : Math.sin(time * 0.35) * 0.03) + q * 0.0
+    const cy = h * (0.5 + (small ? -0.16 : -0.14) * q)
+    const rot = 0   // pas de rotation
     return [w / 2, cy, size, rot]
   }
 
