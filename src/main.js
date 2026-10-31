@@ -291,6 +291,45 @@ function scrollEffects() {
 }
 if (reduced) { heroWords.forEach((w) => w.classList.add('on')); word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
+/* Chargeur : le « o » du logo en miniature, avec la trame du site (points entiers de 5 px, pas de 6 px).
+   Un arc à bouts arrondis tourne ; il s'assombrit vers la queue et n'est irisé qu'à son bout. */
+const spin = document.querySelector('.loader__spin')
+if (spin) {
+  const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
+  spin.width = S * dpr; spin.height = S * dpr
+  const x = spin.getContext('2d'); x.scale(dpr, dpr)
+  const IR = [[56, 237, 143], [71, 153, 255], [199, 84, 255], [255, 77, 237]]
+  const R = 44, r = 23, mid = (R + r) / 2, half = (R - r) / 2, ARC = Math.PI * 1.7, STEP = 6
+  const draw = (t) => {
+    if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
+    x.clearRect(0, 0, S, S)
+    const head = (t / 1000) * Math.PI * 2 * 0.9
+    for (let gy = STEP / 2; gy < S; gy += STEP) for (let gx = STEP / 2; gx < S; gx += STEP) {
+      const dx = gx - S / 2, dy = gy - S / 2
+      let a = Math.atan2(dx, -dy) - head; a = ((a % (Math.PI * 2)) + Math.PI * 4) % (Math.PI * 2)   // 0 au bout, croît vers la queue
+      const back = Math.PI * 2 - a                                 // distance angulaire derrière le bout
+      const along = Math.min(back, ARC)                            // position sur l'arc (0 = bout)
+      if (back > ARC + half / mid && a > half / mid) continue
+      // distance au trait de l'arc, bouts arrondis
+      const ang = head - along
+      const px = S / 2 + Math.sin(ang) * mid, py = S / 2 - Math.cos(ang) * mid
+      const onArc = back <= ARC && a > 0.001 ? Math.abs(Math.hypot(dx, dy) - mid) : Math.hypot(gx - px, gy - py)
+      const capHead = Math.hypot(gx - (S / 2 + Math.sin(head) * mid), gy - (S / 2 - Math.cos(head) * mid))
+      const d = Math.min(onArc, capHead)
+      if (d > half) continue
+      const k = 1 - Math.min(1, back > ARC ? 1 : back / ARC)       // 1 au bout, 0 à la queue
+      const v = Math.round(255 * Math.pow(Math.min(1, k / 0.9), 2.4))                 // s'assombrit tôt vers la queue
+      const u = Math.min(1, Math.max(0, (k - 0.9) / 0.1))                              // irisé seulement au bout, fondu depuis le blanc
+      const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
+      const ic = IR[i].map((c, j) => c + (IR[i + 1][j] - c) * w)
+      const col = ic.map((c) => Math.round(v + (c - v) * Math.min(1, u * 1.6)))
+      x.fillStyle = `rgb(${col})`; x.beginPath(); x.arc(gx, gy, 2.5, 0, Math.PI * 2); x.fill()
+    }
+    requestAnimationFrame(draw)
+  }
+  requestAnimationFrame(draw)
+}
+
 /* Écran de chargement : polices, image de l'accueil, au moins 1 s ; au plus 6 s. Le défilement est bloqué pendant ce temps. */
 lenis?.stop(); scrollTo(0, 0)
 const heroImg = document.querySelector('.hero__view img')

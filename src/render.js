@@ -108,7 +108,7 @@ export function render(lang) {
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
-<div class="loader" aria-hidden="true"><span class="loader__spin"></span></div>
+<div class="loader" aria-hidden="true"><canvas class="loader__spin" width="96" height="96"></canvas></div>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
