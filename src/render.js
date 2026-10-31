@@ -127,42 +127,42 @@ export function render(lang) {
     </div>
     <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
     <h1 id="hero-t" class="sr">Holosene · ${esc(t(site.signature))}</h1>
-  </section>
-
-  <section class="studio" aria-label="Holosene">
-    <div class="studio__mark wrap">${logotype}</div>
-    <p class="studio__line wrap" data-reveal>${esc(t(studio))}</p>
+    <p class="hero__line wrap" data-reveal>${esc(t(studio))}</p>
   </section>
 
   <section class="work" id="projets" aria-labelledby="proj-t">
-    <div class="row wrap">
-      <h2 class="lbl" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
-      <p class="big disp" data-words>${words(t(workIntro))}</p>
-    </div>
+    <header class="sec-head wrap">
+      <h2 class="disp" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
+      <p data-reveal>${esc(t(workIntro))}</p>
+    </header>
     ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, genre: t(p.genre), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
   </section>
 
+  <section class="studio" aria-hidden="true">
+    <div class="studio__mark wrap">${logotype}</div>
+  </section>
+
   <section class="work work--research" id="recherche" aria-labelledby="research-t">
-    <div class="row wrap">
-      <h2 class="lbl" id="research-t">${esc(t(ui.research))}</h2>
-      <p class="big disp" data-words>${words(t(research.intro))}</p>
-    </div>
+    <header class="sec-head wrap">
+      <h2 class="disp" id="research-t">${esc(t(ui.research))}</h2>
+      <p data-reveal>${esc(t(research.intro))}</p>
+    </header>
     ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), genre: t(r.kind), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
 
   <section class="about wrap" id="a-propos" aria-labelledby="about-t">
     <h2 class="lbl" id="about-t" data-reveal>${esc(t(ui.studio))}</h2>
     ${about.map((a, k) => `<p data-reveal style="--d:${k * 80}ms">${esc(t(a)).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</p>`).join('')}
-  </section>
-
-  <section class="contact wrap" id="contact" aria-labelledby="contact-t">
-    <h2 class="lbl" id="contact-t" data-reveal>${esc(t(ui.contact))}</h2>
-    <a class="mail disp" href="mailto:${esc(site.email)}" translate="no" data-reveal="line"><span>${esc(site.email)}</span></a>
-    <div class="contact__row" data-reveal style="--d:120ms">
-      <button class="btn btn--light copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
-      <ul class="socials">${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
+    <div class="contact" id="contact" data-reveal>
+      <h2 class="lbl" id="contact-t">${esc(t(ui.contact))}</h2>
+      <a class="mail" href="mailto:${esc(site.email)}" translate="no"><span>${esc(site.email)}</span></a>
+      <div class="contact__row">
+        <button class="btn btn--light copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
+        <ul class="socials">${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
+      </div>
     </div>
   </section>
+
 </main>
 
 <footer class="foot wrap">

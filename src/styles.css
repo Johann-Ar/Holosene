@@ -118,10 +118,10 @@ main, .foot { position: relative; z-index: 1; }
 @media (max-width: 760px) { .row { grid-template-columns: 1fr; } .row > h2, .big { grid-column: 1 / -1; } }
 
 /* 2. à propos : le logotype se trace puis se remplit, le texte s'allume mot à mot */
-.studio { padding-block: 2vh var(--sp-8); display: grid; gap: var(--sp-5); }
+.studio { padding-block: var(--sp-7); }   /* pause graphique : le seul élément géant de son écran */
 /* mini à propos et à propos de fin : capitales, centrés, mots importants en gras (comme la référence) */
-.studio__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
-.studio__line { justify-self: center; max-width: 62ch; font-size: clamp(0.95rem, 1.3vw, 1.2rem); line-height: 1.45; }
+.hero__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
+.hero__line { position: absolute; left: 0; right: 0; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); margin-inline: auto; max-width: 62ch; font-size: clamp(0.9rem, 1.15vw, 1.1rem); line-height: 1.45; }
 .about { padding-block: var(--sp-9) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
 .about h2 { margin-bottom: 10px; }
 .about p { max-width: 64ch; font-size: clamp(0.95rem, 1.25vw, 1.15rem); line-height: 1.55; }
@@ -133,7 +133,11 @@ main, .foot { position: relative; z-index: 1; }
 .studio__word .w-line path { stroke-width: 6; stroke-dasharray: 1; stroke-dashoffset: var(--draw, 0); opacity: calc(1 - var(--fill, 1)); }
 
 /* 3. projets : index en grand texte, puis une piste horizontale (épinglée au défilement sur grand écran) */
-.work { padding-top: var(--sp-6); }
+.work { min-height: 100svh; padding-top: var(--sp-8); display: flex; flex-direction: column; justify-content: center; }
+/* en-tête de section : titre en caractère d'affichage, phrase courte au texte courant */
+.sec-head { display: grid; gap: 14px; max-width: 760px; }
+.sec-head h2 { font-size: clamp(2.2rem, 3.9vw, 3.6rem); }
+.sec-head p { max-width: 58ch; font-size: clamp(1rem, 1.15vw, 1.1rem); color: rgb(255 255 255 / 0.8); }
 .work__index a { text-decoration: none; }
 /* survol de l'adresse du contact : trait irisé aux bouts arrondis, qui se déroule sous les jambages */
 .mail > span { position: relative; display: inline-block; }
@@ -143,7 +147,7 @@ main, .foot { position: relative; z-index: 1; }
 .work__index a, .fiche__next { text-decoration: none; }
 /* piste horizontale indépendante : glisser à deux doigts (pavé tactile), au doigt, à la souris ou avec les flèches ;
    bords latéraux fondus comme le haut et le bas des images */
-.work__pin { padding-block: var(--sp-7) var(--sp-8); }
+.work__pin { padding-block: var(--sp-5) var(--sp-6); }
 .work__track { --fade: 120px;   /* même largeur que le fondu du haut */ overflow-x: auto; scrollbar-width: none; padding-bottom: 8px;
   -webkit-mask: linear-gradient(90deg, rgb(0 0 0 / 0.12), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / 0.12)); mask: linear-gradient(90deg, rgb(0 0 0 / 0.12), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / 0.12)); }
 .work__strip { display: flex; gap: clamp(24px, 4vw, 64px); width: max-content; }
@@ -153,7 +157,7 @@ main, .foot { position: relative; z-index: 1; }
 .work__track.is-drag { cursor: grabbing; user-select: none; }
 .work__track:focus-visible { outline: none; }
 .work__track::-webkit-scrollbar { display: none; }
-.card { flex: 0 0 auto; width: min(84vw, 46vw + 60px, (100svh - 380px) * 1.6); scroll-snap-align: start; display: grid; gap: 22px; align-content: start; }
+.card { flex: 0 0 auto; width: min(84vw, 40vw + 40px, 72svh);   /* la section (titre + piste + noms) tient en un écran */ scroll-snap-align: start; display: grid; gap: 22px; align-content: start; }
 .card__media { aspect-ratio: 16 / 10; border-radius: 26px; background: var(--card-bg); }
 .card__media > img { border-radius: 26px; }
 .has-gl .card__media { background: none; }
@@ -189,7 +193,7 @@ main, .foot { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) { .no-frame::after { transition: opacity 0.2s; } }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
-.work--research { padding-top: var(--sp-8); }
+.work--research { padding-top: var(--sp-6); }
 .lens-on:not(.fiche-open), .lens-on:not(.fiche-open) * { cursor: none !important; }   /* seulement sur les vignettes, jamais dans une fiche */
 .card__media--text, .has-gl .card__media--text { display: grid; place-items: center;
   background: radial-gradient(120% 90% at 15% 10%, rgb(255 151 240 / 0.34), transparent 60%), radial-gradient(90% 80% at 85% 20%, rgb(153 193 221 / 0.34), transparent 60%),
@@ -197,10 +201,10 @@ main, .foot { position: relative; z-index: 1; }
 .card__media--text .disp { font-size: clamp(2rem, 4vw, 3.6rem); color: #fff; }
 
 /* 5. contact, pied de page */
-.contact { padding-block: var(--sp-9); display: grid; justify-items: start; gap: 26px; }
-.mail { display: block; overflow: hidden; font-size: clamp(1.3rem, 6vw, 6.2rem); text-decoration: none; overflow-wrap: anywhere; padding-bottom: 0.26em; margin-bottom: -0.18em; }
+.contact { margin-top: var(--sp-6); display: grid; justify-items: center; gap: 16px; text-align: center; }
+.mail { display: block; overflow: hidden; font: 600 clamp(1.15rem, 1.6vw, 1.5rem)/1.3 var(--font-display); font-stretch: var(--display-stretch); color: #fff; text-decoration: none; overflow-wrap: anywhere; padding-bottom: 0.26em; margin-bottom: -0.18em; }
 
-.contact__row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+.contact__row { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; }
 .socials { list-style: none; display: flex; gap: 20px; flex-wrap: wrap; font-size: 15px; }
 /* liens soulignés (réseaux, pied de page) : trait arrondi, qui devient irisé au survol */
 .socials a, .foot a { position: relative; text-decoration: none; }
