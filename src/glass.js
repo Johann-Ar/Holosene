@@ -1,39 +1,56 @@
 /**
- * Verre des formes de la marque (monogramme de l'accueil, chargeur) : même modèle que le bord des vignettes.
- * Une bande de verre de largeur W part de l'arête vers l'intérieur : elle se teinte (irisé pour le « o », gris clair
- * pour le S), reçoit une arête lumineuse fine, un liseré intérieur et un reflet orienté (lumière en haut à gauche).
- * Le même calcul existe en GLSL (gl.js, GLASS_SHADE) et en JavaScript (chargeur, dessiné pixel par pixel).
+ * Verre des formes de la marque (monogramme de l'accueil, chargeur), selon la méthode établie des rendus « liquid glass » :
+ * - la forme est une plaque de verre à bord arrondi : profil de hauteur convexe (squircle) sur une largeur de biseau B,
+ *   calculé à partir de la distance exacte à l'arête ; le dessus est plat, donc parfaitement transparent ;
+ * - normale 3D tirée de la pente du profil ; réfraction par la loi de Snell (indice ~1,5, légèrement différent pour
+ *   R, V et B : dispersion) ; le fond est lu à l'endroit dévié ;
+ * - réflexion de Fresnel (approximation de Schlick, F0 = 0,04) d'un environnement de studio, et reflet spéculaire net.
+ * Le même modèle existe en GLSL (GLASS_GLSL, utilisé par gl.js) et en JavaScript (glassJS, pour le chargeur).
  */
-export const GLASS_SHADE = `
-// d : distance à l'arête vers l'intérieur (px), n : normale sortante, tint : teinte du bord, base : ce qui est derrière
-vec3 glassShade(float d, vec2 n, vec3 tint, vec3 base, float W) {
-  float t = clamp(d / W, 0.0, 1.0), s1 = 1.0 - t;
-  vec3 col = base + vec3(0.06);                                        // verre : léger voile clair
-  col = mix(col, col * tint * 1.25 + tint * 0.2, pow(s1, 1.25) * 0.9); // bande teintée, fondue vers l'intérieur
-  vec2 L = normalize(vec2(-0.65, -0.76));
-  float facing = dot(n, L);
-  col += mix(vec3(1.0), tint, 0.4) * (pow(max(facing, 0.0), 2.0) * exp(-d / 2.4) * 1.1 + pow(max(-facing, 0.0), 2.0) * exp(-d / 3.2) * 0.4);
-  col += vec3(1.0) * exp(-d / 1.1) * 0.55;                             // arête lumineuse
-  col += tint * exp(-pow((d - W * 0.62) / 1.6, 2.0)) * 0.35;           // liseré intérieur
-  return col;
+export const GLASS_GLSL = `
+// profil du biseau : hauteur h(x), x = distance / largeur du biseau (0 à l'arête, 1 sur le plat)
+float glassH(float x) { x = clamp(x, 0.0, 1.0); return pow(1.0 - pow(1.0 - x, 4.0), 0.25); }
+// normale 3D (z vers l'écran) ; n2 : normale sortante dans le plan, d : distance à l'arête, B : biseau, T : épaisseur
+vec3 glassNormal(float d, vec2 n2, float B, float T) {
+  float x = d / B, e = 0.02;
+  float slope = (glassH(x + e) - glassH(x - e)) / (2.0 * e) * T / B;
+  return normalize(vec3(n2 * slope, 1.0));
+}
+// environnement de studio : grand panneau clair en haut à gauche, sol sombre
+vec3 glassEnv(vec3 r) {
+  float top = smoothstep(-0.2, 0.9, -r.y);
+  float key = pow(max(dot(r, normalize(vec3(-0.55, -0.65, 0.5))), 0.0), 7.0);
+  return vec3(0.05) + vec3(0.9) * top + vec3(2.2) * key;
+}
+float glassFresnel(vec3 n) { float c = clamp(n.z, 0.0, 1.0); return 0.04 + 0.96 * pow(1.0 - c, 5.0); }
+// décalage de lecture du fond pour un indice donné (px) : rayon réfracté traversant l'épaisseur T
+vec2 glassShift(vec3 n, float ior, float T) { vec3 r = refract(vec3(0.0, 0.0, -1.0), n, 1.0 / ior); return r.xy / max(-r.z, 0.2) * T; }
+vec3 glassSpec(vec3 n) {
+  vec3 L = normalize(vec3(-0.55, -0.65, 0.55)), H = normalize(L + vec3(0.0, 0.0, 1.0));
+  return vec3(1.0) * pow(max(dot(n, H), 0.0), 36.0) * 1.1;
 }`
 
-/** Même calcul, en JavaScript (couleurs 0 à 1). */
-export function glassShadeJS(d, nx, ny, tint, base, W) {
-  const t = Math.min(1, Math.max(0, d / W)), s1 = 1 - t, k = Math.pow(s1, 1.25) * 0.9
-  const L = [-0.65 / 1.0018, -0.76 / 1.0018], facing = nx * L[0] + ny * L[1]
-  const sp = Math.pow(Math.max(facing, 0), 2) * Math.exp(-d / 2.4) * 1.1 + Math.pow(Math.max(-facing, 0), 2) * Math.exp(-d / 3.2) * 0.4
-  const edge = Math.exp(-d / 1.1) * 0.55, lip = Math.exp(-Math.pow((d - W * 0.62) / 1.6, 2)) * 0.35
-  return [0, 1, 2].map((i) => {
-    let c = base[i] + 0.06
-    c = c + (c * tint[i] * 1.25 + tint[i] * 0.2 - c) * k
-    return c + (1 + (tint[i] - 1) * 0.4) * sp + edge + tint[i] * lip
-  })
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
+const H = (x) => { x = clamp(x, 0, 1); return Math.pow(1 - Math.pow(1 - x, 4), 0.25) }
+
+/** Même modèle en JavaScript (fond derrière = noir uni : seules la réflexion et la teinte se voient). */
+export function glassJS(d, nx, ny, B, T, tint) {
+  const x = d / B, e = 0.02
+  const slope = (H(x + e) - H(x - e)) / (2 * e) * T / B
+  let n = [nx * slope, ny * slope, 1]; const l = Math.hypot(...n); n = n.map((v) => v / l)
+  const F = 0.04 + 0.96 * Math.pow(1 - clamp(n[2], 0, 1), 5)
+  const r = [-2 * n[2] * n[0], -2 * n[2] * n[1], 1 - 2 * n[2] * n[2]].map((v) => -v)   // reflet de la vue (0, 0, -1)
+  const top = clamp((-r[1] + 0.2) / 1.1, 0, 1), top2 = top * top * (3 - 2 * top)
+  const k = [-0.55, -0.65, 0.5], kl = Math.hypot(...k)
+  const key = Math.pow(Math.max((r[0] * k[0] + r[1] * k[1] + r[2] * k[2]) / kl, 0), 7)
+  const Lh = [-0.55, -0.65, 1.55], lh = Math.hypot(...Lh)
+  const spec = Math.pow(Math.max((n[0] * Lh[0] + n[1] * Lh[1] + n[2] * Lh[2]) / lh, 0), 36) * 1.1
+  return tint.map((t) => (0.05 + 0.9 * top2 + 2.2 * key) * F * (0.35 + 0.65 * t) + t * 0.07 * (1 - F) + spec + Math.exp(-d / 1.0) * 0.4 * t)
 }
 
-/** Distance euclidienne à l'extérieur de la forme (Felzenszwalb), pour un masque binaire. */
+/** Distance euclidienne à l'extérieur de la forme (algorithme de Felzenszwalb et Huttenlocher), masque binaire. */
 export function insideDistance(inside, w, h) {
-  const INF = 1e12, f = new Float64Array(Math.max(w, h)), d = new Float64Array(Math.max(w, h)), v = new Int32Array(Math.max(w, h)), z = new Float64Array(Math.max(w, h) + 1)
+  const INF = 1e12, m = Math.max(w, h), f = new Float64Array(m), d = new Float64Array(m), v = new Int32Array(m), z = new Float64Array(m + 1)
   const g = new Float64Array(w * h)
   for (let i = 0; i < w * h; i++) g[i] = inside[i] ? INF : 0
   const pass = (n) => {

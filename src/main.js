@@ -1,7 +1,7 @@
 import './styles.css'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
-import { glassShadeJS } from './glass.js'
+import { glassJS } from './glass.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -303,7 +303,7 @@ if (spin) {
   let finishAt = 0, onDone = null
   // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
   finishLoader = (done) => { finishAt = performance.now(); onDone = done }
-  // dessin pixel par pixel, avec le même verre que le logo et les vignettes (glassShadeJS)
+  // dessin pixel par pixel, avec le même verre que le logo (glassJS)
   const P = S * dpr, img = x.createImageData(P, P)
   x.setTransform(1, 0, 0, 1, 0, 0)
   const draw = (t) => {
@@ -337,7 +337,7 @@ if (spin) {
       const ic = IR[iI].map((c, n) => (c + (IR[iI + 1][n] - c) * wI) / 255)
       const lc = wheel(Math.atan2(px, -py) / TAU).map((c) => c / 255)
       const tint = [0, 1, 2].map((n) => { const g = 0.86 + (ic[n] - 0.86) * Math.min(1, u * 2); return g + (lc[n] - g) * fe })
-      const col = glassShadeJS(Math.max(0, d), nx, ny, tint, [0, 0, 0], W)
+      const col = glassJS(Math.max(0, d), nx, ny, 6, 9, tint)
       const fade = Math.min(1, Math.pow(k, 0.8) * 1.15 + fe)     // la queue s'efface
       const al = cov * fade
       data[o] = Math.min(255, col[0] * 255 * al); data[o + 1] = Math.min(255, col[1] * 255 * al); data[o + 2] = Math.min(255, col[2] * 255 * al); data[o + 3] = al * 255

@@ -5,7 +5,7 @@
  * Accueil : le S du monogramme en trame de points, le « o » en aplat irisé comme sur le logo ; pas de lentille.
  */
 
-import { GLASS_SHADE, insideDistance } from './glass.js'
+import { GLASS_GLSL, insideDistance } from './glass.js'
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 
@@ -60,7 +60,7 @@ vec3 iris(float t) {
   return r;
 }
 
-${GLASS_SHADE}
+${GLASS_GLSL}
 // trame en un point : un point par cellule, sa taille suit la lumière de l'image (couleur prémultipliée, alpha).
 // off : décalage de la lecture de l'image seulement (la grille de points reste en place : réfraction sans traînées)
 vec4 halftoneS(vec2 p, vec2 off) {
@@ -76,21 +76,28 @@ vec4 halftoneS(vec2 p, vec2 off) {
     if (cov < 0.001) return vec4(0.0);
     bool isO = mk.g > mk.r;
     float px = uMarkXf.z / 1000.0 * 90.0;                                // le champ va de 0 à 90 unités du monogramme
-    vec2 e = vec2(1.0 / 816.0, 0.0), e2 = vec2(0.0, 1.0 / 1000.0);
+    vec2 e = vec2(2.0 / 816.0, 0.0), e2 = vec2(0.0, 2.0 / 1000.0);
     float dd = isO ? texture2D(uMaskB, muv).g : texture2D(uMaskB, muv).r;
     float gx = (isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r);
     float gy = (isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r);
     vec2 n = -normalize(vec2(gx, gy) + 1e-6);                            // normale sortante
     float dist = dd * px;                                                 // distance à l'arête, en px
-    float W = clamp(uMarkXf.z * 0.032, 10.0, 30.0);
-    // ce qui est derrière : le fond, dévié vers le bord (réfraction), plus fort au ras de l'arête
-    float s1 = 1.0 - clamp(dist / W, 0.0, 1.0);
-    vec2 sp = (gl_FragCoord.xy + n * vec2(1.0, -1.0) * W * 1.2 * s1 * s1 * uDpr) / uCanvas;
-    vec3 base = texture2D(uBg, sp).rgb * 1.4;
+    // plaque de verre : biseau B, épaisseur T ; le dessus plat laisse voir le fond tel quel (transparence)
+    float B = clamp(uMarkXf.z * 0.05, 12.0, 40.0), T = B * 1.6;
+    vec3 N = glassNormal(dist, n, B, T);
+    vec2 base = gl_FragCoord.xy;
+    vec2 flip = vec2(1.0, -1.0) * uDpr;
+    vec3 refr = vec3(texture2D(uBg, (base + glassShift(N, 1.44, T) * flip) / uCanvas).r,
+                     texture2D(uBg, (base + glassShift(N, 1.50, T) * flip) / uCanvas).g,
+                     texture2D(uBg, (base + glassShift(N, 1.56, T) * flip) / uCanvas).b);
+    float F = glassFresnel(N);
     vec2 ep = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
-    float ang = atan(ep.x, -ep.y) / 6.28318;
-    vec3 tint = isO ? iris(ang) : vec3(0.86, 0.86, 0.9);
-    vec3 col = glassShade(dist, n, tint, base, W);
+    vec3 tint = isO ? iris(atan(ep.x, -ep.y) / 6.28318) : vec3(1.0);
+    vec3 R = reflect(vec3(0.0, 0.0, -1.0), N);
+    vec3 env = glassEnv(R) * mix(vec3(1.0), tint, isO ? 0.85 : 0.0);
+    float edge = 1.0 - smoothstep(0.0, B, dist);
+    vec3 col = refr * (1.0 - F) * mix(vec3(1.0), tint, (isO ? 0.35 : 0.0) * edge) + env * F + glassSpec(N) + tint * (isO ? 0.07 : 0.045);
+    col += mix(vec3(1.0), tint, isO ? 0.7 : 0.0) * exp(-dist / max(1.0, uDpr * 0.8)) * 0.45;   // arête : réflexion totale interne, fine
     float al = cov * (isO ? 1.0 : smoothstep(0.0, 1.0, uReveal));
     return vec4(col * al, al);
   }
