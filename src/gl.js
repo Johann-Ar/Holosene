@@ -19,6 +19,9 @@ uniform float uCell;    // pas de la trame (px CSS)
 uniform float uReveal;  // 0 : points absents, 1 : trame complète
 uniform float uFade;    // fondu des bords haut et bas
 uniform float uHasMask;
+uniform sampler2D uBg;     // fond de page (pour la réfraction du logo en verre)
+uniform sampler2D uMaskB;  // masque du monogramme adouci (relief du verre)
+uniform vec2 uCanvas;      // taille de la toile (px écran)
 uniform float uFloor;   // taille minimale des points dans le masque
 uniform float uRadius;  // coins arrondis (0 : aucun)
 uniform vec3 uLens;     // centre (px CSS), rayon intérieur
@@ -60,14 +63,31 @@ vec3 iris(float t) {
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
   if (uHasMask > 0.5) {
-    // accueil : le monogramme en aplat (pas de trame) : S blanc, « o » irisé ; apparaît en fondu
+    // accueil : le monogramme en verre (comme le bord des vignettes) : relief tiré du masque adouci, réfraction du fond,
+    // lumière sur les arêtes ; arêtes du « o » irisées
     vec2 d = p - uMarkXf.xy;
     vec2 muv = d / uMarkXf.z / vec2(0.816, 1.0) + 0.5;
-    vec4 mk = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
+    if (muv.x < 0.0 || muv.x > 1.0 || muv.y < 0.0 || muv.y > 1.0) return vec4(0.0);
+    vec4 mk = texture2D(uMask, muv);
     float cov = smoothstep(0.35, 0.65, max(mk.r, mk.g));
+    if (cov < 0.001) return vec4(0.0);
+    bool isO = mk.g > mk.r;
+    vec2 e = vec2(1.0 / 900.0, 0.0);
+    float hgt = max(texture2D(uMaskB, muv).r, texture2D(uMaskB, muv).g);
+    float hx = max(texture2D(uMaskB, muv + e.xy).r, texture2D(uMaskB, muv + e.xy).g) - max(texture2D(uMaskB, muv - e.xy).r, texture2D(uMaskB, muv - e.xy).g);
+    float hy = max(texture2D(uMaskB, muv + e.yx).r, texture2D(uMaskB, muv + e.yx).g) - max(texture2D(uMaskB, muv - e.yx).r, texture2D(uMaskB, muv - e.yx).g);
+    vec2 n = vec2(hx, hy) * 9.0;                                       // pente du relief
+    float rim = pow(1.0 - clamp(hgt, 0.0, 1.0), 3.0);                  // 1 sur l'arête, 0 au cœur
+    vec2 sp = (gl_FragCoord.xy - n * vec2(1.0, -1.0) * 70.0 * uDpr) / uCanvas;
+    vec3 bgc = texture2D(uBg, sp).rgb;
+    vec3 col = bgc * 2.6 + vec3(0.13);                                 // verre dépoli : fond réfracté, éclairci
+    vec2 L = normalize(vec2(-0.6, -0.8));
+    float spec = pow(max(dot(normalize(n + 1e-5), L), 0.0), 3.0) * clamp(length(n) * 2.0, 0.0, 1.0);
     vec2 ep = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
-    vec3 col = mix(vec3(1.0), iris(atan(ep.x, -ep.y) / 6.28318), step(mk.r, mk.g));
-    float al = cov * (mk.g > mk.r ? 1.0 : smoothstep(0.0, 1.0, uReveal));
+    vec3 edge = isO ? iris(atan(ep.x, -ep.y) / 6.28318) : vec3(1.0);
+    float lip = exp(-pow((1.0 - hgt) - 0.08, 2.0) * 160.0);            // liseré lumineux fin juste à l'intérieur de l'arête
+    col += edge * (rim * (isO ? 1.4 : 0.9) + lip * (isO ? 0.9 : 0.6)) + vec3(1.0) * spec * 1.1;
+    float al = cov * (isO ? 1.0 : smoothstep(0.0, 1.0, uReveal));
     return vec4(col * al, al);
   }
   vec2 cell = floor(p / uCell);
@@ -272,28 +292,44 @@ void main() {
 // Fond de page (comme la référence) : noir très profond, grandes nappes de couleur qui dérivent lentement près des
 // bords (couleurs de la marque, à ~6 % d'intensité) et grain de pellicule animé.
 const BG = `precision highp float;
+// Fond animé : même algorithme et mêmes réglages que le fond de la référence fournie par Johann (passe « fluidText »
+// puis « post ») ; couleurs : versions très sombres de la roue irisée. Bruit noise() d'après Inigo Quilez (CC BY-NC-SA 3.0).
 uniform vec2 uView;
 uniform float uDpr;
 uniform float uTime;
-float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-float blob(vec2 p, vec2 c, float r) { return exp(-dot(p - c, p - c) / (r * r)); }
-void main() {
-  vec2 uv = gl_FragCoord.xy / uDpr / uView;
-  float asp = uView.x / uView.y;
-  vec2 p = vec2(uv.x * asp, uv.y);
-  float t = uTime * 0.16;
-  // les nappes tournent et se déforment en continu (fond vivant, comme la référence)
-  p += 0.06 * vec2(sin(p.y * 3.0 + t * 1.3), cos(p.x * 2.5 - t * 1.1));
-  vec3 col = vec3(0.0);
-  col += vec3(1.00, 0.30, 0.93) * blob(p, vec2(0.05 + 0.25 * sin(t * 0.9), 0.75 + 0.22 * cos(t * 0.7)), 0.55);
-  col += vec3(0.78, 0.33, 1.00) * blob(p, vec2(asp - 0.05 + 0.22 * cos(t * 0.8), 0.30 + 0.25 * sin(t * 0.6)), 0.60);
-  col += vec3(0.28, 0.60, 1.00) * blob(p, vec2(asp * 0.75 + 0.30 * sin(t * 0.5), 1.00 + 0.15 * cos(t * 1.1)), 0.50);
-  col += vec3(0.22, 0.93, 0.56) * blob(p, vec2(0.25 + 0.30 * cos(t * 0.65), 0.0 + 0.15 * sin(t * 0.85)), 0.45) * 0.6;
-  float vig = smoothstep(0.15, 0.95, length((uv - 0.5) * vec2(1.0, 0.9)) * 1.25);                                    // la couleur reste vers les bords
-  col *= 0.09 * (0.35 + 0.65 * vig);
-  col += (h(gl_FragCoord.xy + fract(uTime * 7.0) * 113.0) - 0.5) * 0.022;                                            // grain
-  gl_FragColor = vec4(max(col, 0.0), 1.0);
+#define S(a,b,t) smoothstep(a,b,t)
+mat2 Rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+vec2 hash2(vec2 p){ p = vec2(dot(p, vec2(2127.1, 81.17)), dot(p, vec2(1269.5, 283.37))); return fract(sin(p) * 43758.5453); }
+float noise(vec2 p){
+  vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
+  float n = mix(mix(dot(-1.0 + 2.0 * hash2(i), f), dot(-1.0 + 2.0 * hash2(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0)), u.x),
+                mix(dot(-1.0 + 2.0 * hash2(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0)), dot(-1.0 + 2.0 * hash2(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0)), u.x), u.y);
+  return 0.5 + 0.5 * n;
+}
+float random(vec2 st){ return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123); }
+void main(){
+  vec2 vUv = gl_FragCoord.xy / (uView * uDpr);
+  vec3 c1 = vec3(0.000, 0.075, 0.045), c2 = vec3(0.120, 0.020, 0.090), c3 = vec3(0.045, 0.010, 0.120), c4 = vec3(0.035, 0.035, 0.040);
+  float ratio = uView.x / uView.y;
+  vec2 tuv = vUv - 0.5;
+  float degree = noise(vec2(uTime * 0.1, tuv.x * tuv.y));
+  tuv.y *= 1.0 / ratio; tuv *= Rot(radians((degree - 0.5) * 720.0 + 180.0)); tuv.y *= ratio;
+  float frequency = 5.0, amplitude = 30.0, speed = uTime * 2.0;
+  tuv.x += sin(tuv.y * frequency + speed) / amplitude;
+  tuv.y += sin(tuv.x * frequency * 1.5 + speed) / (amplitude * 0.5);
+  vec3 layer1 = mix(c1, c2, S(-0.3, 0.2, (tuv * Rot(radians(-5.0))).x));
+  vec3 layer2 = mix(c3, c4, S(-0.3, 0.2, (tuv * Rot(radians(-5.0))).x));
+  vec3 color = mix(layer1, layer2, S(0.5, -0.3, tuv.y)) * 0.6;
+  vec2 vgn = vUv * (1.0 - vUv.yx);
+  float vig = pow(vgn.x * vgn.y * 15.0, 0.25);
+  color *= 1.0 - vec3(random(vUv + mod(uTime, 1.0))) * 0.1;
+  color = pow(clamp(color, 0.0, 1.0), vec3(1.0 / 1.05));
+  color = mix(color, mix(vec3(0.0), color * vig, vig), 0.5);
+  gl_FragColor = vec4(color, 1.0);
 }`
+const BLIT = `precision highp float;
+uniform sampler2D uSrc; uniform vec2 uSize;
+void main(){ gl_FragColor = texture2D(uSrc, gl_FragCoord.xy / uSize); }`
 
 /** Monogramme (viewBox 816 × 1000) : le S et le « o ». */
 const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
@@ -310,8 +346,8 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText']) U[n] = gl.getUniformLocation(prog, n)
-  gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText']) U[n] = gl.getUniformLocation(prog, n)
+  gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uBg, 4); gl.uniform1i(U.uMaskB, 5)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
 
@@ -319,6 +355,19 @@ export function createGL(canvas, { reduced }) {
   const bgProg = gl.createProgram()
   gl.attachShader(bgProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(bgProg, sh(gl.FRAGMENT_SHADER, BG)); gl.bindAttribLocation(bgProg, 0, 'a'); gl.linkProgram(bgProg)
   const BU = {}; for (const n of ['uView', 'uDpr', 'uTime']) BU[n] = gl.getUniformLocation(bgProg, n)
+  const blitProg = gl.createProgram()
+  gl.attachShader(blitProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(blitProg, sh(gl.FRAGMENT_SHADER, BLIT)); gl.bindAttribLocation(blitProg, 0, 'a'); gl.linkProgram(blitProg)
+  const LU = { src: gl.getUniformLocation(blitProg, 'uSrc'), size: gl.getUniformLocation(blitProg, 'uSize') }
+  const bgFbo = gl.createFramebuffer(), bgTex = gl.createTexture()
+  let bgW = 0, bgH = 0
+  function ensureBg() {
+    if (bgW === canvas.width && bgH === canvas.height) return
+    bgW = canvas.width; bgH = canvas.height
+    gl.bindTexture(gl.TEXTURE_2D, bgTex)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, bgW, bgH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, bgTex, 0); gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  }
 
   // passe « verre » et texture intermédiaire (contenu des vignettes)
   const gProg = gl.createProgram()
@@ -371,6 +420,10 @@ export function createGL(canvas, { reduced }) {
     x.fillStyle = '#ff0000'; x.fill(new Path2D(S_PATH))
     x.fillStyle = '#00ff00'; x.fill(new Path2D(O_PATH), 'evenodd')
     v.mask = newTex(); upload(v.mask, c)
+    // version adoucie : le relief du verre
+    const cb = document.createElement('canvas'); cb.width = 1632; cb.height = 2000
+    const xb = cb.getContext('2d'); xb.fillStyle = '#000'; xb.fillRect(0, 0, 1632, 2000); xb.filter = 'blur(18px)'; xb.drawImage(c, 0, 0)
+    v.maskB = newTex(); upload(v.maskB, cb)
   }
   /** Placement du monogramme : intro (le « o » du chargeur, au centre, grandit et le S apparaît), puis le défilement p
    *  le fait encore grossir et glisser vers la droite (bas sur mobile) ; il flotte doucement, sans rotation. */
@@ -431,8 +484,14 @@ export function createGL(canvas, { reduced }) {
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
+    ensureBg()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo)
     gl.useProgram(bgProg); gl.disable(gl.BLEND)
-    gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, reduced ? 0 : time)
+    gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, reduced ? 12 : time)
+    gl.drawArrays(gl.TRIANGLES, 0, 3)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    gl.useProgram(blitProg); gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, bgTex)
+    gl.uniform1i(LU.src, 4); gl.uniform2f(LU.size, canvas.width, canvas.height)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.enable(gl.BLEND)
     if (document.documentElement.classList.contains('fiche-open')) {
@@ -470,7 +529,7 @@ export function createGL(canvas, { reduced }) {
       const w = b.width, h = b.height
       // apparition : les points poussent, puis rétrécissent quand la vue sort de l'écran
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
-      const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.55)))
+      const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.8)))   // apparition plus tardive, disparition plus précoce
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
       if (v.mark) maskFor(v)
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
@@ -494,6 +553,8 @@ export function createGL(canvas, { reduced }) {
       }
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, v.tex)
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, v.mask || v.tex)
+      if (v.maskB) { gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, v.maskB) }
+      gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)

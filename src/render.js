@@ -56,7 +56,7 @@ export function render(lang) {
     return `
       <article class="card${c.todo ? ' todo' : ''}" id="${c.id}" aria-labelledby="${c.id}-t">
         ${media}
-        <h3 class="card__line" id="${c.id}-t">${c.href ? `<a href="${c.href}">` : '<span>'}<span class="disp card__name">${esc(c.title)}</span> <span class="lbl card__genre">// ${esc(c.genre)}</span>${c.href ? '</a>' : '</span>'}${c.todo ? '' : ''}</h3>
+        <h3 class="card__line" id="${c.id}-t">${c.href ? `<a href="${c.href}">` : '<span>'}<span class="disp card__name">${esc(c.title)}</span> <span class="lbl card__genre">${esc(c.genre)}</span>${c.href ? '</a>' : '</span>'}${c.todo ? '' : ''}</h3>
       </article>`
   }
   // une piste : cartes, compteur, ligne de progression, flèches
@@ -142,7 +142,7 @@ export function render(lang) {
   <section class="work" id="projets" aria-labelledby="proj-t">
     <header class="sec-head wrap">
       <h2 class="disp" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
-      <p class="lbl sec-head__sub" data-reveal>// ${esc(t(workIntro))}</p>
+      <p class="lbl sec-head__sub" data-reveal>${esc(t(workIntro))}</p>
     </header>
     ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, genre: t(p.genre), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
   </section>
@@ -150,7 +150,7 @@ export function render(lang) {
   <section class="work work--research" id="recherche" aria-labelledby="research-t">
     <header class="sec-head wrap">
       <h2 class="disp" id="research-t">${esc(t(ui.research))}</h2>
-      <p class="lbl sec-head__sub" data-reveal>// ${esc(t(research.intro))}</p>
+      <p class="lbl sec-head__sub" data-reveal>${esc(t(research.intro))}</p>
     </header>
     ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), genre: t(r.kind), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
