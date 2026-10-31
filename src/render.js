@@ -52,13 +52,8 @@ export function render(lang) {
     return `
       <article class="card${c.todo ? ' todo' : ''}" id="${c.id}" aria-labelledby="${c.id}-t">
         ${media}
-        <div class="card__meta">
-          <p class="lbl">${c.label}</p>
-          <h3 class="disp card__title" id="${c.id}-t">${c.href ? `<a href="${c.href}">${esc(c.title)}</a>` : esc(c.title)}</h3>
-          <p class="card__lead">${esc(c.lead)}</p>
-          ${c.more ? `<p class="card__lead todo">${esc(c.more)}</p>` : ''}
-          ${c.credit ? `<p class="credit">${esc(c.credit)}</p>` : ''}
-        </div>
+        <h3 class="card__line" id="${c.id}-t">${c.href ? `<a href="${c.href}">` : '<span>'}<b>${esc(c.title)}</b> <span class="card__genre">// ${esc(c.genre)}</span>${c.href ? '</a>' : '</span>'}${c.todo ? '' : ''}</h3>
+        ${c.credit ? `<p class="credit">${esc(c.credit)}</p>` : ''}
       </article>`
   }
   // une piste : cartes, compteur, ligne de progression, flèches
@@ -155,7 +150,7 @@ export function render(lang) {
       <h2 class="lbl" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
       <p class="big disp" data-words>${words(t(workIntro))}</p>
     </div>
-    ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, label: `${n2(i)} · ${esc(t(p.milieu))} · ${esc(p.year)}`, lead: t(p.context), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
+    ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, genre: t(p.genre), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
   </section>
 
   <section class="work work--research" id="recherche" aria-labelledby="research-t">
@@ -163,7 +158,7 @@ export function render(lang) {
       <h2 class="lbl" id="research-t">${esc(t(ui.research))}</h2>
       <p class="big disp" data-words>${words(t(research.intro))}</p>
     </div>
-    ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), label: `${esc(t(r.kind))}${r.when ? ` · ${esc(t(r.when))}` : ''}`, lead: t(r.text), more: r.more && t(r.more), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
+    ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), genre: t(r.kind), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
 
   <section class="contact wrap" id="contact" aria-labelledby="contact-t">

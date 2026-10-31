@@ -63,6 +63,7 @@ export const ui = {
 export const projects = [
   {
     slug: '4derives',
+    genre: T('Rivière, film et 4D Gaussian splatting', 'River, film and 4D Gaussian splatting'),   // repris du portfolio
     title: '4Dérives',
     year: '2025-26',
     milieu: T('Rivière', 'River'),
@@ -101,6 +102,7 @@ export const projects = [
   },
   {
     slug: 'dumbo',
+    genre: T('Grands fonds, galerie 3D', 'Deep sea, 3D gallery'),   // repris du portfolio
     title: 'Dumbo',
     year: '2026',
     milieu: T('Grands fonds', 'Deep sea'),
@@ -140,6 +142,7 @@ export const projects = [
   },
   {
     slug: 'photographique-volume',
+    genre: T('Photographie sous-marine, paysages 3D', 'Underwater photography, 3D landscapes'),   // repris du portfolio
     title: 'Photographique Volume',
     year: '2025-26',
     milieu: T('Littoral', 'Coastline'),
@@ -179,6 +182,7 @@ export const projects = [
   },
   {
     slug: 'mondes-immerges',
+    genre: T('Article de recherche', 'Research paper'),   // repris du portfolio
     title: 'Mondes Immergés',
     year: '2024-25',
     milieu: T('Recherche', 'Research'),
