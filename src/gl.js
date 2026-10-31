@@ -88,16 +88,16 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float dist = dd * 90.0;                                // unités
     float W = 25.0;                                        // épaisseur du verre (unités) : même rapport à la largeur du trait que sur le chargeur
     float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
-    // réfraction (même loi que les vignettes) puis trame fixée à la forme
-    vec2 q = lp - n * W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);
-    float STEP = 24.0;
-    vec2 cell = floor(q / STEP), c = (cell + 0.5) * STEP;
-    vec4 mk = texture2D(uMask, c / vec2(816.0, 1000.0));
+    // réfraction (même loi que les vignettes) puis trame de l'écran (grille fixe, points de taille constante)
+    vec2 qs = p - n * W * upx * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);
+    vec2 cell = floor(qs / uCell), cs = (cell + 0.5) * uCell;
+    vec2 c = (cs - uMarkXf.xy) / upx + vec2(408.0, 500.0);            // centre du point, en unités du monogramme
+    vec4 mk = (c.x > 0.0 && c.x < 816.0 && c.y > 0.0 && c.y < 1000.0) ? texture2D(uMask, c / vec2(816.0, 1000.0)) : vec4(0.0);
     float inShape = step(0.5, max(mk.r, mk.g));
     float rnd = hash(cell);
     float rev = mk.g > mk.r ? 1.0 : smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
-    float r = STEP * 0.42 * inShape * rev, aU = aa / upx;
-    float dotA = (1.0 - smoothstep(r - aU, r + aU, length(q - c))) * clamp(r / aU, 0.0, 1.0);
+    float r = uCell * 0.46 * inShape * rev;
+    float dotA = (1.0 - smoothstep(r - aa, r + aa, length(qs - cs))) * clamp(r / aa, 0.0, 1.0);
     vec2 pc = c - vec2(639.25, 586.8);
     vec3 g = (mk.g > mk.r ? iris(atan(pc.x, -pc.y) / 6.28318) : vec3(0.95)) * dotA;   // « o » entièrement irisé
     // verre du bord (comme les vignettes et le chargeur)
@@ -475,7 +475,6 @@ export function createGL(canvas, { reduced }) {
     const i = e(Math.min(1, intro))
     const s0 = 44 / O_R, c0 = [w / 2 - O_OFF[0] * s0, h / 2 - O_OFF[1] * s0]
     size = s0 + (size - s0) * i; cx = c0[0] + (cx - c0[0]) * i; cy = c0[1] + (cy - c0[1]) * i
-    if (!reduced) { cy += Math.sin(time * 0.9) * h * 0.008 * i; cx += Math.cos(time * 0.6) * w * 0.004 * i }   // flotte
     return [cx, cy, size, 0]
   }
 
@@ -595,7 +594,7 @@ export function createGL(canvas, { reduced }) {
       if (v.maskB) { gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, v.maskB) }
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
-      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
+      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : w < 760 ? Math.max(5, v.cell - 1) : v.cell)   // logo : même trame que le chargeur (6 px) partout
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       if (v.text) { textFor(v, w, h); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.textTex) }

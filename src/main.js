@@ -42,7 +42,7 @@ document.querySelectorAll('.copy').forEach((b) => {
 
 /* Défilement doux (désactivé si l'utilisateur réduit les animations) ; une seule boucle d'affichage pour le
    défilement et le WebGL, pour que la trame reste collée au texte. */
-const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9 })
+const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both' })   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
 document.addEventListener('click', (e) => {
   const a = e.target.closest('a[href^="#"]')
   const id = a?.getAttribute('href').slice(1)
