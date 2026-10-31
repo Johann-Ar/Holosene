@@ -52,8 +52,7 @@ export function render(lang) {
     return `
       <article class="card${c.todo ? ' todo' : ''}" id="${c.id}" aria-labelledby="${c.id}-t">
         ${media}
-        <h3 class="card__line" id="${c.id}-t">${c.href ? `<a href="${c.href}">` : '<span>'}<b>${esc(c.title)}</b> <span class="card__genre">// ${esc(c.genre)}</span>${c.href ? '</a>' : '</span>'}${c.todo ? '' : ''}</h3>
-        ${c.credit ? `<p class="credit">${esc(c.credit)}</p>` : ''}
+        <h3 class="card__line" id="${c.id}-t">${c.href ? `<a href="${c.href}">` : '<span>'}<span class="disp card__name">${esc(c.title)}</span> <span class="lbl card__genre">// ${esc(c.genre)}</span>${c.href ? '</a>' : '</span>'}${c.todo ? '' : ''}</h3>
       </article>`
   }
   // une piste : cartes, compteur, ligne de progression, flèches
