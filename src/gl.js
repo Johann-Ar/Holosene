@@ -244,6 +244,30 @@ void main() {
   gl_FragColor = vec4(col * a, a);
 }`
 
+// Fond de page (comme la référence) : noir très profond, grandes nappes de couleur qui dérivent lentement près des
+// bords (couleurs de la marque, à ~6 % d'intensité) et grain de pellicule animé.
+const BG = `precision highp float;
+uniform vec2 uView;
+uniform float uDpr;
+uniform float uTime;
+float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float blob(vec2 p, vec2 c, float r) { return exp(-dot(p - c, p - c) / (r * r)); }
+void main() {
+  vec2 uv = gl_FragCoord.xy / uDpr / uView;
+  float asp = uView.x / uView.y;
+  vec2 p = vec2(uv.x * asp, uv.y);
+  float t = uTime * 0.035;
+  vec3 col = vec3(0.0);
+  col += vec3(1.00, 0.30, 0.93) * blob(p, vec2(-0.05 + 0.08 * sin(t * 1.3), 0.80 + 0.10 * cos(t)), 0.55);          // rose, haut gauche
+  col += vec3(0.78, 0.33, 1.00) * blob(p, vec2(asp + 0.05 + 0.06 * cos(t * 1.1), 0.25 + 0.12 * sin(t * 0.9)), 0.60); // mauve, bas droite
+  col += vec3(0.28, 0.60, 1.00) * blob(p, vec2(asp - 0.10 + 0.08 * sin(t * 0.7), 1.05), 0.50);                      // bleu, haut droite
+  col += vec3(0.22, 0.93, 0.56) * blob(p, vec2(0.15 + 0.10 * cos(t * 0.8), -0.08), 0.45) * 0.6;                      // menthe, bas gauche
+  float vig = smoothstep(0.15, 0.95, length((uv - 0.5) * vec2(1.0, 0.9)) * 1.25);                                    // la couleur reste vers les bords
+  col *= 0.09 * (0.35 + 0.65 * vig);
+  col += (h(gl_FragCoord.xy + fract(uTime * 7.0) * 113.0) - 0.5) * 0.022;                                            // grain
+  gl_FragColor = vec4(max(col, 0.0), 1.0);
+}`
+
 /** Géométrie du monogramme (viewBox 816 × 1000) : le S et le « o ». */
 const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
 const O = { x: 639.25, y: 586.8, ro: 176.7, ri: 90.8 }
@@ -272,6 +296,11 @@ export function createGL(canvas, { reduced }) {
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
+
+  // fond de page
+  const bgProg = gl.createProgram()
+  gl.attachShader(bgProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(bgProg, sh(gl.FRAGMENT_SHADER, BG)); gl.bindAttribLocation(bgProg, 0, 'a'); gl.linkProgram(bgProg)
+  const BU = {}; for (const n of ['uView', 'uDpr', 'uTime']) BU[n] = gl.getUniformLocation(bgProg, n)
 
   // passe « verre » et texture intermédiaire (contenu des vignettes)
   const gProg = gl.createProgram()
@@ -367,6 +396,10 @@ export function createGL(canvas, { reduced }) {
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
+    gl.useProgram(bgProg); gl.disable(gl.BLEND)
+    gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, reduced ? 0 : time)
+    gl.drawArrays(gl.TRIANGLES, 0, 3)
+    gl.enable(gl.BLEND)
     if (document.documentElement.classList.contains('fiche-open')) {
       // fiche projet ouverte : le curseur reste toujours visible
       if (lens.hidden) { document.documentElement.classList.remove('lens-on'); lens.hidden = false }
