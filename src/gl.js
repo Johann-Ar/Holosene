@@ -79,6 +79,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
   if (uFade > 0.5) edge = smoothstep(0.0, 0.2 * uRes.y, c.y) * smoothstep(0.0, 0.2 * uRes.y, uRes.y - c.y);
   float rnd = hash(cell);
   float rev = smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
+  if (uHasMask > 0.5 && inO > 0.5) rev = 1.0;   // accueil : le « o » est là dès le départ (il vient du chargeur)
   float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor * inWord) * m;
   float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
@@ -360,16 +361,23 @@ export function createGL(canvas, { reduced }) {
     x.fillStyle = '#00ff00'; x.fill(new Path2D(O_PATH), 'evenodd')
     v.mask = newTex(); upload(v.mask, c)
   }
-  /** Placement du monogramme selon l'avancée p (0 à 1) dans la scène d'accueil épinglée. */
-  function markXf(w, h, p, time) {
+  /** Placement du monogramme : intro (le « o » du chargeur, au centre, grandit et le S apparaît), puis le défilement p
+   *  le fait encore grossir et glisser vers la droite (bas sur mobile) ; il flotte doucement, sans rotation. */
+  const O_OFF = [0.23125, 0.0868], O_R = 0.1767
+  function markXf(w, h, p, time, intro) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
-    const q = e(k(0, 0.5))
     const small = w < 760
-    const big = Math.min(h * 0.74, w * (small ? 0.7 : 0.9) * 1000 / 816), end = Math.min(h * (small ? 0.42 : 0.38), w * 0.6 * 1000 / 816)
-    const size = big + (end - big) * q
-    const cy = h * (0.5 + (small ? -0.12 : -0.2) * q)
-    const rot = 0   // pas de rotation
-    return [w / 2, cy, size, rot]
+    const big = Math.min(h * 0.62, w * (small ? 0.62 : 0.8) * 1000 / 816)
+    const end = small ? Math.min(h * 0.5, w * 0.82 * 1000 / 816) : Math.min(h * 0.8, w * 0.4 * 1000 / 816)
+    const q = e(k(0, 0.55))
+    let size = big + (end - big) * q
+    let cx = w / 2 + (small ? 0.06 : 0.26) * w * q, cy = h / 2 + (small ? -0.17 : 0) * h * q
+    // intro : le « o » prend la place du chargeur (rayon extérieur 44 px, au centre), puis le monogramme s'agrandit
+    const i = e(Math.min(1, intro))
+    const s0 = 44 / O_R, c0 = [w / 2 - O_OFF[0] * s0, h / 2 - O_OFF[1] * s0]
+    size = s0 + (size - s0) * i; cx = c0[0] + (cx - c0[0]) * i; cy = c0[1] + (cy - c0[1]) * i
+    if (!reduced) { cy += Math.sin(time * 0.9) * h * 0.008 * i; cx += Math.cos(time * 0.6) * w * 0.004 * i }   // flotte
+    return [cx, cy, size, 0]
   }
 
   // texte net d'une vignette, redessiné à la taille exacte de la vignette et à la densité de l'écran
@@ -488,7 +496,7 @@ export function createGL(canvas, { reduced }) {
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 2) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
-      if (v.mark) { const hr = v.el.closest('.hero').getBoundingClientRect(); const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H))); gl.uniform4f(U.uMarkXf, ...markXf(w, h, p, time)) }
+      if (v.mark) { const hr = v.el.closest('.hero').getBoundingClientRect(); const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H))); gl.uniform4f(U.uMarkXf, ...markXf(w, h, p, time, reduced ? 1 : (now - v.seen) / 1500)) }
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       if (glassy) {
         // passe 2 : le bord de verre, qui réfracte ce contenu, sur la toile

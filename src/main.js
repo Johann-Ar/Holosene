@@ -256,7 +256,10 @@ function showCard(card) {
 const hero = document.querySelector('.hero')
 const heroWords = [...document.querySelectorAll('.hero__line .w')]
 let heroOn = -1
-const word = document.querySelector('.studio__word')
+const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
+// chaque moitié du logotype (HOLO / SENE) cadrée sur ses lettres
+wordsSvg.forEach((w) => { try { const b = w.querySelector('.w-white').getBBox(); w.setAttribute('viewBox', `${b.x} ${b.y} ${b.width} ${b.height}`) } catch {} })
+const word = null
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 function scrollEffects() {
   const vh = innerHeight
@@ -267,14 +270,14 @@ function scrollEffects() {
   const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
-    const on = Math.round(k(0.62, 0.92) * heroWords.length)
+    const on = Math.round(k(0.72, 0.95) * heroWords.length)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
   }
-  if (word) {
-    const p = k(0.32, 0.68)
-    word.style.setProperty('--draw', (1 - Math.min(1, p * 1.5)).toFixed(3))
-    word.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.5) / 0.5)).toFixed(3))
-  }
+  wordsSvg.forEach((w, i) => {
+    const p = k(0.3 + i * 0.14, 0.58 + i * 0.14)
+    w.style.setProperty('--draw', (1 - Math.min(1, p * 1.5)).toFixed(3))
+    w.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.5) / 0.5)).toFixed(3))
+  })
   for (const b of wordBlocks) {
     const r = b.el.getBoundingClientRect()
     const p = Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (r.height + vh * 0.25)))
@@ -289,42 +292,53 @@ function scrollEffects() {
     if (lead) { const v = f.toFixed(3); if (lead.dataset.f !== v) { lead.dataset.f = v; lead.style.setProperty('--f', v) } }
   }
 }
-if (reduced) { heroWords.forEach((w) => w.classList.add('on')); word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
+if (reduced) { heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
 /* Chargeur : le « o » du logo en miniature, avec la trame du site (points entiers de 5 px, pas de 6 px).
    Un arc à bouts arrondis tourne ; il s'assombrit vers la queue et n'est irisé qu'à son bout. */
 const spin = document.querySelector('.loader__spin')
+let finishLoader = (done) => done()
 if (spin) {
   const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
   spin.width = S * dpr; spin.height = S * dpr
   const x = spin.getContext('2d'); x.scale(dpr, dpr)
   const IR = [[56, 237, 143], [71, 153, 255], [199, 84, 255], [255, 77, 237]]
-  const R = 44, r = 23, mid = (R + r) / 2, half = (R - r) / 2, ARC = Math.PI * 1.7, STEP = 6
+  // roue irisée du logo (comme le shader : 0 = en haut, sens horaire)
+  const WHEEL = [[255, 77, 237], [255, 84, 163], [199, 84, 255], [71, 153, 255], [56, 237, 143], [255, 77, 237]]
+  const wheel = (t) => { const f = (((t % 1) + 1) % 1) * 5, i = Math.floor(f), u = f - i, s3 = u * u * (3 - 2 * u); return WHEEL[i].map((c, j) => c + (WHEEL[i + 1][j] - c) * s3) }
+  const R = 44, r = 23, mid = (R + r) / 2, half = (R - r) / 2, STEP = 6, TAU = Math.PI * 2
+  let finishAt = 0, onDone = null
+  // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
+  finishLoader = (done) => { finishAt = performance.now(); onDone = done }
   const draw = (t) => {
     if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
     x.clearRect(0, 0, S, S)
-    const head = (t / 1000) * Math.PI * 2 * 0.9
+    const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
+    const ARC = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe
+    const head = (t / 1000) * TAU * 0.9
     for (let gy = STEP / 2; gy < S; gy += STEP) for (let gx = STEP / 2; gx < S; gx += STEP) {
       const dx = gx - S / 2, dy = gy - S / 2
-      let a = Math.atan2(dx, -dy) - head; a = ((a % (Math.PI * 2)) + Math.PI * 4) % (Math.PI * 2)   // 0 au bout, croît vers la queue
-      const back = Math.PI * 2 - a                                 // distance angulaire derrière le bout
-      const along = Math.min(back, ARC)                            // position sur l'arc (0 = bout)
-      if (back > ARC + half / mid && a > half / mid) continue
-      // distance au trait de l'arc, bouts arrondis
+      let a = Math.atan2(dx, -dy) - head; a = ((a % TAU) + TAU * 2) % TAU
+      const back = TAU - a
+      const along = Math.min(back, ARC)
+      const full = fe > 0.999
+      if (!full && back > ARC + half / mid && a > half / mid) continue
       const ang = head - along
       const px = S / 2 + Math.sin(ang) * mid, py = S / 2 - Math.cos(ang) * mid
-      const onArc = back <= ARC && a > 0.001 ? Math.abs(Math.hypot(dx, dy) - mid) : Math.hypot(gx - px, gy - py)
+      const onArc = full || (back <= ARC && a > 0.001) ? Math.abs(Math.hypot(dx, dy) - mid) : Math.hypot(gx - px, gy - py)
       const capHead = Math.hypot(gx - (S / 2 + Math.sin(head) * mid), gy - (S / 2 - Math.cos(head) * mid))
-      const d = Math.min(onArc, capHead)
-      if (d > half) continue
-      const k = 1 - Math.min(1, back > ARC ? 1 : back / ARC)       // 1 au bout, 0 à la queue
-      const v = Math.round(255 * Math.pow(Math.min(1, k / 0.9), 1.3))                 // s'assombrit progressivement vers la queue
-      const u = Math.min(1, Math.max(0, (k - 0.9) / 0.1))                              // irisé seulement au bout, fondu depuis le blanc
+      if (Math.min(onArc, full ? 1e9 : capHead) > half) continue
+      const k = 1 - Math.min(1, back > ARC ? 1 : back / ARC)
+      const v = Math.round(255 * Math.pow(Math.min(1, k / 0.72), 1.3))
+      const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))   // irisé sur le dernier quart de l'arc
       const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
       const ic = IR[i].map((c, j) => c + (IR[i + 1][j] - c) * w)
-      const col = ic.map((c) => Math.round(v + (c - v) * Math.min(1, u * 1.6)))
-      x.fillStyle = `rgb(${col})`; x.beginPath(); x.arc(gx, gy, 2.5, 0, Math.PI * 2); x.fill()
+      let col = ic.map((c) => v + (c - v) * Math.min(1, u * 2.2))
+      const lc = wheel(Math.atan2(dx, -dy) / TAU)                   // en fin de chargement : les couleurs du « o »
+      col = col.map((c, j) => Math.round(c + (lc[j] - c) * fe))
+      x.fillStyle = `rgb(${col})`; x.beginPath(); x.arc(gx, gy, 2.5, 0, TAU); x.fill()
     }
+    if (fin >= 1 && onDone) { const d = onDone; onDone = null; d() }
     requestAnimationFrame(draw)
   }
   requestAnimationFrame(draw)
@@ -340,7 +354,7 @@ Promise.race([
     new Promise((r) => setTimeout(r, reduced ? 0 : 1000)),
   ]),
   new Promise((r) => setTimeout(r, 6000)),
-]).then(() => requestAnimationFrame(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
+]).then(() => finishLoader(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
 
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null

@@ -13,6 +13,9 @@ html.lenis, html.lenis body { height: auto; } .lenis.lenis-smooth { scroll-behav
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 body { background: var(--c-black-deep); color: var(--c-grey-light); font: 400 var(--fs-body)/var(--lh-body) var(--font-text); overflow-x: hidden; }
 img { max-width: 100%; display: block; }
+/* logos et visuels : pas de glisser-déposer */
+img, svg, canvas { -webkit-user-drag: none; user-select: none; }
+.brand, .hero, .studio__word { -webkit-user-select: none; user-select: none; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--iris-blue); outline-offset: 4px; }
 
@@ -30,7 +33,7 @@ a { color: inherit; }
 
 .loader { display: none; }
 /* écran de chargement : un astérisque tramé (mêmes points que le site) qui tourne, puis fondu */
-.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: #000; transition: opacity 0.9s var(--ease-flow), visibility 0.9s; }
+.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: #000; transition: opacity 0.45s var(--ease-flow), visibility 0.45s; }
 .is-loaded .loader { opacity: 0; visibility: hidden; }
 .loader__spin { width: 96px; height: 96px; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -130,11 +133,14 @@ main, .foot { position: relative; z-index: 1; }
 .hero__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
 /* accueil : le logotype sur toute la largeur, fait de points (la rivière) ; ses deux « o » sont l'œil irisé du monogramme.
    Positions partagées avec le WebGL (wordBox dans gl.js) : marges --edge, centre vertical à 42 % (38 % sur mobile). */
-.hero__word { position: absolute; left: 0; right: 0; top: 64%; transform: translateY(-50%); line-height: 0; }
-.hero__line { position: absolute; left: 0; right: 0; top: calc(64% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 26px); margin-inline: auto; max-width: 62ch; font-size: clamp(0.9rem, 1.15vw, 1.1rem); line-height: 1.45; }
+.hero__copy { position: absolute; left: var(--edge-l); top: 50%; transform: translateY(-50%); display: grid; justify-items: start; gap: clamp(18px, 3svh, 32px); }
+/* HOLO au-dessus de SENE, sur le bord gauche, même hauteur de lettres */
+.hero__word { display: grid; justify-items: start; gap: clamp(8px, 1.6svh, 18px); line-height: 0; }
+.hero__word .studio__word { width: auto; height: min(19svh, 12vw); }
+.hero__line { max-width: 40ch; text-align: left !important; font-size: clamp(0.85rem, 1.05vw, 1rem); line-height: 1.5; }
+@media (max-width: 760px) { .hero__copy { top: auto; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: none; right: var(--edge-r); } .hero__word .studio__word { height: min(11svh, 20vw); } }
 .js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
 .js .hero__line .w.on { opacity: 1; }
-@media (max-width: 760px) { .hero__word { top: 70%; } .hero__line { top: calc(70% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 20px); } }
 .about { padding-block: var(--sp-9) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
 .about h2 { margin-bottom: 10px; }
 .about p { max-width: 64ch; font-size: clamp(0.95rem, 1.25vw, 1.15rem); line-height: 1.55; }

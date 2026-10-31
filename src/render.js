@@ -15,17 +15,21 @@ const logoBox = logoSrc.match(/viewBox="([^"]+)"/)[1]
 // couleurs irisées éclaircies vers le blanc : l'irisé reste un reflet, pas une couleur franche
 const IRIS = ['#e1adcd', '#abcce3', '#abe7c2', '#adcce4', '#e0aece', '#faafd8', '#ffaaf3', '#feacdd', '#e1adcd']
 const IRIS_LINE = ['#f0d7e7', '#d6e6f1', '#d6f3e1', '#d7e6f2', '#f0d7e7', '#fdd8ec', '#ffd5f9', '#ffd7ee', '#f0d7e7']
-const logotype = `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="true">
+const logoParts = logoSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, ''))
+// le logotype en deux moitiés : HOLO (H, o, l, o) et SENE (s, e, n, e)
+const wordPart = (paths) => `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="true">
   <defs>
     <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
     <linearGradient id="iris-l" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS_LINE.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
     <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="erode" radius="6" result="e"/><feGaussianBlur in="e" stdDeviation="12" result="b"/><feComposite in="b" in2="SourceGraphic" operator="in"/></filter>
   </defs>
-  <g class="w-edge" fill="url(#iris-g)">${logoPaths}</g>
-  <g class="w-core" fill="#fff" filter="url(#core)">${logoPaths}</g>
-  <g class="w-white" fill="#fff">${logoPaths}</g>
-  <g class="w-line" fill="none" stroke="url(#iris-l)">${logoPaths.replace(/<path /g, '<path pathLength="1" ')}</g>
+  <g class="w-edge" fill="url(#iris-g)">${paths}</g>
+  <g class="w-core" fill="#fff" filter="url(#core)">${paths}</g>
+  <g class="w-white" fill="#fff">${paths}</g>
+  <g class="w-line" fill="none" stroke="url(#iris-l)">${paths.replace(/<path /g, '<path pathLength="1" ')}</g>
 </svg>`
+const logotype = wordPart(logoPaths)
+const holo = wordPart(logoParts.slice(0, 4).join('')), sene = wordPart(logoParts.slice(4).join(''))
 
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
@@ -113,7 +117,7 @@ export function render(lang) {
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
   <a href="#top" class="brand" aria-label="Holosene">
-    <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
+    <img class="brand__mark" draggable="false" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
   </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
@@ -128,8 +132,10 @@ export function render(lang) {
         <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
       </div>
       <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
-      <h1 id="hero-t" class="hero__word wrap"><span class="sr">Holosene · ${esc(t(site.signature))}</span>${logotype}</h1>
-      <p class="hero__line wrap" data-hwords>${words(t(studio))}</p>
+      <div class="hero__copy">
+        <h1 id="hero-t" class="hero__word"><span class="sr">Holosene · ${esc(t(site.signature))}</span>${holo}${sene}</h1>
+        <p class="hero__line" data-hwords>${words(t(studio))}</p>
+      </div>
     </div>
   </section>
 
