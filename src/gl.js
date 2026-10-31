@@ -5,6 +5,8 @@
  * Accueil : le S du monogramme en trame de points, le « o » en aplat irisé comme sur le logo ; pas de lentille.
  */
 
+import { GLASS_SHADE, insideDistance } from './glass.js'
+
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 
 
@@ -58,35 +60,37 @@ vec3 iris(float t) {
   return r;
 }
 
+${GLASS_SHADE}
 // trame en un point : un point par cellule, sa taille suit la lumière de l'image (couleur prémultipliée, alpha).
 // off : décalage de la lecture de l'image seulement (la grille de points reste en place : réfraction sans traînées)
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
   if (uHasMask > 0.5) {
-    // accueil : le monogramme en verre (comme le bord des vignettes) : relief tiré du masque adouci, réfraction du fond,
-    // lumière sur les arêtes ; arêtes du « o » irisées
+    // accueil : le monogramme en verre, avec le modèle du bord des vignettes (glassShade) :
+    // distance à l'arête exacte (champ de distance), bord gris clair pour le S, irisé pour le « o »
     vec2 d = p - uMarkXf.xy;
     vec2 muv = d / uMarkXf.z / vec2(0.816, 1.0) + 0.5;
     if (muv.x < 0.0 || muv.x > 1.0 || muv.y < 0.0 || muv.y > 1.0) return vec4(0.0);
     vec4 mk = texture2D(uMask, muv);
-    float cov = smoothstep(0.35, 0.65, max(mk.r, mk.g));
+    float cov = smoothstep(0.3, 0.7, max(mk.r, mk.g));
     if (cov < 0.001) return vec4(0.0);
     bool isO = mk.g > mk.r;
-    vec2 e = vec2(1.0 / 900.0, 0.0);
-    float hgt = max(texture2D(uMaskB, muv).r, texture2D(uMaskB, muv).g);
-    float hx = max(texture2D(uMaskB, muv + e.xy).r, texture2D(uMaskB, muv + e.xy).g) - max(texture2D(uMaskB, muv - e.xy).r, texture2D(uMaskB, muv - e.xy).g);
-    float hy = max(texture2D(uMaskB, muv + e.yx).r, texture2D(uMaskB, muv + e.yx).g) - max(texture2D(uMaskB, muv - e.yx).r, texture2D(uMaskB, muv - e.yx).g);
-    vec2 n = vec2(hx, hy) * 9.0;                                       // pente du relief
-    float rim = pow(1.0 - clamp(hgt, 0.0, 1.0), 3.0);                  // 1 sur l'arête, 0 au cœur
-    vec2 sp = (gl_FragCoord.xy - n * vec2(1.0, -1.0) * 70.0 * uDpr) / uCanvas;
-    vec3 bgc = texture2D(uBg, sp).rgb;
-    vec3 col = bgc * 2.6 + vec3(0.13);                                 // verre dépoli : fond réfracté, éclairci
-    vec2 L = normalize(vec2(-0.6, -0.8));
-    float spec = pow(max(dot(normalize(n + 1e-5), L), 0.0), 3.0) * clamp(length(n) * 2.0, 0.0, 1.0);
+    float px = uMarkXf.z / 1000.0 * 90.0;                                // le champ va de 0 à 90 unités du monogramme
+    vec2 e = vec2(1.0 / 816.0, 0.0), e2 = vec2(0.0, 1.0 / 1000.0);
+    float dd = isO ? texture2D(uMaskB, muv).g : texture2D(uMaskB, muv).r;
+    float gx = (isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r);
+    float gy = (isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r);
+    vec2 n = -normalize(vec2(gx, gy) + 1e-6);                            // normale sortante
+    float dist = dd * px;                                                 // distance à l'arête, en px
+    float W = clamp(uMarkXf.z * 0.032, 10.0, 30.0);
+    // ce qui est derrière : le fond, dévié vers le bord (réfraction), plus fort au ras de l'arête
+    float s1 = 1.0 - clamp(dist / W, 0.0, 1.0);
+    vec2 sp = (gl_FragCoord.xy + n * vec2(1.0, -1.0) * W * 1.2 * s1 * s1 * uDpr) / uCanvas;
+    vec3 base = texture2D(uBg, sp).rgb * 1.4;
     vec2 ep = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
-    vec3 edge = isO ? iris(atan(ep.x, -ep.y) / 6.28318) : vec3(1.0);
-    float lip = exp(-pow((1.0 - hgt) - 0.08, 2.0) * 160.0);            // liseré lumineux fin juste à l'intérieur de l'arête
-    col += edge * (rim * (isO ? 1.4 : 0.9) + lip * (isO ? 0.9 : 0.6)) + vec3(1.0) * spec * 1.1;
+    float ang = atan(ep.x, -ep.y) / 6.28318;
+    vec3 tint = isO ? iris(ang) : vec3(0.86, 0.86, 0.9);
+    vec3 col = glassShade(dist, n, tint, base, W);
     float al = cov * (isO ? 1.0 : smoothstep(0.0, 1.0, uReveal));
     return vec4(col * al, al);
   }
@@ -420,10 +424,17 @@ export function createGL(canvas, { reduced }) {
     x.fillStyle = '#ff0000'; x.fill(new Path2D(S_PATH))
     x.fillStyle = '#00ff00'; x.fill(new Path2D(O_PATH), 'evenodd')
     v.mask = newTex(); upload(v.mask, c)
-    // version adoucie : le relief du verre
-    const cb = document.createElement('canvas'); cb.width = 1632; cb.height = 2000
-    const xb = cb.getContext('2d'); xb.fillStyle = '#000'; xb.fillRect(0, 0, 1632, 2000); xb.filter = 'blur(18px)'; xb.drawImage(c, 0, 0)
-    v.maskB = newTex(); upload(v.maskB, cb)
+    // champ de distance à l'arête (S en r, « o » en g), 0 à 90 unités : le verre a une largeur exacte partout
+    const sm = document.createElement('canvas'); sm.width = 816; sm.height = 1000
+    const xs = sm.getContext('2d'); xs.drawImage(c, 0, 0, 816, 1000)
+    const px = xs.getImageData(0, 0, 816, 1000).data
+    const inS = new Uint8Array(816 * 1000), inO = new Uint8Array(816 * 1000)
+    for (let i = 0; i < 816 * 1000; i++) { inS[i] = px[i * 4] > 127; inO[i] = px[i * 4 + 1] > 127 }
+    const dS = insideDistance(inS, 816, 1000), dO = insideDistance(inO, 816, 1000)
+    const img = xs.createImageData(816, 1000)
+    for (let i = 0; i < 816 * 1000; i++) { img.data[i * 4] = Math.min(255, dS[i] / 90 * 255); img.data[i * 4 + 1] = Math.min(255, dO[i] / 90 * 255); img.data[i * 4 + 3] = 255 }
+    xs.putImageData(img, 0, 0)
+    v.maskB = newTex(); upload(v.maskB, sm)
   }
   /** Placement du monogramme : intro (le « o » du chargeur, au centre, grandit et le S apparaît), puis le défilement p
    *  le fait encore grossir et glisser vers la droite (bas sur mobile) ; il flotte doucement, sans rotation. */
