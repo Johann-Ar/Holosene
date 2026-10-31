@@ -66,40 +66,51 @@ ${GLASS_GLSL}
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
   if (uHasMask > 0.5) {
-    // accueil : le monogramme en verre, avec le modèle du bord des vignettes (glassShade) :
-    // distance à l'arête exacte (champ de distance), bord gris clair pour le S, irisé pour le « o »
-    vec2 d = p - uMarkXf.xy;
-    vec2 muv = d / uMarkXf.z / vec2(0.816, 1.0) + 0.5;
-    if (muv.x < 0.0 || muv.x > 1.0 || muv.y < 0.0 || muv.y > 1.0) return vec4(0.0);
-    vec4 mk = texture2D(uMask, muv);
-    float cov = smoothstep(0.3, 0.7, max(mk.r, mk.g));
+    // accueil : le monogramme en trame de points (S blanc, « o » irisé), avec sur son contour le bord de verre des
+    // vignettes : la trame y est réfractée vers l'intérieur, le verre se teinte (gris pour le S, irisé pour le « o »),
+    // arête claire, reflets orientés
+    vec2 toUv = 1.0 / uMarkXf.z / vec2(0.816, 1.0);
+    vec2 muv = (p - uMarkXf.xy) * toUv + 0.5;
+    vec4 mkp = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
+    float cov = smoothstep(0.3, 0.7, max(mkp.r, mkp.g));
     if (cov < 0.001) return vec4(0.0);
-    bool isO = mk.g > mk.r;
-    float px = uMarkXf.z / 1000.0 * 90.0;                                // le champ va de 0 à 90 unités du monogramme
+    bool isO = mkp.g > mkp.r;
+    // distance à l'arête (px) et normale sortante, depuis le champ de distance
     vec2 e = vec2(2.0 / 816.0, 0.0), e2 = vec2(0.0, 2.0 / 1000.0);
-    float dd = isO ? texture2D(uMaskB, muv).g : texture2D(uMaskB, muv).r;
-    float gx = (isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r);
-    float gy = (isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r);
-    vec2 n = -normalize(vec2(gx, gy) + 1e-6);                            // normale sortante
-    float dist = dd * px;                                                 // distance à l'arête, en px
-    // plaque de verre : biseau B, épaisseur T ; le dessus plat laisse voir le fond tel quel (transparence)
-    float B = clamp(uMarkXf.z * 0.05, 12.0, 40.0), T = B * 1.6;
-    vec3 N = glassNormal(dist, n, B, T);
-    vec2 base = gl_FragCoord.xy;
-    vec2 flip = vec2(1.0, -1.0) * uDpr;
-    vec3 refr = vec3(texture2D(uBg, (base + glassShift(N, 1.44, T) * flip) / uCanvas).r,
-                     texture2D(uBg, (base + glassShift(N, 1.50, T) * flip) / uCanvas).g,
-                     texture2D(uBg, (base + glassShift(N, 1.56, T) * flip) / uCanvas).b);
-    float F = glassFresnel(N);
-    vec2 ep = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
-    vec3 tint = isO ? iris(atan(ep.x, -ep.y) / 6.28318) : vec3(1.0);
-    vec3 R = reflect(vec3(0.0, 0.0, -1.0), N);
-    vec3 env = glassEnv(R) * mix(vec3(1.0), tint, isO ? 0.85 : 0.0);
-    float edge = 1.0 - smoothstep(0.0, B, dist);
-    vec3 col = refr * (1.0 - F) * mix(vec3(1.0), tint, (isO ? 0.35 : 0.0) * edge) + env * F + glassSpec(N) + tint * (isO ? 0.07 : 0.045);
-    col += mix(vec3(1.0), tint, isO ? 0.7 : 0.0) * exp(-dist / max(1.0, uDpr * 0.8)) * 0.45;   // arête : réflexion totale interne, fine
-    float al = cov * (isO ? 1.0 : smoothstep(0.0, 1.0, uReveal));
-    return vec4(col * al, al);
+    vec4 dc = texture2D(uMaskB, muv);
+    float dd = isO ? dc.g : dc.r;
+    float gx = isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r;
+    float gy = isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r;
+    vec2 n = -normalize(vec2(gx, gy) + 1e-6);
+    float dist = dd * uMarkXf.z / 1000.0 * 90.0;
+    float W = clamp(uMarkXf.z * 0.03, 10.0, 26.0);
+    float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
+    // trame : grille fixe ; près de l'arête, la forme est lue plus à l'intérieur (réfraction, sans traînées)
+    vec2 cell = floor(p / uCell), c = (cell + 0.5) * uCell;
+    vec2 off = -n * W * 0.5 * s1 * s1 * (3.0 - 2.0 * s1);
+    vec2 cuv = (c + off - uMarkXf.xy) * toUv + 0.5;
+    vec4 mk = (cuv.x > 0.0 && cuv.x < 1.0 && cuv.y > 0.0 && cuv.y < 1.0) ? texture2D(uMask, cuv) : vec4(0.0);
+    float inShape = smoothstep(0.3, 0.7, max(mk.r, mk.g));
+    float rnd = hash(cell);
+    float rev = mk.g > mk.r ? 1.0 : smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
+    float r = uCell * 0.49 * 0.92 * inShape * rev;
+    float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
+    vec2 ep = c - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
+    vec3 dotCol = mk.g > mk.r ? iris(atan(ep.x, -ep.y) / 6.28318) : vec3(0.95);
+    vec3 g = dotCol * dotA;
+    // verre du bord (comme les vignettes)
+    vec2 pe = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
+    vec3 tint = isO ? iris(atan(pe.x, -pe.y) / 6.28318) : vec3(0.82, 0.83, 0.88);
+    g = g * mix(vec3(1.0), tint * 1.15, 0.85 * pow(s1, 1.1)) + tint * 0.12 * s1;
+    vec2 L = normalize(vec2(-0.65, -0.76));
+    float facing = dot(n, L);
+    float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(dist - 2.0) / 2.2) * 0.95;
+    float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(dist - 3.0) / 3.0) * 0.35;
+    g += mix(vec3(1.0), tint, 0.5) * (spec + back);
+    g += mix(vec3(1.0), tint, isO ? 0.6 : 0.2) * exp(-dist / 1.3) * 0.5;      // arête claire
+    float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
+    float al = max(dotA, s1 * 0.35) * cov * shapeRev;
+    return vec4(g * cov * shapeRev, al);
   }
   vec2 cell = floor(p / uCell);
   vec2 c = (cell + 0.5) * uCell;

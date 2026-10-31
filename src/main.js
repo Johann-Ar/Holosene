@@ -1,7 +1,6 @@
 import './styles.css'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
-import { glassJS } from './glass.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -303,7 +302,7 @@ if (spin) {
   let finishAt = 0, onDone = null
   // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
   finishLoader = (done) => { finishAt = performance.now(); onDone = done }
-  // dessin pixel par pixel, avec le même verre que le logo (glassJS)
+  // dessin pixel par pixel : trame de points (comme le logo) et bord de verre des vignettes sur le contour de l'arc
   const P = S * dpr, img = x.createImageData(P, P)
   x.setTransform(1, 0, 0, 1, 0, 0)
   const draw = (t) => {
@@ -311,36 +310,55 @@ if (spin) {
     const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
     const ARC = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe
     const head = (t / 1000) * TAU * 0.9
-    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid, W = 7
+    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid, W = 6, L = [-0.65 / 1.0018, -0.76 / 1.0018]
+    // forme : distance à l'arête (px, positive dedans), normale sortante, position k sur l'arc (1 au bout, 0 à la queue)
+    const shape = (px, py) => {
+      const rr = Math.hypot(px, py)
+      let a = Math.atan2(px, -py) - head; a = ((a % TAU) + TAU * 2) % TAU
+      const back = TAU - a
+      if (fe > 0.9 || back <= ARC) {
+        const dOut = R - rr, dIn = rr - r, s0 = dOut < dIn ? 1 : -1
+        return [Math.min(dOut, dIn), s0 * px / (rr || 1), s0 * py / (rr || 1), fe > 0.9 ? Math.max(1 - back / ARC, fe) : 1 - back / ARC]
+      }
+      const cx = px - hx, cy = py - hy, dc = Math.hypot(cx, cy)
+      return [half - dc, cx / (dc || 1), cy / (dc || 1), 1]
+    }
+    // couleur d'un point : s'éteint vers la queue, irisé au bout ; en fin de chargement, les couleurs du « o »
+    const colorAt = (k, px, py) => {
+      const v = Math.pow(Math.min(1, k / 0.72), 1.3)
+      const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))
+      const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
+      const ic = IR[i].map((c, n) => (c + (IR[i + 1][n] - c) * w) / 255)
+      const lc = wheel(Math.atan2(px, -py) / TAU).map((c) => c / 255)
+      return [0, 1, 2].map((n) => { const c = v + (ic[n] - v) * Math.min(1, u * 2.2); return c + (lc[n] - c) * fe })
+    }
     const data = img.data
     for (let j = 0; j < P; j++) for (let i = 0; i < P; i++) {
       const o = (j * P + i) * 4
       const px = (i + 0.5) / dpr - S / 2, py = (j + 0.5) / dpr - S / 2
-      const rr = Math.hypot(px, py)
-      let a = Math.atan2(px, -py) - head; a = ((a % TAU) + TAU * 2) % TAU
-      const back = TAU - a                                       // derrière le bout (0 au bout)
-      let d, nx, ny, k
-      const onRing = fe > 0.9 || back <= ARC
-      if (onRing) {
-        const dOut = R - rr, dIn = rr - r
-        d = Math.min(dOut, dIn); const s0 = dOut < dIn ? 1 : -1; nx = s0 * px / (rr || 1); ny = s0 * py / (rr || 1)
-        k = fe > 0.999 ? 1 : 1 - back / ARC
-      } else {
-        const cx = px - hx, cy = py - hy, dc = Math.hypot(cx, cy)   // bout arrondi
-        d = half - dc; nx = cx / (dc || 1); ny = cy / (dc || 1); k = 1
-      }
+      const [d, nx, ny, k] = shape(px, py)
       if (d < -0.6) { data[o + 3] = 0; continue }
       const cov = Math.min(1, (d + 0.6) / 1.2)
-      // teinte : gris clair, irisée vers le bout ; en fin de chargement, les couleurs du « o »
-      const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))
-      const fI = u * (IR.length - 1), iI = Math.min(IR.length - 2, Math.floor(fI)), wI = fI - iI
-      const ic = IR[iI].map((c, n) => (c + (IR[iI + 1][n] - c) * wI) / 255)
-      const lc = wheel(Math.atan2(px, -py) / TAU).map((c) => c / 255)
-      const tint = [0, 1, 2].map((n) => { const g = 0.86 + (ic[n] - 0.86) * Math.min(1, u * 2); return g + (lc[n] - g) * fe })
-      const col = glassJS(Math.max(0, d), nx, ny, 6, 9, tint)
-      const fade = Math.min(1, Math.pow(k, 0.8) * 1.15 + fe)     // la queue s'efface
-      const al = cov * fade
-      data[o] = Math.min(255, col[0] * 255 * al); data[o + 1] = Math.min(255, col[1] * 255 * al); data[o + 2] = Math.min(255, col[2] * 255 * al); data[o + 3] = al * 255
+      const s1 = 1 - Math.min(1, Math.max(0, d / W))
+      // trame : la forme est lue plus à l'intérieur près de l'arête (réfraction)
+      const gx = Math.floor((px + S / 2) / STEP) * STEP + STEP / 2 - S / 2, gy = Math.floor((py + S / 2) / STEP) * STEP + STEP / 2 - S / 2
+      const bend = W * 0.5 * s1 * s1 * (3 - 2 * s1)
+      const [dq, , , kq] = shape(gx - nx * bend, gy - ny * bend)
+      const dotR = dq > 0 ? 2.5 : 0
+      const dotA = Math.min(1, Math.max(0, (dotR - Math.hypot(px - gx, py - gy)) * dpr + 0.5))
+      const dcol = colorAt(kq, gx, gy)
+      // verre du bord : teinte (gris clair, irisée vers le bout), arête claire, reflets
+      const tint = colorAt(Math.max(k, 0.0001), px, py).map((c, n) => 0.82 + (c - 0.82) * Math.min(1, Math.max(0, (k - 0.72) / 0.28) * 2 + fe))
+      const facing = nx * L[0] + ny * L[1]
+      const sp = Math.pow(Math.max(facing, 0), 2) * Math.exp(-Math.abs(d - 2) / 2.2) * 0.95 + Math.pow(Math.max(-facing, 0), 2) * Math.exp(-Math.abs(d - 3) / 3) * 0.35
+      const fade = Math.min(1, Math.pow(k, 0.8) * 1.15 + fe)
+      const col = [0, 1, 2].map((n) => {
+        let c = dcol[n] * dotA
+        c = c * (1 + (tint[n] * 1.15 - 1) * 0.85 * Math.pow(s1, 1.1)) + tint[n] * 0.12 * s1
+        return c + (1 + (tint[n] - 1) * 0.5) * sp + (1 + (tint[n] - 1) * 0.4) * Math.exp(-d / 1.3) * 0.5
+      })
+      const al = Math.min(1, Math.max(dotA, s1 * 0.35)) * cov * fade
+      data[o] = Math.min(255, col[0] * 255 * cov * fade); data[o + 1] = Math.min(255, col[1] * 255 * cov * fade); data[o + 2] = Math.min(255, col[2] * 255 * cov * fade); data[o + 3] = al * 255
     }
     x.putImageData(img, 0, 0)
     if (fin >= 1 && onDone) { const d = onDone; onDone = null; d() }
