@@ -122,12 +122,14 @@ export function render(lang) {
 
 <main id="top">
   <section class="hero" aria-labelledby="hero-t">
-    <div class="hero__view" data-gl="mark" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
+    <div class="hero__view" data-gl="word" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
       <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
     </div>
-    <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
-    <h1 id="hero-t" class="sr">Holosene · ${esc(t(site.signature))}</h1>
-    <p class="hero__line wrap" data-reveal>${esc(t(studio))}</p>
+    <h1 id="hero-t" class="hero__word wrap">
+      <span class="sr">Holosene · ${esc(t(site.signature))}</span>
+      <svg viewBox="${logoBox}" aria-hidden="true" focusable="false">${logoPaths}</svg>
+    </h1>
+    <p class="hero__line" data-reveal>${esc(t(studio))}</p>
   </section>
 
   <section class="work" id="projets" aria-labelledby="proj-t">
@@ -136,10 +138,6 @@ export function render(lang) {
       <p data-reveal>${esc(t(workIntro))}</p>
     </header>
     ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, genre: t(p.genre), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
-  </section>
-
-  <section class="studio" aria-hidden="true">
-    <div class="studio__mark wrap">${logotype}</div>
   </section>
 
   <section class="work work--research" id="recherche" aria-labelledby="research-t">

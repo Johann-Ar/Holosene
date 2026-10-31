@@ -106,10 +106,7 @@ main, .foot { position: relative; z-index: 1; }
 .hero { position: relative; height: 100svh; min-height: 560px; }
 .hero__view { position: absolute; inset: 0; }
 .hero__view > img { opacity: 0 !important; }
-.hero__mark { position: absolute; left: 50%; top: 45%; height: min(64svh, 50vw * 1000 / 816); width: auto; transform: translate(-50%, -50%); opacity: 0.92; transition: opacity var(--dur-slow); }
-.has-gl .hero__mark { opacity: 0; }
 .hero__bottom { position: absolute; left: 0; right: 0; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; gap: 16px; }
-@media (max-width: 760px) { .hero__mark { top: 40%; height: min(50svh, 62vw * 1000 / 816); } .hero__bottom { flex-direction: column; } }
 
 /* gabarit commun À propos / Projets / Contact : libellé à gauche, grand texte à droite */
 .row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
@@ -121,7 +118,13 @@ main, .foot { position: relative; z-index: 1; }
 .studio { padding-block: var(--sp-7); }   /* pause graphique : le seul élément géant de son écran */
 /* mini à propos et à propos de fin : capitales, centrés, mots importants en gras (comme la référence) */
 .hero__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
-.hero__line { position: absolute; left: 0; right: 0; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); margin-inline: auto; max-width: 62ch; font-size: clamp(0.9rem, 1.15vw, 1.1rem); line-height: 1.45; }
+/* accueil : le logotype sur toute la largeur, fait de points (la rivière) ; ses deux « o » sont l'œil irisé du monogramme.
+   Positions partagées avec le WebGL (wordBox dans gl.js) : marges --edge, centre vertical à 42 % (38 % sur mobile). */
+.hero__word { position: absolute; left: 0; right: 0; top: 42%; transform: translateY(-50%); line-height: 0; }
+.hero__word svg { width: 100%; height: auto; fill: #fff; transition: opacity var(--dur-slow); }
+.has-gl .hero__word svg { opacity: 0; }
+@media (max-width: 760px) { .hero__word { top: 38%; } .hero__line { top: calc(38% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 22px); } }
+.hero__line { position: absolute; left: var(--edge-l); right: var(--edge-r); top: calc(42% + (100vw - var(--edge-l) - var(--edge-r)) * 736 / 4824 / 2 + 28px); max-width: 46ch; text-align: left !important; font-size: clamp(0.9rem, 1.15vw, 1.1rem); line-height: 1.45; }
 .about { padding-block: var(--sp-9) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
 .about h2 { margin-bottom: 10px; }
 .about p { max-width: 64ch; font-size: clamp(0.95rem, 1.25vw, 1.15rem); line-height: 1.55; }

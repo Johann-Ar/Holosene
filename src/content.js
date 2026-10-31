@@ -29,7 +29,7 @@ export const site = {
 
 export const ui = {
   projects: T('Projets', 'Work'),
-  research: T('Recherche', 'Research'),
+  research: T('Travaux de recherche', 'Research work'),
   studio: T('À propos', 'About'),
   workHint: T('Faites défiler', 'Scroll'),
   contact: T('Contact', 'Contact'),

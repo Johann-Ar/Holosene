@@ -31,7 +31,7 @@ uniform float uHasText;
 uniform float uColor;   // 1 : points de la couleur de l'image (dégradé « En cours »)
 uniform vec4 uScr;      // coin haut gauche de la vue à l'écran (px), taille de l'écran (px)
 uniform float uTime;
-uniform vec4 uEye;      // accueil : le « o » du logo (centre, rayon extérieur, rayon intérieur), aplat irisé
+uniform vec4 uEye;      // accueil : centres des deux « o » du logotype (xy, zw)
 
 vec2 cover(vec2 p) {
   float s = max(uRes.x / uImg.x, uRes.y / uImg.y);
@@ -63,15 +63,17 @@ vec4 halftoneS(vec2 p, vec2 off) {
   float l = lum(texture2D(uTex, cover(c + off)).rgb);
   if (uHasText > 0.5) l = max(l, texture2D(uText, (c + off) / uRes).a);   // texte de la vignette : fait partie de l'image
   float m = 1.0;
-  if (uHasMask > 0.5) m = texture2D(uMask, c / uRes).r;
+  float inWord = 0.0;
+  if (uHasMask > 0.5) { inWord = texture2D(uMask, c / uRes).r; m = mix(0.42, 1.0, inWord); }   // autour du mot : trame atténuée
   float edge = 1.0;
   if (uFade > 0.5) edge = smoothstep(0.0, 0.2 * uRes.y, c.y) * smoothstep(0.0, 0.2 * uRes.y, uRes.y - c.y);
   float rnd = hash(cell);
   float rev = smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
-  float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor) * m;
+  float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor * inWord) * m;
   float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
   vec3 dc = mix(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))), min(texture2D(uTex, cover(c + off)).rgb * 1.25, 1.0), uColor);   // uColor : 0 gris, 1 couleur
+  if (uHasMask > 0.5) dc = max(dc * mix(0.4, 1.0, inWord), vec3(0.62 * inWord));   // le mot reste lisible même sur une zone sombre de l'image
   return vec4(dc * dotA, dotA);
 }
 vec4 halftone(vec2 p) { return halftoneS(p, vec2(0.0)); }
@@ -146,11 +148,13 @@ void main() {
   col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
 
   // accueil : le « o » du logo, en aplat irisé comme sur le monogramme
-  if (uEye.z > 0.5) {
-    float de = length(p - uEye.xy);
-    float eye = smoothstep(uEye.w - aa, uEye.w + aa, de) * (1.0 - smoothstep(uEye.z - aa, uEye.z + aa, de));
-    vec2 ep = p - uEye.xy;
-    col = mix(col, iris(atan(ep.x, -ep.y) / 6.28318), eye); a = mix(a, 1.0, eye);
+  if (uHasMask > 0.5) {
+    float og = texture2D(uMask, p / uRes).g * min(1.0, uReveal * 1.4);
+    if (og > 0.001) {
+      vec2 oc = length(p - uEye.xy) < length(p - uEye.zw) ? uEye.xy : uEye.zw;
+      vec2 ep = p - oc;
+      col = mix(col, iris(atan(ep.x, -ep.y) / 6.28318), og); a = max(a, og);
+    }
   }
 
   // bords latéraux fondus de la piste (vues sans verre ; sinon la passe « verre » s'en charge)
@@ -256,30 +260,19 @@ void main() {
   vec2 uv = gl_FragCoord.xy / uDpr / uView;
   float asp = uView.x / uView.y;
   vec2 p = vec2(uv.x * asp, uv.y);
-  float t = uTime * 0.035;
+  float t = uTime * 0.16;
+  // les nappes tournent et se déforment en continu (fond vivant, comme la référence)
+  p += 0.06 * vec2(sin(p.y * 3.0 + t * 1.3), cos(p.x * 2.5 - t * 1.1));
   vec3 col = vec3(0.0);
-  col += vec3(1.00, 0.30, 0.93) * blob(p, vec2(-0.05 + 0.08 * sin(t * 1.3), 0.80 + 0.10 * cos(t)), 0.55);          // rose, haut gauche
-  col += vec3(0.78, 0.33, 1.00) * blob(p, vec2(asp + 0.05 + 0.06 * cos(t * 1.1), 0.25 + 0.12 * sin(t * 0.9)), 0.60); // mauve, bas droite
-  col += vec3(0.28, 0.60, 1.00) * blob(p, vec2(asp - 0.10 + 0.08 * sin(t * 0.7), 1.05), 0.50);                      // bleu, haut droite
-  col += vec3(0.22, 0.93, 0.56) * blob(p, vec2(0.15 + 0.10 * cos(t * 0.8), -0.08), 0.45) * 0.6;                      // menthe, bas gauche
+  col += vec3(1.00, 0.30, 0.93) * blob(p, vec2(0.05 + 0.25 * sin(t * 0.9), 0.75 + 0.22 * cos(t * 0.7)), 0.55);
+  col += vec3(0.78, 0.33, 1.00) * blob(p, vec2(asp - 0.05 + 0.22 * cos(t * 0.8), 0.30 + 0.25 * sin(t * 0.6)), 0.60);
+  col += vec3(0.28, 0.60, 1.00) * blob(p, vec2(asp * 0.75 + 0.30 * sin(t * 0.5), 1.00 + 0.15 * cos(t * 1.1)), 0.50);
+  col += vec3(0.22, 0.93, 0.56) * blob(p, vec2(0.25 + 0.30 * cos(t * 0.65), 0.0 + 0.15 * sin(t * 0.85)), 0.45) * 0.6;
   float vig = smoothstep(0.15, 0.95, length((uv - 0.5) * vec2(1.0, 0.9)) * 1.25);                                    // la couleur reste vers les bords
   col *= 0.09 * (0.35 + 0.65 * vig);
   col += (h(gl_FragCoord.xy + fract(uTime * 7.0) * 113.0) - 0.5) * 0.022;                                            // grain
   gl_FragColor = vec4(max(col, 0.0), 1.0);
 }`
-
-/** Géométrie du monogramme (viewBox 816 × 1000) : le S et le « o ». */
-const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
-const O = { x: 639.25, y: 586.8, ro: 176.7, ri: 90.8 }
-
-/** Place le monogramme dans la vue d'accueil (mêmes calculs que le CSS de .hero__mark). */
-export function markBox(w, h) {
-  const small = w < 760
-  const mh = Math.min(h * (small ? 0.5 : 0.64), w * (small ? 0.62 : 0.5) * (1000 / 816))
-  const s = mh / 1000
-  const x = (w - 816 * s) / 2, y = h * (small ? 0.4 : 0.45) - mh / 2
-  return { x, y, s }
-}
 
 export function createGL(canvas, { reduced }) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
@@ -333,7 +326,7 @@ export function createGL(canvas, { reduced }) {
 
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
     const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0, color: el.hasAttribute('data-color'), text: el.dataset.text || '', textTex: null, textKey: '',
-      mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
+      mark: el.dataset.gl === 'word', cell: +el.dataset.cell || 7,
       radius: +el.dataset.radius || 0, clip: el.closest('[data-clip]'), fade: el.dataset.gl === 'panel', mask: null, maskKey: '' }
     const src = v.video || el.querySelector('img')
     const done = () => { upload(v.tex, src); v.img = [src.videoWidth || src.naturalWidth, src.videoHeight || src.naturalHeight]; v.ready = v.img[0] > 0 }
@@ -344,15 +337,22 @@ export function createGL(canvas, { reduced }) {
   })
   if (!views.length) return null
 
-  // masque du monogramme (le S et le « o »), dessiné à la taille de la vue d'accueil
+  // masque du logotype (r) et de ses deux « o » (g), dessiné à la taille de la vue d'accueil
+  const wordSvg = document.querySelector('.hero__word svg')
+  const wordPaths = wordSvg ? [...wordSvg.querySelectorAll('path')] : []
   function maskFor(v, w, h) {
     const key = `${w}x${h}`
     if (v.maskKey === key) return
-    const dpr = Math.min(devicePixelRatio || 1, 2), b = markBox(w, h)
+    // position du logotype : celle du SVG de l'accueil (même mise en page que le CSS, aucune valeur dupliquée)
+    const r = wordSvg.getBoundingClientRect(), vr = v.el.getBoundingClientRect()
+    const b = { x: r.left - vr.left, y: r.top - vr.top, s: r.width / 4824, vx: 98, vy: -724 }
+    const dpr = Math.min(devicePixelRatio || 1, 2)
     const c = document.createElement('canvas'); c.width = Math.round(w * dpr); c.height = Math.round(h * dpr)
     const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height)
-    x.setTransform(b.s * dpr, 0, 0, b.s * dpr, b.x * dpr, b.y * dpr); x.fillStyle = '#fff'
-    x.fill(new Path2D(S_PATH))
+    x.setTransform(b.s * dpr, 0, 0, b.s * dpr, (b.x - b.vx * b.s) * dpr, (b.y - b.vy * b.s) * dpr)
+    wordPaths.forEach((pa, i) => { x.fillStyle = i === 1 || i === 3 ? '#ffff00' : '#ff0000'; x.fill(new Path2D(pa.getAttribute('d'))) })
+    // centres des deux « o »
+    v.oc = [1, 3].map((i) => { const bb = wordPaths[i]?.getBBox(); return bb ? [b.x + (bb.x + bb.width / 2 - b.vx) * b.s, b.y + (bb.y + bb.height / 2 - b.vy) * b.s] : [0, 0] })
     v.mask ??= newTex(); upload(v.mask, c); v.maskKey = key
   }
 
@@ -462,7 +462,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
-      gl.uniform1f(U.uFloor, v.mark ? 0.42 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
+      gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       if (v.text) { textFor(v, w, h); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.textTex) }
       gl.uniform1f(U.uHasText, v.text ? 1 : 0)
       gl.uniform1f(U.uColor, v.color ? 1 : v.mark ? 0 : colorMode === 1 ? 1 : colorMode === 2 ? v.glass : 0)   // mode 2 : couleur au survol, en fondu
@@ -472,7 +472,7 @@ export function createGL(canvas, { reduced }) {
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 2) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
-      if (v.mark) { const m = markBox(w, h), e = Math.min(1, reveal * 1.4); gl.uniform4f(U.uEye, m.x + O.x * m.s, m.y + O.y * m.s, O.ro * m.s * e, O.ri * m.s * e) }
+      if (v.mark) gl.uniform4f(U.uEye, v.oc[0][0], v.oc[0][1], v.oc[1][0], v.oc[1][1])
       else gl.uniform4f(U.uEye, 0, 0, 0, 0)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       if (glassy) {
