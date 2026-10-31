@@ -233,7 +233,7 @@ export const research = {
       title: T('Reconstruction volumétrique du réel capturé', 'Volumetric reconstruction of captured reality'),
       text: T('Gaussian splatting 3D et 4D ; ce qui sépare captation, reconstruction et génération par IA.', '3D and 4D Gaussian splatting; what separates capture, reconstruction and AI generation.'),
       more: TODO('titre du mémoire, direction, échéance', 'thesis title, supervisor, deadline'),
-      image: T('en-cours.webp', 'in-progress.webp'),   // dégradé irisé avec le texte, tramé comme les autres vignettes
+      image: 'en-cours.webp', label: T('En cours', 'In progress'),   // dégradé tramé ; texte net dessiné par le WebGL
     },
     {
       kind: T('Relevé', 'Record'), when: '2025-26',

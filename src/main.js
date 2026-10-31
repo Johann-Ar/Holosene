@@ -25,13 +25,16 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
 /* Aspiration des images aux bords de l'écran (WebGL), sauf si l'utilisateur réduit les animations. */
 if (!reduced) root.classList.add('liquid')
 
-/* Touche Espace : bascule le mode couleur (vignettes tramées en couleur). Choix mémorisé. */
-root.classList.toggle('color-mode', store.get('color') === '1')
+/* Touche Espace : 1re pression, vignettes tramées en couleur ; 2e, seulement la vignette survolée ; 3e, retour au noir
+   et blanc. Choix mémorisé. */
+let colorMode = +(store.get('color') || 0) % 3
 addEventListener('keydown', (e) => {
   if (e.code !== 'Space' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || root.classList.contains('fiche-open')) return
   if (e.target.closest?.('input, textarea, select, button, a, [contenteditable]')) return
   e.preventDefault()
-  store.set('color', root.classList.toggle('color-mode') ? '1' : null)
+  colorMode = (colorMode + 1) % 3
+  store.set('color', colorMode ? String(colorMode) : null)
+  gl?.setColorMode(colorMode)
 })
 
 /* Contact : copier l'adresse. */
@@ -281,6 +284,7 @@ if (reduced) { word?.style.setProperty('--draw', 0); wordBlocks.forEach((b) => b
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null
 try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (err) { console.warn(err) }
+gl?.setColorMode(colorMode)
 
 function loop(t) {
   lenis?.raf(t)

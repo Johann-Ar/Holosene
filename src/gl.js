@@ -26,6 +26,8 @@ uniform float uLensO;   // rayon extérieur de l'anneau
 uniform float uGlass;   // survol d'une carte : bord de verre (0 à 1)
 uniform vec4 uClip;     // piste horizontale : bords gauche et droit (px, dans la vue), largeur du fondu
 uniform float uCardBg;  // gris du fond des cartes
+uniform sampler2D uText; // texte net de la vignette (alpha), à la résolution de l'écran
+uniform float uHasText;
 uniform float uColor;   // 1 : points de la couleur de l'image (dégradé « En cours »)
 uniform vec4 uScr;      // coin haut gauche de la vue à l'écran (px), taille de l'écran (px)
 uniform float uTime;
@@ -68,7 +70,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
   float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor) * m;
   float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
-  vec3 dc = uColor > 0.5 ? min(texture2D(uTex, cover(c + off)).rgb * 1.25, 1.0) : vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0)));
+  vec3 dc = mix(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))), min(texture2D(uTex, cover(c + off)).rgb * 1.25, 1.0), uColor);   // uColor : 0 gris, 1 couleur
   return vec4(dc * dotA, dotA);
 }
 vec4 halftone(vec2 p) { return halftoneS(p, vec2(0.0)); }
@@ -139,6 +141,9 @@ void main() {
   if (uLens.z > 0.5) { float dl = length(p - uLens.xy); float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.18)) * step(uLensO, dl); h *= 1.0 + 0.35 * g; }
   vec3 col = h.rgb; float a = h.a;
   col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
+
+  // texte de la vignette (« En cours ») : net, dans l'image, sous le verre
+  if (uHasText > 0.5) { float ta = texture2D(uText, vec2(p.x / uRes.x, p.y / uRes.y)).a; col = mix(col, vec3(1.0), ta); a = max(a, ta); }
 
   // accueil : le « o » du logo, en aplat irisé comme sur le monogramme
   if (uEye.z > 0.5) {
@@ -255,8 +260,8 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime']) U[n] = gl.getUniformLocation(prog, n)
-  gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText']) U[n] = gl.getUniformLocation(prog, n)
+  gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
 
@@ -290,7 +295,7 @@ export function createGL(canvas, { reduced }) {
   document.documentElement.addEventListener('pointerleave', () => { ptr.t = -1e9 })
 
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
-    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0, color: el.hasAttribute('data-color'),
+    const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0, color: el.hasAttribute('data-color'), text: el.dataset.text || '', textTex: null, textKey: '',
       mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
       radius: +el.dataset.radius || 0, clip: el.closest('[data-clip]'), fade: el.dataset.gl === 'panel', mask: null, maskKey: '' }
     const src = v.video || el.querySelector('img')
@@ -314,6 +319,24 @@ export function createGL(canvas, { reduced }) {
     v.mask ??= newTex(); upload(v.mask, c); v.maskKey = key
   }
 
+  // texte net d'une vignette, redessiné à la taille exacte de la vignette et à la densité de l'écran
+  function textFor(v, w, h) {
+    const key = `${Math.round(w)}x${Math.round(h)}@${dpr}:${document.fonts?.status}`
+    if (v.textKey === key) return
+    const c = document.createElement('canvas'); c.width = Math.round(w * dpr); c.height = Math.round(h * dpr)
+    const x = c.getContext('2d'); x.scale(dpr, dpr)
+    const fs = Math.round(Math.min(w * 0.13, h * 0.2))
+    x.font = `500 ${fs}px Archivo, sans-serif`
+    try { x.fontStretch = 'expanded' } catch {}
+    x.letterSpacing = `${(-0.04 * fs).toFixed(1)}px`
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'
+    x.fillText(v.text, w / 2, h / 2)
+    v.textTex ??= newTex()
+    gl.bindTexture(gl.TEXTURE_2D, v.textTex); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c)
+    v.textKey = key
+  }
+
   let W = 0, H = 0, dpr = 1
   function resize() {
     W = innerWidth; H = innerHeight
@@ -328,6 +351,8 @@ export function createGL(canvas, { reduced }) {
   const follow = (a, b, tau, dt) => a + (b - a) * (1 - Math.exp(-dt / tau))
 
   let last = performance.now(), time = 0
+  let colorMode = 0
+  const setColorMode = (m) => { colorMode = m }
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
@@ -392,7 +417,9 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.42 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
-      gl.uniform1f(U.uColor, v.color || (!v.mark && document.documentElement.classList.contains('color-mode')) ? 1 : 0)
+      if (v.text) { textFor(v, w, h); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.textTex) }
+      gl.uniform1f(U.uHasText, v.text ? 1 : 0)
+      gl.uniform1f(U.uColor, v.color ? 1 : v.mark ? 0 : colorMode === 1 ? 1 : colorMode === 2 ? v.glass : 0)   // mode 2 : couleur au survol, en fondu
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced || !document.documentElement.classList.contains('liquid') ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
@@ -418,5 +445,5 @@ export function createGL(canvas, { reduced }) {
     }
   }
   document.documentElement.classList.add('has-gl')
-  return { frame }
+  return { frame, setColorMode }
 }
