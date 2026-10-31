@@ -75,41 +75,41 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float cov = smoothstep(0.3, 0.7, max(mkp.r, mkp.g));
     if (cov < 0.001) return vec4(0.0);
     bool isO = mkp.g > mkp.r;
-    // distance à l'arête (px) et normale sortante, depuis le champ de distance
+    // tout est calculé dans le repère du monogramme (unités 816 × 1000) : la trame est fixée à la forme et grandit avec
+    // elle, comme une image ; mêmes proportions que le chargeur (pas de 24 unités, verre fin)
+    float upx = uMarkXf.z / 1000.0;                       // px par unité
+    vec2 lp = (p - uMarkXf.xy) / upx + vec2(408.0, 500.0);
     vec2 e = vec2(2.0 / 816.0, 0.0), e2 = vec2(0.0, 2.0 / 1000.0);
     vec4 dc = texture2D(uMaskB, muv);
     float dd = isO ? dc.g : dc.r;
     float gx = isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r;
     float gy = isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r;
     vec2 n = -normalize(vec2(gx, gy) + 1e-6);
-    float dist = dd * uMarkXf.z / 1000.0 * 90.0;
-    float W = clamp(uMarkXf.z * 0.03, 8.0, 22.0);   // verre plus fin que sur les vignettes : le trait du logo est étroit
+    float dist = dd * 90.0;                                // unités
+    float W = 18.0;                                        // épaisseur du verre (unités)
     float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
-    // trame : grille fixe ; près de l'arête, la forme est lue plus à l'intérieur (réfraction, sans traînées)
-    // réfraction comme le verre des vignettes : on lit la trame plus à l'intérieur, de plus en plus près de l'arête ;
-    // la grille elle-même est déviée, donc les points se courbent et grossissent dans le verre
-    vec2 q = p - n * W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);   // même loi que les vignettes (sans repli)
-    vec2 cell = floor(q / uCell), c = (cell + 0.5) * uCell;
-    vec2 cuv = (c - uMarkXf.xy) * toUv + 0.5;
-    vec4 mk = (cuv.x > 0.0 && cuv.x < 1.0 && cuv.y > 0.0 && cuv.y < 1.0) ? texture2D(uMask, cuv) : vec4(0.0);
-    float inShape = smoothstep(0.3, 0.7, max(mk.r, mk.g));
+    // réfraction (même loi que les vignettes) puis trame fixée à la forme
+    vec2 q = lp - n * W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);
+    float STEP = 24.0;
+    vec2 cell = floor(q / STEP), c = (cell + 0.5) * STEP;
+    vec4 mk = texture2D(uMask, c / vec2(816.0, 1000.0));
+    float inShape = step(0.5, max(mk.r, mk.g));
     float rnd = hash(cell);
     float rev = mk.g > mk.r ? 1.0 : smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
-    float r = uCell * 0.49 * 0.92 * inShape * rev;
-    float dotA = (1.0 - smoothstep(r - aa, r + aa, length(q - c))) * clamp(r / aa, 0.0, 1.0);
-    vec3 dotCol = vec3(0.95);   // trame blanche partout (le « o » ne se colore que par son bord de verre)
-    vec3 g = dotCol * dotA;
-    // verre du bord (comme les vignettes)
-    vec2 pe = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
+    float r = STEP * 0.42 * inShape * rev, aU = aa / upx;
+    float dotA = (1.0 - smoothstep(r - aU, r + aU, length(q - c))) * clamp(r / aU, 0.0, 1.0);
+    vec3 g = vec3(0.95) * dotA;
+    // verre du bord (comme les vignettes et le chargeur)
+    vec2 pe = lp - vec2(639.25, 586.8);
     vec3 tint = isO ? iris(atan(pe.x, -pe.y) / 6.28318) : vec3(0.82, 0.83, 0.88);
     g = g * mix(vec3(1.0), tint * 1.15, 0.85 * pow(s1, 1.1)) + tint * 0.12 * s1;
-    g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);   // le verre assombrit un peu, comme sur les vignettes
+    g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);
     vec2 L = normalize(vec2(-0.65, -0.76));
-    float facing = dot(n, L);
-    float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(dist - 2.0) / 2.2) * 0.95;
-    float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(dist - 3.0) / 3.0) * 0.35;
+    float facing = dot(n, L), dpx = dist * upx;
+    float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(dpx - 2.0) / 2.2) * 0.95;
+    float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(dpx - 3.0) / 3.0) * 0.35;
     g += mix(vec3(1.0), tint, 0.5) * (spec + back);
-    g += mix(vec3(1.0), tint, isO ? 0.6 : 0.2) * exp(-dist / 1.3) * 0.5;      // arête claire
+    g += mix(vec3(1.0), tint, isO ? 0.6 : 0.2) * exp(-dpx / 1.3) * 0.5;
     float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
     float al = max(dotA, s1 * 0.35) * cov * shapeRev;
     return vec4(g * cov * shapeRev, al);
