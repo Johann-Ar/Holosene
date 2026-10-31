@@ -25,6 +25,15 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
 /* Aspiration des images aux bords de l'écran (WebGL), sauf si l'utilisateur réduit les animations. */
 if (!reduced) root.classList.add('liquid')
 
+/* Touche Espace : bascule le mode couleur (vignettes tramées en couleur). Choix mémorisé. */
+root.classList.toggle('color-mode', store.get('color') === '1')
+addEventListener('keydown', (e) => {
+  if (e.code !== 'Space' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || root.classList.contains('fiche-open')) return
+  if (e.target.closest?.('input, textarea, select, button, a, [contenteditable]')) return
+  e.preventDefault()
+  store.set('color', root.classList.toggle('color-mode') ? '1' : null)
+})
+
 /* Contact : copier l'adresse. */
 document.querySelectorAll('.copy').forEach((b) => {
   const label = b.textContent

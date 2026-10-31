@@ -392,7 +392,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.42 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
-      gl.uniform1f(U.uColor, v.color ? 1 : 0)
+      gl.uniform1f(U.uColor, v.color || (!v.mark && document.documentElement.classList.contains('color-mode')) ? 1 : 0)
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced || !document.documentElement.classList.contains('liquid') ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
