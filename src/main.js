@@ -258,7 +258,11 @@ const heroWords = [...document.querySelectorAll('.hero__line .w')]
 let heroOn = -1
 const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
 // chaque moitié du logotype (HOLO / SENE) cadrée sur ses lettres
-wordsSvg.forEach((w) => { try { const b = w.querySelector('.w-white').getBBox(); w.setAttribute('viewBox', `${b.x} ${b.y} ${b.width} ${b.height}`) } catch {} })
+// même hauteur de cadre pour les deux (celle de HOLO, avec ses capitales) : les lettres gardent la même échelle
+try {
+  const bb = wordsSvg.map((w) => w.querySelector('.w-white').getBBox()), top = bb[0].y, hh = bb[0].height
+  wordsSvg.forEach((w, i) => w.setAttribute('viewBox', `${bb[i].x} ${top} ${bb[i].width} ${hh}`))
+} catch {}
 const word = null
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 function scrollEffects() {

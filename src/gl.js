@@ -368,10 +368,12 @@ export function createGL(canvas, { reduced }) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const small = w < 760
     const big = Math.min(h * 0.62, w * (small ? 0.62 : 0.8) * 1000 / 816)
-    const end = small ? Math.min(h * 0.5, w * 0.82 * 1000 / 816) : Math.min(h * 0.8, w * 0.4 * 1000 / 816)
+    const end = small ? Math.min(h * 0.46, w * 0.78 * 1000 / 816) : Math.min(h * 0.66, w * 0.34 * 1000 / 816)
     const q = e(k(0, 0.55))
     let size = big + (end - big) * q
-    let cx = w / 2 + (small ? 0.06 : 0.26) * w * q, cy = h / 2 + (small ? -0.17 : 0) * h * q
+    const edge = Math.max(16, Math.min(56, w * 0.04))
+    const cxEnd = small ? w / 2 + 0.04 * w : w - edge * 1.6 - 0.408 * end   // le « o » garde une marge sur le bord droit
+    let cx = w / 2 + (cxEnd - w / 2) * q, cy = h / 2 + (small ? -0.18 : 0.02) * h * q
     // intro : le « o » prend la place du chargeur (rayon extérieur 44 px, au centre), puis le monogramme s'agrandit
     const i = e(Math.min(1, intro))
     const s0 = 44 / O_R, c0 = [w / 2 - O_OFF[0] * s0, h / 2 - O_OFF[1] * s0]
