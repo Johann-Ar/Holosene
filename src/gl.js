@@ -83,25 +83,27 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float gy = isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r;
     vec2 n = -normalize(vec2(gx, gy) + 1e-6);
     float dist = dd * uMarkXf.z / 1000.0 * 90.0;
-    float W = clamp(uMarkXf.z * 0.03, 10.0, 26.0);
+    float W = clamp(uMarkXf.z * 0.03, 8.0, 22.0);   // verre plus fin que sur les vignettes : le trait du logo est étroit
     float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
     // trame : grille fixe ; près de l'arête, la forme est lue plus à l'intérieur (réfraction, sans traînées)
-    vec2 cell = floor(p / uCell), c = (cell + 0.5) * uCell;
-    vec2 off = -n * W * 0.5 * s1 * s1 * (3.0 - 2.0 * s1);
-    vec2 cuv = (c + off - uMarkXf.xy) * toUv + 0.5;
+    // réfraction comme le verre des vignettes : on lit la trame plus à l'intérieur, de plus en plus près de l'arête ;
+    // la grille elle-même est déviée, donc les points se courbent et grossissent dans le verre
+    vec2 q = p - n * W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);   // même loi que les vignettes (sans repli)
+    vec2 cell = floor(q / uCell), c = (cell + 0.5) * uCell;
+    vec2 cuv = (c - uMarkXf.xy) * toUv + 0.5;
     vec4 mk = (cuv.x > 0.0 && cuv.x < 1.0 && cuv.y > 0.0 && cuv.y < 1.0) ? texture2D(uMask, cuv) : vec4(0.0);
     float inShape = smoothstep(0.3, 0.7, max(mk.r, mk.g));
     float rnd = hash(cell);
     float rev = mk.g > mk.r ? 1.0 : smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
     float r = uCell * 0.49 * 0.92 * inShape * rev;
-    float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
-    vec2 ep = c - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
-    vec3 dotCol = mk.g > mk.r ? iris(atan(ep.x, -ep.y) / 6.28318) : vec3(0.95);
+    float dotA = (1.0 - smoothstep(r - aa, r + aa, length(q - c))) * clamp(r / aa, 0.0, 1.0);
+    vec3 dotCol = vec3(0.95);   // trame blanche partout (le « o » ne se colore que par son bord de verre)
     vec3 g = dotCol * dotA;
     // verre du bord (comme les vignettes)
     vec2 pe = p - (uMarkXf.xy + vec2(0.23125, 0.0868) * uMarkXf.z);
     vec3 tint = isO ? iris(atan(pe.x, -pe.y) / 6.28318) : vec3(0.82, 0.83, 0.88);
     g = g * mix(vec3(1.0), tint * 1.15, 0.85 * pow(s1, 1.1)) + tint * 0.12 * s1;
+    g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);   // le verre assombrit un peu, comme sur les vignettes
     vec2 L = normalize(vec2(-0.65, -0.76));
     float facing = dot(n, L);
     float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(dist - 2.0) / 2.2) * 0.95;
@@ -516,7 +518,7 @@ export function createGL(canvas, { reduced }) {
     ensureBg()
     gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo)
     gl.useProgram(bgProg); gl.disable(gl.BLEND)
-    gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, reduced ? 12 : time)
+    gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, 12)   // fond fixe
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
     gl.useProgram(blitProg); gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, bgTex)

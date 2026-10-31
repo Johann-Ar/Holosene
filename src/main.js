@@ -341,12 +341,14 @@ if (spin) {
       const cov = Math.min(1, (d + 0.6) / 1.2)
       const s1 = 1 - Math.min(1, Math.max(0, d / W))
       // trame : la forme est lue plus à l'intérieur près de l'arête (réfraction)
-      const gx = Math.floor((px + S / 2) / STEP) * STEP + STEP / 2 - S / 2, gy = Math.floor((py + S / 2) / STEP) * STEP + STEP / 2 - S / 2
-      const bend = W * 0.5 * s1 * s1 * (3 - 2 * s1)
-      const [dq, , , kq] = shape(gx - nx * bend, gy - ny * bend)
+      // réfraction comme les vignettes : la grille de points est lue plus à l'intérieur près de l'arête
+      const bend = W * 0.42 * s1 * s1 * (3 - 2 * s1)
+      const qx = px - nx * bend, qy = py - ny * bend
+      const gx = Math.floor((qx + S / 2) / STEP) * STEP + STEP / 2 - S / 2, gy = Math.floor((qy + S / 2) / STEP) * STEP + STEP / 2 - S / 2
+      const [dq, , , kq] = shape(gx, gy)
       const dotR = dq > 0 ? 2.5 : 0
-      const dotA = Math.min(1, Math.max(0, (dotR - Math.hypot(px - gx, py - gy)) * dpr + 0.5))
-      const dcol = colorAt(kq, gx, gy)
+      const dotA = Math.min(1, Math.max(0, (dotR - Math.hypot(qx - gx, qy - gy)) * dpr + 0.5))
+      const dcol = colorAt(kq, gx, gy).map((c) => c + (0.95 - c) * fe)   // en fin de chargement : points blancs, comme le « o » du logo
       // verre du bord : teinte (gris clair, irisée vers le bout), arête claire, reflets
       const tint = colorAt(Math.max(k, 0.0001), px, py).map((c, n) => 0.82 + (c - 0.82) * Math.min(1, Math.max(0, (k - 0.72) / 0.28) * 2 + fe))
       const facing = nx * L[0] + ny * L[1]
@@ -355,6 +357,7 @@ if (spin) {
       const col = [0, 1, 2].map((n) => {
         let c = dcol[n] * dotA
         c = c * (1 + (tint[n] * 1.15 - 1) * 0.85 * Math.pow(s1, 1.1)) + tint[n] * 0.12 * s1
+        c *= 0.62 + 0.38 * Math.min(1, Math.max(0, (1 - s1) / 0.75))
         return c + (1 + (tint[n] - 1) * 0.5) * sp + (1 + (tint[n] - 1) * 0.4) * Math.exp(-d / 1.3) * 0.5
       })
       const al = Math.min(1, Math.max(dotA, s1 * 0.35)) * cov * fade
