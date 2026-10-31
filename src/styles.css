@@ -53,6 +53,7 @@ a { color: inherit; }
    - « blanc de l'œil » : un aplat blanc dont les bords se teintent des couleurs irisées (boutons, grands lettrages)
    - lueur fine : un léger dédoublement irisé pendant les apparitions, qui s'efface pour laisser le blanc */
 :root { --c-black-deep: #000; --c-black: #000; --bg-rgb: 0 0 0; --card-bg: #000; }
+:root { --edge-fx: 120px;   /* largeur commune des fondus et de l'aspiration aux bords (référence : bord haut) */ }
 :root { --iris-line: linear-gradient(90deg, #da9bc2, #99c1dd, #98e2b4, #f99dd0, #ff97f0, #da9bc2); --iris-l: #ff97f0; --iris-r: #98e2b4; --iris-t: #99c1dd; --iris-b: #da9bc2; }
 .btn--light { position: relative; isolation: isolate; overflow: hidden; background: #fff; color: var(--c-black); border: 0; padding: 13px 21px; transition: transform var(--dur-base) var(--ease-flow); }
 /* bords teintés d'une suite de couleurs irisées claires, fondue vers le blanc du centre : sans contour, sans assombrir */
@@ -68,7 +69,7 @@ a { color: inherit; }
 /* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
 .edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
 .edge--top { top: 0; height: 120px; background: linear-gradient(rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
-.edge--bottom { bottom: 0; height: 90px; background: linear-gradient(0deg, rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
+.edge--bottom { bottom: 0; height: 120px; background: linear-gradient(0deg, rgb(0 0 0 / 1.000) 0%, rgb(0 0 0 / 0.738) 19%, rgb(0 0 0 / 0.541) 34%, rgb(0 0 0 / 0.382) 47%, rgb(0 0 0 / 0.278) 56%, rgb(0 0 0 / 0.194) 65%, rgb(0 0 0 / 0.126) 73%, rgb(0 0 0 / 0.075) 80%, rgb(0 0 0 / 0.042) 86%, rgb(0 0 0 / 0.021) 91%, rgb(0 0 0 / 0.008) 95%, rgb(0 0 0 / 0.002) 98%, rgb(0 0 0 / 0.000) 100%); }
 .edge-bottom-off .edge--bottom { opacity: 0; }
 .fiche-open .edge { display: none; }
 .work__pin { position: relative; }
@@ -143,7 +144,7 @@ main, .foot { position: relative; z-index: 1; }
 /* piste horizontale indépendante : glisser à deux doigts (pavé tactile), au doigt, à la souris ou avec les flèches ;
    bords latéraux fondus comme le haut et le bas des images */
 .work__pin { padding-block: var(--sp-7) var(--sp-8); }
-.work__track { --fade: max(var(--edge-l), 24px); overflow-x: auto; scrollbar-width: none; padding-bottom: 8px;
+.work__track { --fade: 120px;   /* même largeur que le fondu du haut */ overflow-x: auto; scrollbar-width: none; padding-bottom: 8px;
   -webkit-mask: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); mask: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); }
 .work__strip { display: flex; gap: clamp(24px, 4vw, 64px); width: max-content; }
 /* avec le script : la piste est déplacée par le script (glisser, pavé tactile, flèches), en boucle */
@@ -161,8 +162,6 @@ main, .foot { position: relative; z-index: 1; }
 /* mêmes styles que le reste du site : nom en caractère d'affichage, genre en libellé */
 .card__name { font-size: clamp(1.4rem, 2.2vw, 2rem); transition: opacity var(--dur-base); }
 .card__genre { transition: opacity var(--dur-base); }
-/* survol (comme la référence) : la carte survolée reste blanche, les autres s'atténuent */
-.work__strip:has(.card:hover) .card:not(:hover) :is(.card__name, .card__genre) { opacity: 0.45; }
 .work__bar { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: var(--sp-5); }
 .work__nav { display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border-radius: 50%; border: 1px solid rgb(255 255 255 / 0.22); background: var(--c-black-deep); color: #fff; cursor: pointer; }
 .work__nav svg { display: block; transition: transform var(--dur-base) var(--ease-flow); }
