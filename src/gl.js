@@ -228,14 +228,14 @@ void main() {
     float rim = exp(-abs(sd + 1.5) / 1.6);
     // entre-deux : une bande irisée de largeur fixe (≈ 9 px depuis l'arête), même sur image claire
     float band9 = 1.0 - smoothstep(4.0, 11.0, -sd);
-    g = mix(g, g * tint * 1.15 + tint * 0.12, band9 * 0.75 * uGlass);
+    g = mix(g, g * tint * 1.15 + tint * 0.12, band9 * 0.45 * uGlass);
     g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);       // le verre assombrit un peu (visible sur les images claires)
     vec2 L = normalize(vec2(-0.65, -0.76));
     float facing = dot(n, L);
     float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(sd + 2.0) / 2.2) * 0.95;
     float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(sd + 3.0) / 3.0) * 0.35;
     g += mix(vec3(1.0), tint, 0.5) * (spec + back);
-    g = mix(g, tint, rim * 0.85 * uGlass);                          // liseré irisé fin le long de l'arête
+    g = mix(g, tint, rim * 0.5 * uGlass);                          // liseré irisé fin le long de l'arête
     col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
   }
   float a = 1.0 - smoothstep(-aa, aa, sd);
@@ -449,7 +449,7 @@ export function createGL(canvas, { reduced }) {
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, colorMode === 2 ? Math.max(0.55, v.glass) : v.glass); gl.uniform1f(GU.uBg, 0)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, Math.max(colorMode === 2 ? 0.55 : 0.25, v.glass))   // léger irisé même hors survol; gl.uniform1f(GU.uBg, 0)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
