@@ -96,7 +96,7 @@ vec3 withLens(vec2 q, vec3 base) {
     vec2 lp = q - uLens.xy;
     float d = length(lp);
     if (d < uLensO + 2.0) {
-      float k = smoothstep(0.833, 1.0, d / R);
+      float k = smoothstep(0.72, 1.0, d / R);
       float bend = 0.2 * k * k * k;
       vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
       vec3 orig = vec3(0.0);
