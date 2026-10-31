@@ -164,7 +164,7 @@ void main() {
         float sp = 0.16 * uGlass;   // séparation des couleurs : seulement au survol
         vec4 hr = halftoneS(p, suck - n * bend * (1.0 + sp)), hg = halftoneS(p, suck - n * bend), hb = halftoneS(p, suck - n * bend * (1.0 - sp));
         vec3 g = vec3(hr.r, hg.g, hb.b) + vec3(uCardBg) * (1.0 - hg.a);
-        g = withLens(p - n * bend * 0.7, g);                                         // la lentille se voit à travers le verre, déviée
+        g = withLens(p - n * W * 1.3 * pow(s1, 1.5), g);                                         // la lentille se voit à travers le verre, déviée
         // irisé au survol : suite de couleurs répétée le long du bord
         vec2 cp = p - uRes * 0.5;
         vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
