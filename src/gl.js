@@ -88,13 +88,6 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float dist = dd * 90.0;                                // unités
     float W = 25.0;                                        // épaisseur du verre (unités) : même rapport à la largeur du trait que sur le chargeur
     float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
-    if (!isO) {
-      // le S : blanc plein, bords irisés légers comme le logotype (suite de couleurs répétée, fondue vers le blanc)
-      vec3 edgeC = mix(iris((lp.x + lp.y * 0.5) / 460.0 * 1.6), vec3(1.0), 0.45);
-      vec3 sc = mix(edgeC, vec3(1.0), smoothstep(1.0, 12.0, dist));
-      float shapeRevS = smoothstep(0.0, 1.0, uReveal);
-      return vec4(sc * cov * shapeRevS, cov * shapeRevS);
-    }
     // réfraction (même loi que les vignettes) puis trame fixée à la forme
     vec2 q = lp - n * W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);
     float STEP = 24.0;
