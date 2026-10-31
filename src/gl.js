@@ -221,13 +221,16 @@ void main() {
     vec2 cp = p - uRes * 0.5;
     vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
     vec3 tint = mix(vec3(1.0), ic, uGlass);
-    g = g * mix(vec3(1.0), tint, 0.85 * s1) + tint * 0.1 * s1;
+    // la couleur n'est plus appliquée à l'image (sinon une image claire se colore sur toute l'épaisseur du verre) :
+    // elle n'est portée que par la lumière du verre, d'une largeur fixe, identique sur image claire ou sombre
+    float rim = exp(-abs(sd + 1.5) / 1.6);
     g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);       // le verre assombrit un peu (visible sur les images claires)
     vec2 L = normalize(vec2(-0.65, -0.76));
     float facing = dot(n, L);
     float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(sd + 2.0) / 2.2) * 0.95;
     float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(sd + 3.0) / 3.0) * 0.35;
     g += mix(vec3(1.0), tint, 0.5) * (spec + back);
+    g = mix(g, tint, rim * 0.85 * uGlass);                          // liseré irisé fin le long de l'arête
     col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
   }
   float a = 1.0 - smoothstep(-aa, aa, sd);
