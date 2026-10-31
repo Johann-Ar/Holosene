@@ -4,7 +4,7 @@
  * #p-<slug> (CSS :target), le JavaScript ajoute focus, Échap et piégeage du focus.
  */
 import { readFileSync } from 'node:fs'
-import { site, ui, projects, research, studio, workIntro } from './content.js'
+import { site, ui, projects, research, studio, about, workIntro } from './content.js'
 import sizes from './media-sizes.json' with { type: 'json' }
 
 // logotype en ligne (À propos) : le tracé se dessine, le blanc se remplit, puis ses bords se fondent dans une suite
@@ -119,7 +119,7 @@ export function render(lang) {
     <img class="brand__mark" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
   </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
-    <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#studio">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
+    <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
     <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" lang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}">${lang === 'fr' ? 'EN' : 'FR'}</a>
   </nav>
 </header>
@@ -131,18 +131,11 @@ export function render(lang) {
     </div>
     <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
     <h1 id="hero-t" class="sr">Holosene · ${esc(t(site.signature))}</h1>
-    <div class="hero__bottom wrap">
-      <p class="lbl" data-reveal>${esc(t(site.signature))}</p>
-      <p class="lbl" data-reveal style="--d:120ms">${esc(t(site.baseline))}</p>
-    </div>
   </section>
 
-  <section class="studio" id="studio" aria-labelledby="studio-t">
+  <section class="studio" aria-label="Holosene">
     <div class="studio__mark wrap">${logotype}</div>
-    <div class="row wrap">
-      <h2 class="lbl" id="studio-t">${esc(t(ui.studio))}</h2>
-      <p class="big disp" data-words>${words(t(studio))}</p>
-    </div>
+    <p class="studio__line wrap" data-reveal>${esc(t(studio))}</p>
   </section>
 
   <section class="work" id="projets" aria-labelledby="proj-t">
@@ -159,6 +152,11 @@ export function render(lang) {
       <p class="big disp" data-words>${words(t(research.intro))}</p>
     </div>
     ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), genre: t(r.kind), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
+  </section>
+
+  <section class="about wrap" id="a-propos" aria-labelledby="about-t">
+    <h2 class="lbl" id="about-t" data-reveal>${esc(t(ui.studio))}</h2>
+    ${about.map((a, k) => `<p data-reveal style="--d:${k * 80}ms">${esc(t(a)).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</p>`).join('')}
   </section>
 
   <section class="contact wrap" id="contact" aria-labelledby="contact-t">

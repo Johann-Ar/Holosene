@@ -261,7 +261,18 @@ export const research = {
   ],
 }
 
+/** Mini à propos sous le logotype (une phrase). */
 export const studio = T(
-  'Je suis Johann Arata, designer numérique, en master Design (Environnements numériques) à la Faculté des arts de Strasbourg. Holosene rassemble mes projets et travaux de recherche en design.',
-  'I am Johann Arata, a digital designer studying for a master’s in Design (Digital Environments) at the Faculty of Arts in Strasbourg. Holosene gathers my projects and my design research.',
+  'Johann Arata, designer numérique : design interactif, WebGL, captation du réel et recherche en design.',
+  'Johann Arata, digital designer: interaction design, WebGL, real-world capture and design research.',
 )
+
+/** À propos, en fin de page. **…** : mots mis en avant. Uniquement des informations fournies par Johann. */
+export const about = [
+  T('Je suis designer numérique, en **master Design (Environnements numériques)** à la Faculté des arts de Strasbourg, après un **DNMADe Design numérique**.',
+    'I am a digital designer, studying for a **master’s in Design (Digital Environments)** at the Faculty of Arts in Strasbourg, after a **degree in Digital Design (DNMADe)**.'),
+  T('Je capte le réel et je le transforme en **volumes et en espaces 3D à parcourir**, de la prise de vue jusqu’au site en **WebGL et Three.js**.',
+    'I capture the real world and turn it into **volumes and 3D spaces to explore**, from the shoot to the website in **WebGL and Three.js**.'),
+  T('En parallèle des projets, je mène une **recherche en design** sur le réel capturé et sur ce qui le sépare de la **génération par IA**.',
+    'Alongside the projects, I carry out **design research** on captured reality and on what separates it from **AI generation**.'),
+]

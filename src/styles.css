@@ -117,7 +117,14 @@ main, .foot { position: relative; z-index: 1; }
 @media (max-width: 760px) { .row { grid-template-columns: 1fr; } .row > h2, .big { grid-column: 1 / -1; } }
 
 /* 2. à propos : le logotype se trace puis se remplit, le texte s'allume mot à mot */
-.studio { padding-block: 2vh var(--sp-9); display: grid; gap: var(--sp-7); }
+.studio { padding-block: 2vh var(--sp-8); display: grid; gap: var(--sp-5); }
+/* mini à propos et à propos de fin : capitales, centrés, mots importants en gras (comme la référence) */
+.studio__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
+.studio__line { justify-self: center; max-width: 62ch; font-size: clamp(0.95rem, 1.3vw, 1.2rem); line-height: 1.45; }
+.about { padding-block: var(--sp-9) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
+.about h2 { margin-bottom: 10px; }
+.about p { max-width: 64ch; font-size: clamp(0.95rem, 1.25vw, 1.15rem); line-height: 1.55; }
+.about strong { color: #fff; font-weight: 700; }
 .studio__word { width: 100%; height: auto; overflow: visible; }
 /* --fill de 0 à 1 : d'abord le blanc plein (w-white), puis il s'efface sur le blanc aux bords irisés (w-edge + w-core) */
 .studio__word .w-white { opacity: calc(min(var(--fill, 1) * 2, 1) - max(var(--fill, 1) * 2 - 1, 0)); }
