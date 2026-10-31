@@ -45,8 +45,8 @@ float vnoise(vec2 x) {
 // roue irisée de la marque, à parts égales ; 0 = en haut, sens horaire
 vec3 iris(float t) {
   vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
-  c[0] = vec3(1.000, 0.420, 0.930); c[1] = vec3(1.000, 0.450, 0.740); c[2] = vec3(0.860, 0.470, 0.700);
-  c[3] = vec3(0.420, 0.680, 0.960); c[4] = vec3(0.400, 0.920, 0.600); c[5] = c[0];
+  c[0] = vec3(1.000, 0.300, 0.930); c[1] = vec3(1.000, 0.330, 0.640); c[2] = vec3(0.780, 0.330, 1.000);
+  c[3] = vec3(0.280, 0.600, 1.000); c[4] = vec3(0.220, 0.930, 0.560); c[5] = c[0];
   float x = fract(t) * 5.0; vec3 r = c[0];
   for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
   return r;
@@ -138,50 +138,7 @@ void main() {
   vec4 h = halftoneS(hp, suck);
   if (uLens.z > 0.5) { float dl = length(p - uLens.xy); float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.18)) * step(uLensO, dl); h *= 1.0 + 0.35 * g; }
   vec3 col = h.rgb; float a = h.a;
-  float sd = 0.0;
-  if (uRadius > 0.0) {
-    sd = sdCard(p);
-    col += vec3(uCardBg) * (1.0 - a); a = 1.0;
-  }
   col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
-
-  if (uRadius > 0.0) {
-    // bord en verre liquide (à la manière d'Apple) : dans l'épaisseur du verre, l'image est aspirée depuis l'intérieur
-    // (réfraction forte, qui grossit vers l'arête), légère séparation des couleurs, lumière spéculaire qui suit
-    // l'orientation du bord (vive en haut à gauche, douce en bas à droite), ombre intérieure. Irisé au survol.
-    {
-      float W = 34.0;
-      // position dans l'épaisseur du verre entre deux contours arrondis : lisse aussi dans les coins
-      float di = sdInner(p, W);
-      float t = clamp(-sd / max(-sd + di, 1e-3), 0.0, 1.0);   // 0 à l'arête, 1 au bord intérieur
-      if (di < 0.0) t = 1.0;
-      vec2 e = vec2(1.0, 0.0);
-      vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy) + sdInner(p + e.xy, W) - sdInner(p - e.xy, W),
-                              sdCard(p + e.yx) - sdCard(p - e.yx) + sdInner(p + e.yx, W) - sdInner(p - e.yx, W)) + 1e-5);
-      if (t < 1.0) {
-        float s1 = 1.0 - t;
-        float bend = W * 0.85 * s1 * s1;              // réfraction : on lit l'image plus à l'intérieur
-        float sp = 0.16 * uGlass;   // séparation des couleurs : seulement au survol
-        vec4 hr = halftoneS(p, suck - n * bend * (1.0 + sp)), hg = halftoneS(p, suck - n * bend), hb = halftoneS(p, suck - n * bend * (1.0 - sp));
-        vec3 g = vec3(hr.r, hg.g, hb.b) + vec3(uCardBg) * (1.0 - hg.a);
-        g = withLens(p - n * W * 1.3 * pow(s1, 1.5), g);                                         // la lentille se voit à travers le verre, déviée
-        // irisé au survol : suite de couleurs répétée le long du bord
-        vec2 cp = p - uRes * 0.5;
-        vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
-        vec3 tint = mix(vec3(1.0), ic, uGlass);
-        g = g * mix(vec3(1.0), tint, 0.75 * s1) + tint * 0.1 * s1;
-        g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);                                   // le verre assombrit l'image (visible aussi sur le clair)
-        // lumière spéculaire selon l'orientation du bord
-        vec2 L = normalize(vec2(-0.65, -0.76));
-        float facing = dot(n, L);
-        float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(sd + 2.0) / 2.2) * 0.95;
-        float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(sd + 3.0) / 3.0) * 0.35;
-        float sheen = exp(-abs(t - 0.5) * 6.0) * 0.06 * (0.5 + 0.5 * facing);
-        g += mix(vec3(1.0), tint, 0.5) * (spec + back + sheen);
-        col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
-      }
-    }
-  }
 
   // accueil : le « o » du logo, en aplat irisé comme sur le monogramme
   if (uEye.z > 0.5) {
@@ -191,11 +148,80 @@ void main() {
     col = mix(col, iris(atan(ep.x, -ep.y) / 6.28318), eye); a = mix(a, 1.0, eye);
   }
 
-  // carte : coins arrondis
-  if (uRadius > 0.0) { float cov = 1.0 - smoothstep(-aa, aa, sd); col *= cov; a *= cov; }
-  // bords latéraux fondus de la piste des projets
-  if (uClip.z > 0.0) { float f = smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)); col *= f; a *= f; }
+  // bords latéraux fondus de la piste (vues sans verre ; sinon la passe « verre » s'en charge)
+  if (uClip.z > 0.0 && uRadius < 0.5) { float f = smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)); col *= f; a *= f; }
   gl_FragColor = vec4(col, a);
+}`
+
+const IRIS = `// roue irisée de la marque, à parts égales ; 0 = en haut, sens horaire
+vec3 iris(float t) {
+  vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
+  c[0] = vec3(1.000, 0.300, 0.930); c[1] = vec3(1.000, 0.330, 0.640); c[2] = vec3(0.780, 0.330, 1.000);
+  c[3] = vec3(0.280, 0.600, 1.000); c[4] = vec3(0.220, 0.930, 0.560); c[5] = c[0];
+  float x = fract(t) * 5.0; vec3 r = c[0];
+  for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
+  return r;
+}`
+
+// Passe « verre » des vignettes : lit le contenu déjà dessiné (trame, lentille, aspiration) dans une texture
+// intermédiaire, et le réfracte dans l'épaisseur du bord. Tout ce qui passe sous le verre est déformé de la même façon.
+const GLASS = `precision highp float;
+uniform sampler2D uFbo;
+uniform vec2 uFboSize;  // taille de la texture intermédiaire (px écran)
+uniform vec2 uRes;      // taille de la vignette (px CSS)
+uniform vec2 uOrigin;
+uniform float uDpr;
+uniform float uRadius;
+uniform float uGlass;   // survol (0 à 1) : couleurs irisées et séparation des couleurs
+uniform float uBg;
+uniform vec4 uClip;
+${IRIS}
+float sdCard(vec2 p) {
+  vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
+}
+float sdInner(vec2 p, float w) {
+  float r = uRadius + w * 0.6;
+  vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - w - r);
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+vec3 at(vec2 q) {
+  q = clamp(q, vec2(0.5), uRes - 0.5);
+  vec4 c = texture2D(uFbo, vec2(q.x, uRes.y - q.y) * uDpr / uFboSize);
+  return c.rgb + vec3(uBg) * (1.0 - c.a);
+}
+void main() {
+  vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
+  p.y = uRes.y - p.y;
+  float aa = 0.9 / uDpr;
+  float sd = sdCard(p);
+  vec3 col = at(p);
+  float W = 34.0;
+  float di = sdInner(p, W);
+  float t = di < 0.0 ? 1.0 : clamp(-sd / max(-sd + di, 1e-3), 0.0, 1.0);   // 0 à l'arête, 1 au bord intérieur
+  if (t < 1.0) {
+    vec2 e = vec2(1.0, 0.0);
+    vec2 n = normalize(vec2(sdCard(p + e.xy) - sdCard(p - e.xy) + sdInner(p + e.xy, W) - sdInner(p - e.xy, W),
+                            sdCard(p + e.yx) - sdCard(p - e.yx) + sdInner(p + e.yx, W) - sdInner(p - e.yx, W)) + 1e-5);
+    float s1 = 1.0 - t;
+    float bend = W * 0.42 * s1 * s1 * (3.0 - 2.0 * s1); // réfraction douce : la trame est grossie vers l'arête, sans traînées
+    float sp = 0.16 * uGlass;                           // séparation des couleurs : au survol seulement
+    vec3 g = vec3(at(p - n * bend * (1.0 + sp)).r, at(p - n * bend).g, at(p - n * bend * (1.0 - sp)).b);
+    vec2 cp = p - uRes * 0.5;
+    vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
+    vec3 tint = mix(vec3(1.0), ic, uGlass);
+    g = g * mix(vec3(1.0), tint, 0.85 * s1) + tint * 0.1 * s1;
+    g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);       // le verre assombrit un peu (visible sur les images claires)
+    vec2 L = normalize(vec2(-0.65, -0.76));
+    float facing = dot(n, L);
+    float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(sd + 2.0) / 2.2) * 0.95;
+    float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(sd + 3.0) / 3.0) * 0.35;
+    g += mix(vec3(1.0), tint, 0.5) * (spec + back);
+    col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
+  }
+  float a = 1.0 - smoothstep(-aa, aa, sd);
+  if (uClip.z > 0.0) a *= smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x));
+  gl_FragColor = vec4(col * a, a);
 }`
 
 /** Géométrie du monogramme (viewBox 816 × 1000) : le S et le « o ». */
@@ -226,6 +252,24 @@ export function createGL(canvas, { reduced }) {
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
+
+  // passe « verre » et texture intermédiaire (contenu des vignettes)
+  const gProg = gl.createProgram()
+  gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
+  if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip']) GU[n] = gl.getUniformLocation(gProg, n)
+  const fbo = gl.createFramebuffer(), fboTex = gl.createTexture()
+  let fboW = 0, fboH = 0
+  function ensureFbo(w, h) {
+    if (w <= fboW && h <= fboH) return
+    fboW = Math.max(w, fboW); fboH = Math.max(h, fboH)
+    gl.bindTexture(gl.TEXTURE_2D, fboTex)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, fboW, fboH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fboTex, 0)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+  }
 
   const newTex = () => { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v); return t }
   const upload = (t, src) => { gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, src) }
@@ -316,15 +360,28 @@ export function createGL(canvas, { reduced }) {
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
-      const x0 = Math.round(b.left * dpr), y0 = Math.round((H - b.bottom) * dpr)
-      gl.viewport(x0, y0, Math.round(w * dpr), Math.round(h * dpr))
-      gl.scissor(Math.max(0, x0), Math.max(0, y0), Math.round(w * dpr), Math.round(h * dpr))
+      const pw = Math.round(w * dpr), ph = Math.round(h * dpr)
+      const glassy = v.radius > 0
+      let x0 = Math.round(b.left * dpr), y0 = Math.round((H - b.bottom) * dpr)
+      const sx = x0, sy = y0
+      gl.useProgram(prog)
+      if (glassy) {
+        // passe 1 : le contenu de la vignette dans la texture intermédiaire
+        ensureFbo(pw, ph)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+        x0 = 0; y0 = 0
+        gl.viewport(0, 0, pw, ph); gl.scissor(0, 0, pw, ph)
+        gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
+      } else {
+        gl.viewport(x0, y0, pw, ph)
+        gl.scissor(Math.max(0, x0), Math.max(0, y0), pw, ph)
+      }
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, v.tex)
       gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, v.mask || v.tex)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
-      gl.uniform1f(U.uFloor, v.mark ? 0.42 : 0); gl.uniform1f(U.uRadius, v.radius)
+      gl.uniform1f(U.uFloor, v.mark ? 0.42 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       gl.uniform1f(U.uColor, v.color ? 1 : 0)
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced || !document.documentElement.classList.contains('liquid') ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
@@ -335,6 +392,19 @@ export function createGL(canvas, { reduced }) {
       if (v.mark) { const m = markBox(w, h), e = Math.min(1, reveal * 1.4); gl.uniform4f(U.uEye, m.x + O.x * m.s, m.y + O.y * m.s, O.ro * m.s * e, O.ri * m.s * e) }
       else gl.uniform4f(U.uEye, 0, 0, 0, 0)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
+      if (glassy) {
+        // passe 2 : le bord de verre, qui réfracte ce contenu, sur la toile
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+        gl.viewport(sx, sy, pw, ph); gl.scissor(Math.max(0, sx), Math.max(0, sy), pw, ph)
+        gl.useProgram(gProg)
+        gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
+        gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
+        gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, v.glass); gl.uniform1f(GU.uBg, 0)
+        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, Math.max(24, parseFloat(getComputedStyle(v.clip).paddingLeft) || 0), 0)
+        else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
+        gl.drawArrays(gl.TRIANGLES, 0, 3)
+      }
     }
   }
   document.documentElement.classList.add('has-gl')
