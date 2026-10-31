@@ -318,7 +318,7 @@ if (spin) {
       const d = Math.min(onArc, capHead)
       if (d > half) continue
       const k = 1 - Math.min(1, back > ARC ? 1 : back / ARC)       // 1 au bout, 0 à la queue
-      const v = Math.round(255 * Math.pow(Math.min(1, k / 0.9), 2.4))                 // s'assombrit tôt vers la queue
+      const v = Math.round(255 * Math.pow(Math.min(1, k / 0.9), 1.3))                 // s'assombrit progressivement vers la queue
       const u = Math.min(1, Math.max(0, (k - 0.9) / 0.1))                              // irisé seulement au bout, fondu depuis le blanc
       const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
       const ic = IR[i].map((c, j) => c + (IR[i + 1][j] - c) * w)
