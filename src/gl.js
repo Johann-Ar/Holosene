@@ -284,109 +284,25 @@ void main() {
   gl_FragColor = vec4(max(col, 0.0), 1.0);
 }`
 
-// Accueil : le monogramme en volume, fait de points (la trame du site en 3D). Chaque point est une petite sphère
-// plate ; le volume tourne autour de l'axe vertical (jamais autour de l'axe de l'écran).
-const IRIS_GLSL = `// roue irisée de la marque, à parts égales ; 0 = en haut, sens horaire
-vec3 iris(float t) {
-  vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
-  c[0] = vec3(1.000, 0.300, 0.930); c[1] = vec3(1.000, 0.330, 0.640); c[2] = vec3(0.780, 0.330, 1.000);
-  c[3] = vec3(0.280, 0.600, 1.000); c[4] = vec3(0.220, 0.930, 0.560); c[5] = c[0];
-  float x = fract(t) * 5.0; vec3 r = c[0];
-  for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
-  return r;
-}`
-const PV = `attribute vec3 aPos; attribute float aO; attribute float aR;
-uniform vec2 uView; uniform vec2 uCenter; uniform float uScale; uniform float uRotY; uniform float uRotX;
-uniform float uDpr; uniform float uDot; uniform float uRev;
-varying float vO; varying float vShade; varying vec2 vLoc;
-void main() {
-  vec3 p = aPos;
-  float cy = cos(uRotY), sy = sin(uRotY);
-  p = vec3(cy * p.x + sy * p.z, p.y, -sy * p.x + cy * p.z);
-  float cx = cos(uRotX), sx = sin(uRotX);
-  p = vec3(p.x, cx * p.y - sx * p.z, sx * p.y + cx * p.z);
-  float persp = 1600.0 / (1600.0 - p.z);
-  vec2 sc = uCenter + p.xy * uScale * persp;
-  gl_Position = vec4(sc.x / uView.x * 2.0 - 1.0, 1.0 - sc.y / uView.y * 2.0, -p.z / 2000.0, 1.0);
-  float show = aO > 0.5 ? 1.0 : smoothstep(aR * 0.6, aR * 0.6 + 0.4, uRev);
-  gl_PointSize = uDot * persp * uDpr * show;
-  vO = aO; vShade = clamp(0.55 + p.z / 160.0, 0.35, 1.0); vLoc = aPos.xy;
-}`
-const PF = `precision highp float;
-varying float vO; varying float vShade; varying vec2 vLoc;
-${IRIS_GLSL}
-void main() {
-  vec2 q = gl_PointCoord * 2.0 - 1.0;
-  float r = dot(q, q);
-  if (r > 1.0) discard;
-  vec2 ep = vLoc - vec2(231.25, 86.8);
-  vec3 c = vO > 0.5 ? iris(atan(ep.x, -ep.y) / 6.28318) : vec3(1.0);
-  gl_FragColor = vec4(c * vShade * (1.0 - 0.25 * r), 1.0);
-}`
-
 /** Monogramme (viewBox 816 × 1000) : le S et le « o ». */
 const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
 const O_PATH = 'M462.5 586.8a176.7 176.7 0 1 0 353.5 0a176.7 176.7 0 1 0 -353.5 0ZM548.4 586.8a90.8 90.8 0 1 0 181.7 0a90.8 90.8 0 1 0 -181.7 0Z'
 
 export function createGL(canvas, { reduced }) {
-  const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, depth: true, powerPreference: 'high-performance' })
+  const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
   if (!gl) return null
   const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s }
   const prog = gl.createProgram()
   gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG)); gl.bindAttribLocation(prog, 0, 'a'); gl.linkProgram(prog)
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
   gl.useProgram(prog)
-  const quadBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf)
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
   const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
-
-  // logo en volume : programme et nuage de points (construit une fois depuis le dessin du monogramme)
-  const pProg = gl.createProgram()
-  gl.attachShader(pProg, sh(gl.VERTEX_SHADER, PV)); gl.attachShader(pProg, sh(gl.FRAGMENT_SHADER, PF)); gl.linkProgram(pProg)
-  if (!gl.getProgramParameter(pProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pProg))
-  const PU = {}; for (const n of ['uView', 'uCenter', 'uScale', 'uRotY', 'uRotX', 'uDpr', 'uDot', 'uRev']) PU[n] = gl.getUniformLocation(pProg, n)
-  const PA = { pos: gl.getAttribLocation(pProg, 'aPos'), o: gl.getAttribLocation(pProg, 'aO'), r: gl.getAttribLocation(pProg, 'aR') }
-  const STEP3 = 10, DEPTH = 70   // pas de la trame (unités du monogramme) et demi-épaisseur du volume
-  let cloud = null
-  function buildCloud() {
-    const c = document.createElement('canvas'); c.width = 816; c.height = 1000
-    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 816, 1000)
-    x.fillStyle = '#ff0000'; x.fill(new Path2D(S_PATH)); x.fillStyle = '#00ff00'; x.fill(new Path2D(O_PATH), 'evenodd')
-    const d = x.getImageData(0, 0, 816, 1000).data
-    const at = (px, py) => { const i = (Math.round(py) * 816 + Math.round(px)) * 4; return [d[i], d[i + 1]] }
-    const pos = [], o = [], rnd = []
-    for (let py = STEP3 / 2; py < 1000; py += STEP3) for (let px = STEP3 / 2; px < 816; px += STEP3) {
-      const [r, g] = at(px, py); if (r < 128 && g < 128) continue
-      // face avant, face arrière, et parois sur les bords (un point de profondeur à chaque pas)
-      const edge = [[STEP3, 0], [-STEP3, 0], [0, STEP3], [0, -STEP3]].some(([ox, oy]) => { const q = at(Math.min(815, Math.max(0, px + ox)), Math.min(999, Math.max(0, py + oy))); return q[0] < 128 && q[1] < 128 })
-      for (let z = -DEPTH; z <= DEPTH + 0.1; z += STEP3) {
-        if (!edge && Math.abs(z) < DEPTH - 0.1) continue
-        pos.push(px - 408, py - 500, z); o.push(g >= 128 ? 1 : 0); rnd.push(Math.random())
-      }
-    }
-    const mk = (arr) => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW); return b }
-    cloud = { pos: mk(pos), o: mk(o), r: mk(rnd), n: o.length }
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf)
-  }
-  function drawCloud(xf, rotY, rev, b) {
-    if (!cloud) buildCloud()
-    gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
-    gl.useProgram(pProg); gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.clear(gl.DEPTH_BUFFER_BIT)
-    const scale = xf[2] / 1000
-    gl.uniform2f(PU.uView, W, H); gl.uniform2f(PU.uCenter, b.left + xf[0], b.top + xf[1]); gl.uniform1f(PU.uScale, scale)
-    gl.uniform1f(PU.uRotY, rotY); gl.uniform1f(PU.uRotX, -0.08); gl.uniform1f(PU.uDpr, dpr)
-    gl.uniform1f(PU.uDot, STEP3 * scale * 0.86); gl.uniform1f(PU.uRev, rev)
-    gl.disableVertexAttribArray(aLoc)
-    for (const [loc, buf, n] of [[PA.pos, cloud.pos, 3], [PA.o, cloud.o, 1], [PA.r, cloud.r, 1]]) { gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, n, gl.FLOAT, false, 0, 0) }
-    gl.drawArrays(gl.POINTS, 0, cloud.n)
-    for (const loc of [PA.pos, PA.o, PA.r]) gl.disableVertexAttribArray(loc)
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-    gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND)
-  }
 
   // fond de page
   const bgProg = gl.createProgram()
@@ -545,15 +461,7 @@ export function createGL(canvas, { reduced }) {
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.55)))
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
-      if (v.mark) {
-        const hr = v.el.closest('.hero').getBoundingClientRect(), p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
-        const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1500)
-        // rotation autour de l'axe vertical : à plat au départ (le « o » sort du chargeur), puis le défilement le fait tourner ; il oscille doucement
-        const ie = 1 - Math.pow(1 - intro, 3)
-        const rotY = (-0.5 + p * 0.95) * ie + (reduced ? 0 : Math.sin(time * 0.5) * 0.12 * ie)
-        drawCloud(markXf(w, h, p, time, intro), rotY, reveal, b)
-        continue
-      }
+      if (v.mark) maskFor(v)
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
