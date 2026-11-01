@@ -63,6 +63,7 @@ export function render(lang) {
   const rail = (cards, label) => `
     <div class="work__pin">
       <div class="work__track wrap" data-clip tabindex="0" aria-label="${esc(label)}"><div class="work__strip">${cards.join('')}</div></div>
+      <p class="lbl rail-hint" aria-hidden="true">${lang === 'fr' ? 'Faire glisser' : 'Drag'} ${cards.length} ${lang === 'fr' ? 'cartes' : 'cards'} →</p>
     </div>`
 
   // fiche projet : en-tête fixe, puis une rangée qui défile à l'horizontale (texte en colonnes, images, projet suivant)
@@ -136,6 +137,7 @@ export function render(lang) {
       <div class="hero__copy">
         <h1 id="hero-t" class="hero__word"><span class="sr">Holosene · ${esc(t(site.signature))}</span>${holo}${sene}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
+        <a class="hero__cta" href="#projets">${lang === 'fr' ? 'Voir les projets' : 'See the work'} <span>↓</span></a>
       </div>
     </div>
   </section>

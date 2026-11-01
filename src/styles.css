@@ -134,18 +134,24 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* 2. à propos : le logotype se trace puis se remplit, le texte s'allume mot à mot */
 .studio { padding-block: var(--sp-7); }   /* pause graphique : le seul élément géant de son écran */
 /* mini à propos et à propos de fin : capitales, centrés, mots importants en gras (comme la référence) */
-.hero__line, .about p { text-transform: uppercase; text-align: center; letter-spacing: 0.02em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
+.hero__line, .about p { text-align: center; letter-spacing: 0.005em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
 /* accueil : le logotype sur toute la largeur, fait de points (la rivière) ; ses deux « o » sont l'œil irisé du monogramme.
    Positions partagées avec le WebGL (wordBox dans gl.js) : marges --edge, centre vertical à 42 % (38 % sur mobile). */
 .hero__copy { position: absolute; inset: 0; pointer-events: none; }
 /* HOLO / SENE en grand, centrés, sous le logo (qui est dessiné devant) ; la présentation centrée en bas, devant */
 .hero__word { position: absolute; left: 0; right: 0; top: 46%; transform: translateY(-50%); display: flex; justify-content: center; align-items: flex-end; gap: 0; line-height: 0; padding-inline: var(--edge-l); }
 .hero__word .studio__word { width: auto; height: min(26svh, 13.5vw); }   /* « Holosene » sur une ligne, presque toute la largeur */
-.hero__line { position: absolute; left: 0; right: 0; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); z-index: 2; margin-inline: auto; max-width: 52ch; text-align: center !important; font-size: clamp(0.85rem, 1.05vw, 1rem); line-height: 1.5; padding-inline: var(--edge-l); }
-@media (max-width: 760px) { .hero__word { top: 44%; } .hero__word .studio__word { height: 12.4vw; } }
+.hero__line { position: absolute; left: 0; right: 0; top: calc(46% + min(13svh, 6.75vw) + 4svh); z-index: 2; margin-inline: auto; max-width: 46ch; text-align: center !important; font-size: clamp(1.05rem, 1.5vw, 1.35rem); line-height: 1.45; color: #fff; padding-inline: var(--edge-l); }
+.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: #fff; text-decoration: none; padding: 12px 18px; }
+.hero__cta span { display: inline-block; animation: nudge 1.8s var(--ease-in-out) infinite; }
+@keyframes nudge { 50% { transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .hero__cta span { animation: none; } }
+/* indication de glissement des pistes */
+.rail-hint { text-align: right; margin: 12px var(--edge-r) 0 0; }
+@media (max-width: 760px) { .hero__line { top: calc(44% + 6.2vw + 3svh); } .hero__word { top: 44%; } .hero__word .studio__word { height: 12.4vw; } }
 .js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
 .js .hero__line .w.on { opacity: 1; }
-.about { padding-block: var(--sp-9) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
+.about { padding-block: var(--sp-7) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
 .about h2 { margin-bottom: 10px; }
 .about p { max-width: 64ch; font-size: clamp(0.95rem, 1.25vw, 1.15rem); line-height: 1.55; }
 .about strong { color: #fff; font-weight: 700; }
@@ -156,7 +162,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .studio__word .w-line path { stroke-width: 6; stroke-dasharray: 1; stroke-dashoffset: var(--draw, 0); opacity: calc(1 - var(--fill, 1)); }
 
 /* 3. projets : index en grand texte, puis une piste horizontale (épinglée au défilement sur grand écran) */
-.work { min-height: 100svh; padding-top: var(--sp-8); display: flex; flex-direction: column; justify-content: center; }
+.work { padding-top: var(--sp-7); }
 /* en-tête de section : titre en caractère d'affichage, phrase courte au texte courant */
 .sec-head { display: grid; gap: 10px; max-width: 760px; }
 .sec-head h2 { font-size: clamp(2.2rem, 3.9vw, 3.6rem); }
@@ -170,7 +176,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .work__index a, .fiche__next { text-decoration: none; }
 /* piste horizontale indépendante : glisser à deux doigts (pavé tactile), au doigt, à la souris ou avec les flèches ;
    bords latéraux fondus comme le haut et le bas des images */
-.work__pin { padding-block: var(--sp-5) var(--sp-6); }
+.work__pin { padding-block: var(--sp-5) var(--sp-5); }
 .work__track { --fade: 120px;   /* même largeur que le fondu du haut */ overflow-x: auto; scrollbar-width: none; padding-bottom: 8px;
   -webkit-mask: linear-gradient(90deg, rgb(0 0 0 / 0.12), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / 0.12)); mask: linear-gradient(90deg, rgb(0 0 0 / 0.12), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / 0.12)); }
 .work__strip { display: flex; gap: clamp(24px, 4vw, 64px); width: max-content; }

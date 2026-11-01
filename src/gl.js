@@ -467,10 +467,11 @@ export function createGL(canvas, { reduced }) {
     const small = w < 760
     const big = Math.min(h * 0.62, w * (small ? 0.62 : 0.8) * 1000 / 816)
     // fin : centré sur le mot HOLO / SENE (dessiné derrière), au-dessus de la présentation
-    const end = small ? Math.min(h * 0.5, w * 0.8 * 1000 / 816) : Math.min(h * 0.64, w * 0.4 * 1000 / 816)
+    // au-dessus du mot (il ne le recouvre qu'en partie) : le nom reste lisible et la présentation dégagée
+    const end = small ? Math.min(h * 0.34, w * 0.6 * 1000 / 816) : Math.min(h * 0.44, w * 0.3 * 1000 / 816)
     const q = e(k(0, 0.55))
     let size = big + (end - big) * q
-    let cx = w / 2, cy = h / 2 + (small ? -0.06 : -0.05) * h * q
+    let cx = w / 2, cy = h / 2 + (small ? -0.25 : -0.21) * h * q
     // intro : le « o » prend la place du chargeur (rayon extérieur 44 px, au centre), puis le monogramme s'agrandit
     const i = e(Math.min(1, intro))
     const s0 = 44 / O_R, c0 = [w / 2 - O_OFF[0] * s0, h / 2 - O_OFF[1] * s0]

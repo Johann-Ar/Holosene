@@ -262,7 +262,7 @@ function scrollEffects() {
   const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
-    const on = Math.round(k(0.72, 0.95) * heroWords.length)
+    const on = Math.round(k(0.02, 0.3) * heroWords.length)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
   }
   wordsSvg.forEach((w, i) => {
