@@ -29,7 +29,9 @@ const wordPart = (paths) => `<svg class="studio__word" viewBox="${logoBox}" aria
   <g class="w-line" fill="none" stroke="url(#iris-l)">${paths.replace(/<path /g, '<path pathLength="1" ')}</g>
 </svg>`
 const logotype = wordPart(logoPaths)
-const holo = wordPart(logoParts.slice(0, 4).join('')), sene = wordPart(logoParts.slice(4).join(''))
+// nom de l'accueil : « Johann Arata », même dessin que le logotype (Archivo 500, largeur 120 %, approche -0,04 em)
+const nameSrc = readFileSync(new URL('../public/media/name-white.svg', import.meta.url), 'utf8')
+const nameWord = wordPart(nameSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, '')).join('')).replace(`viewBox="${logoBox}"`, `viewBox="${nameSrc.match(/viewBox="([^"]+)"/)[1]}"`)
 
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
@@ -63,7 +65,6 @@ export function render(lang) {
   const rail = (cards, label) => `
     <div class="work__pin">
       <div class="work__track wrap" data-clip tabindex="0" aria-label="${esc(label)}"><div class="work__strip">${cards.join('')}</div></div>
-      <p class="lbl rail-hint" aria-hidden="true">${lang === 'fr' ? 'Faire glisser' : 'Drag'} ${cards.length} ${lang === 'fr' ? 'cartes' : 'cards'} →</p>
     </div>`
 
   // fiche projet : en-tête fixe, puis une rangée qui défile à l'horizontale (texte en colonnes, images, projet suivant)
@@ -135,7 +136,7 @@ export function render(lang) {
       </div>
       <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
       <div class="hero__copy">
-        <h1 id="hero-t" class="hero__word"><span class="sr">Holosene · ${esc(t(site.signature))}</span>${holo}${sene}</h1>
+        <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
         <a class="hero__cta" href="#projets">${lang === 'fr' ? 'Voir les projets' : 'See the work'} <span>↓</span></a>
       </div>

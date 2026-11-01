@@ -264,8 +264,8 @@ export const research = {
 
 /** Mini à propos sous le logotype (une phrase). */
 export const studio = T(
-  'Johann Arata, designer numérique : design interactif, WebGL, captation du réel et recherche en design.',
-  'Johann Arata, digital designer: interaction design, WebGL, real-world capture and design research.',
+  'Designer numérique : design interactif, WebGL, captation du réel et recherche en design.',
+  'Digital designer: interaction design, WebGL, real-world capture and design research.',
 )
 
 /** À propos, en fin de page. **…** : mots mis en avant. Uniquement des informations fournies par Johann. */
