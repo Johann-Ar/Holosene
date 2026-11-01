@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { defineConfig } from 'vite'
 
 /** Adresse publique (aperçus de liens, URL canonique, hreflang). À changer avec un nom de domaine. */
-const SITE_URL = (process.env.SITE_URL || 'https://johann-ar.github.io/Holosene/').replace(/\/?$/, '/')
+const SITE_URL = (process.env.SITE_URL || 'https://holosene.vercel.app/').replace(/\/?$/, '/')
 
 /** Pré-rendu : le contenu (src/render.js) et les métadonnées sont écrits dans le HTML publié, pour chaque langue. */
 function prerender() {

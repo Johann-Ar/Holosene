@@ -26,4 +26,4 @@ npm run preview
 
 `.github/workflows/deploy.yml` publie sur GitHub Pages **uniquement depuis `main`**.
 Rien n’est publié tant que la branche de travail n’est pas fusionnée, avec l’accord de Johann.
-Adresse prévue : https://johann-ar.github.io/Holosene/ (`SITE_URL` à changer si un nom de domaine est choisi).
+Adresse prévue : https://holosene.vercel.app/ (`SITE_URL` à changer si un nom de domaine est choisi).

@@ -11,7 +11,7 @@ export const site = {
   name: 'Holosene',
   person: 'Johann Arata',
   email: 'arata.johann@gmail.com',
-  url: 'https://johann-ar.github.io/Holosene/',
+  url: 'https://holosene.vercel.app/',
   intent: T(
     'Je capte le réel et le transforme en volumes et en espaces 3D à parcourir.',
     'I capture the real world and turn it into volumes and 3D spaces to explore.',
