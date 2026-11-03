@@ -56,7 +56,12 @@ a { color: inherit; }
 .topbar__nav a:not(.lang):hover::after, .topbar__nav a:not(.lang):focus-visible::after { clip-path: inset(0 0 0 0 round 99px); }
 .topbar .lang { font: 400 var(--fs-label) var(--font-mono); letter-spacing: 0.06em; border: 1px solid rgb(255 255 255 / 0.4); border-radius: var(--radius-pill); padding: 6px 10px; }
 @media (max-width: 640px) { .topbar__nav a[href="#recherche"] { display: none; } .topbar__nav { gap: 12px; font-size: 13px; } .brand__mark { height: 28px; } }
-@media (max-width: 420px) { .topbar__nav a[href="#studio"] { display: none; } }
+/* mobile : monogramme au centre, Projets et À propos à gauche, Contact et langue à droite */
+@media (max-width: 640px) {
+  .brand { position: absolute; left: 50%; transform: translateX(-50%); }
+  .topbar__nav { flex: 1; }
+  .topbar__nav a[href="#contact"] { margin-left: auto; }
+}
 
 /* effets irisés de la marque
    - « blanc de l'œil » : un aplat blanc dont les bords se teintent des couleurs irisées (boutons, grands lettrages)
@@ -115,11 +120,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .js [data-words] .w { opacity: 1; animation: none !important; }
 }
 
-/* 1. accueil : le monogramme en trame de points ; avec la partie À propos, il forme l'ouverture */
+/* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
 .hero { position: relative; height: 280svh; }   /* scène épinglée : le défilement anime le monogramme, puis le mot et la présentation */
 .hero__pin { position: sticky; top: 0; height: 100svh; min-height: 560px; overflow: hidden; }
-.hero__mark { position: absolute; left: 50%; top: 50%; height: 70svh; width: auto; transform: translate(-50%, -50%); }
-.has-gl .hero__mark { display: none; }
 @media (prefers-reduced-motion: reduce) { .hero { height: 100svh; } }
 .hero__view { position: absolute; inset: 0; }
 .hero__view > img { opacity: 0 !important; }
@@ -135,18 +138,29 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .studio { padding-block: var(--sp-7); }   /* pause graphique : le seul élément géant de son écran */
 /* mini à propos et à propos de fin : capitales, centrés, mots importants en gras (comme la référence) */
 .hero__line, .about p { text-align: center; letter-spacing: 0.005em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
-/* accueil : le logotype sur toute la largeur, fait de points (la rivière) ; ses deux « o » sont l'œil irisé du monogramme.
-   Positions partagées avec le WebGL (wordBox dans gl.js) : marges --edge, centre vertical à 42 % (38 % sur mobile). */
-.hero__copy { position: absolute; inset: 0; pointer-events: none; }
-/* HOLO / SENE en grand, centrés, sous le logo (qui est dessiné devant) ; la présentation centrée en bas, devant */
-.hero__word { position: absolute; left: 0; right: 0; top: 46%; transform: translateY(-50%); display: flex; justify-content: center; align-items: flex-end; gap: 0; line-height: 0; padding-inline: var(--edge-l); }
-.hero__word .studio__word { width: min(90vw, 1500px); height: auto; }   /* « Johann Arata » sur une ligne */   /* « Holosene » sur une ligne, presque toute la largeur */
-.hero__line { position: absolute; left: 0; right: 0; top: calc(46% + min(13svh, 6.75vw) + 4svh); z-index: 2; margin-inline: auto; max-width: 46ch; text-align: center !important; font-size: clamp(1.05rem, 1.5vw, 1.35rem); line-height: 1.45; color: #fff; padding-inline: var(--edge-l); }
+/* composition : logo, nom, présentation en une colonne centrée, espacements réguliers ; le logo WebGL vient se poser
+   dans .hero__slot (gl.js lit sa position), l'image du monogramme y sert de repli sans WebGL */
+.hero__copy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(20px, 3.2svh, 36px); padding: 96px var(--edge-l) calc(14svh + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+.hero__slot { height: clamp(120px, 30svh, 300px); aspect-ratio: 816 / 1000; flex: none; margin-bottom: clamp(4px, 1.2svh, 14px); }
+.hero__mark { display: block; width: 100%; height: 100%; }
+.has-gl .hero__mark { visibility: hidden; }
+.hero__word { margin: 0; line-height: 0; }
+.hero__word .studio__word { width: min(64vw, 820px); height: auto; }
+.hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: clamp(1rem, 1.3vw, 1.2rem); line-height: 1.5; color: rgb(255 255 255 / 0.78); text-wrap: balance; }
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: #fff; text-decoration: none; padding: 12px 18px; }
 .hero__cta span { display: inline-block; animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta span { animation: none; } }
-@media (max-width: 760px) { .hero__line { top: calc(44% + 6.2vw + 3svh); } .hero__word { top: 44%; } .hero__word .studio__word { width: 92vw; } }
+.hero__word .studio__word--stack { display: none; }
+/* mobile : « Arata » à la ligne sous « Johann » ; la flèche sous « Voir les projets », centrée */
+@media (max-width: 760px) {
+  .hero__copy { gap: clamp(16px, 2.6svh, 28px); }
+  .hero__slot { height: clamp(110px, 24svh, 210px); }
+  .hero__word .studio__word--line { display: none; }
+  .hero__word .studio__word--stack { display: block; width: min(68vw, 340px); }
+  .hero__line { font-size: 1rem; max-width: 30ch; }
+  .hero__cta { display: flex; flex-direction: column; align-items: center; gap: 6px; white-space: nowrap; }
+}
 .js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
 .js .hero__line .w.on { opacity: 1; }
 .about { padding-block: var(--sp-7) var(--sp-6); display: grid; justify-items: center; gap: 18px; }

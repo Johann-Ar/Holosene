@@ -66,9 +66,8 @@ ${GLASS_GLSL}
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
   if (uHasMask > 0.5) {
-    // accueil : le monogramme en trame de points (S blanc, « o » irisé), avec sur son contour le bord de verre des
-    // vignettes : la trame y est réfractée vers l'intérieur, le verre se teinte (gris pour le S, irisé pour le « o »),
-    // arête claire, reflets orientés
+    // accueil : le monogramme en aplat (S blanc, « o » irisé), avec sur son contour le bord de verre des
+    // vignettes : le verre se teinte (gris pour le S, irisé pour le « o »), arête claire, reflets orientés
     vec2 toUv = 1.0 / uMarkXf.z / vec2(0.816, 1.0);
     vec2 muv = (p - uMarkXf.xy) * toUv + 0.5;
     vec4 mkp = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
@@ -88,18 +87,9 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float dist = dd * 90.0;                                // unités
     float W = 25.0;                                        // épaisseur du verre (unités) : même rapport à la largeur du trait que sur le chargeur
     float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
-    // réfraction (même loi que les vignettes) puis trame de l'écran (grille fixe, points de taille constante)
-    vec2 qs = p - n * W * upx * 0.42 * s1 * s1 * (3.0 - 2.0 * s1);
-    vec2 cell = floor(qs / uCell), cs = (cell + 0.5) * uCell;
-    vec2 c = (cs - uMarkXf.xy) / upx + vec2(408.0, 500.0);            // centre du point, en unités du monogramme
-    vec4 mk = (c.x > 0.0 && c.x < 816.0 && c.y > 0.0 && c.y < 1000.0) ? texture2D(uMask, c / vec2(816.0, 1000.0)) : vec4(0.0);
-    float inShape = step(0.5, max(mk.r, mk.g));
-    float rnd = hash(cell);
-    float rev = mk.g > mk.r ? 1.0 : smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
-    float r = uCell * 0.46 * inShape * rev;
-    float dotA = (1.0 - smoothstep(r - aa, r + aa, length(qs - cs))) * clamp(r / aa, 0.0, 1.0);
-    vec2 pc = c - vec2(639.25, 586.8);
-    vec3 g = (mk.g > mk.r ? iris(atan(pc.x, -pc.y) / 6.28318) : vec3(0.95)) * dotA;   // « o » entièrement irisé
+    // aplat (sans trame) : S blanc, « o » irisé, lus au pixel
+    vec2 pc = lp - vec2(639.25, 586.8);
+    vec3 g = isO ? iris(atan(pc.x, -pc.y) / 6.28318) : vec3(0.95);
     // verre du bord (comme les vignettes et le chargeur)
     vec2 pe = lp - vec2(639.25, 586.8);
     vec3 tint = isO ? iris(atan(pe.x, -pe.y) / 6.28318) : vec3(0.82, 0.83, 0.88);
@@ -112,7 +102,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
     g += mix(vec3(1.0), tint, 0.5) * (spec + back);
     g += mix(vec3(1.0), tint, isO ? 0.6 : 0.2) * exp(-dpx / 1.3) * 0.5;
     float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
-    float al = cov * shapeRev;   // le « o » est un disque de verre plein : entre les points, le fond sombre (comme le chargeur)
+    float al = cov * shapeRev;
     return vec4(g * cov * shapeRev, al);
   }
   vec2 cell = floor(p / uCell);
@@ -460,18 +450,16 @@ export function createGL(canvas, { reduced }) {
     v.maskB = newTex(); upload(v.maskB, sm)
   }
   /** Placement du monogramme : intro (le « o » du chargeur, au centre, grandit et le S apparaît), puis le défilement p
-   *  le fait encore grossir et glisser vers la droite (bas sur mobile) ; il flotte doucement, sans rotation. */
+   *  le ramène à sa place dans la composition (au-dessus du nom), sans rotation. */
   const O_OFF = [0.23125, 0.0868], O_R = 0.1767
-  function markXf(w, h, p, time, intro) {
+  function markXf(w, h, p, time, intro, slot) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const small = w < 760
     const big = Math.min(h * 0.62, w * (small ? 0.62 : 0.8) * 1000 / 816)
-    // fin : centré sur le mot HOLO / SENE (dessiné derrière), au-dessus de la présentation
-    // au-dessus du mot (il ne le recouvre qu'en partie) : le nom reste lisible et la présentation dégagée
-    const end = small ? Math.min(h * 0.34, w * 0.6 * 1000 / 816) : Math.min(h * 0.44, w * 0.3 * 1000 / 816)
-    const q = e(k(0, 0.55))
-    let size = big + (end - big) * q
-    let cx = w / 2, cy = h / 2 + (small ? -0.25 : -0.21) * h * q
+    // fin : à sa place dans la composition de l'accueil (.hero__slot, au-dessus du nom et de la présentation)
+    const q = e(k(0, 0.45))
+    let size = big + (slot.h - big) * q
+    let cx = w / 2 + (slot.x - w / 2) * q, cy = h / 2 + (slot.y - h / 2) * q
     // intro : le « o » prend la place du chargeur (rayon extérieur 44 px, au centre), puis le monogramme s'agrandit
     const i = e(Math.min(1, intro))
     const s0 = 44 / O_R, c0 = [w / 2 - O_OFF[0] * s0, h / 2 - O_OFF[1] * s0]
@@ -595,7 +583,7 @@ export function createGL(canvas, { reduced }) {
       if (v.maskB) { gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, v.maskB) }
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
-      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : w < 760 ? Math.max(5, v.cell - 1) : v.cell)   // logo : même trame que le chargeur (6 px) partout
+      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       if (v.text) { textFor(v, w, h); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.textTex) }
@@ -607,7 +595,12 @@ export function createGL(canvas, { reduced }) {
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 2) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
-      if (v.mark) { const hr = v.el.closest('.hero').getBoundingClientRect(); const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H))); gl.uniform4f(U.uMarkXf, ...markXf(w, h, p, time, reduced ? 1 : (now - v.seen) / 1500)) }
+      if (v.mark) {
+        const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
+        const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
+        const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
+        gl.uniform4f(U.uMarkXf, ...markXf(w, h, p, time, reduced ? 1 : (now - v.seen) / 1500, slot))
+      }
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       if (glassy) {
         // passe 2 : le bord de verre, qui réfracte ce contenu, sur la toile

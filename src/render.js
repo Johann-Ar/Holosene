@@ -31,7 +31,13 @@ const wordPart = (paths) => `<svg class="studio__word" viewBox="${logoBox}" aria
 const logotype = wordPart(logoPaths)
 // nom de l'accueil : « Johann Arata », même dessin que le logotype (Archivo 500, largeur 120 %, approche -0,04 em)
 const nameSrc = readFileSync(new URL('../public/media/name-white.svg', import.meta.url), 'utf8')
-const nameWord = wordPart(nameSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, '')).join('')).replace(`viewBox="${logoBox}"`, `viewBox="${nameSrc.match(/viewBox="([^"]+)"/)[1]}"`)
+const nameParts = nameSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, ''))
+const nameWord = wordPart(nameParts.join('')).replace(`viewBox="${logoBox}"`, `viewBox="${nameSrc.match(/viewBox="([^"]+)"/)[1]}"`).replace('class="studio__word"', 'class="studio__word studio__word--line"')
+// sur mobile : « Arata » sous « Johann », centré (Johann : x 39 à 3803 ; Arata : x 4117 à 6958) ; identifiants propres
+// pour que les dégradés restent résolus quand l'autre version est masquée
+const nameStacked = wordPart(nameParts.slice(0, 6).join('') + `<g transform="translate(-3616.5 880)">${nameParts.slice(6).join('')}</g>`)
+  .replace(`viewBox="${logoBox}"`, 'viewBox="39 -724 3764 1616"').replace('class="studio__word"', 'class="studio__word studio__word--stack"')
+  .replace(/iris-g|iris-l|"core"|#core/g, (x) => x.replace(/(iris-g|iris-l|core)/, '$1-2'))
 
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
@@ -134,11 +140,11 @@ export function render(lang) {
       <div class="hero__view" data-gl="mark" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
         <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
       </div>
-      <img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000">
       <div class="hero__copy">
-        <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}</h1>
+        <div class="hero__slot" aria-hidden="true"><img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000"></div>
+        <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}${nameStacked}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
-        <a class="hero__cta" href="#projets">${lang === 'fr' ? 'Voir les projets' : 'See the work'} <span>↓</span></a>
+        <a class="hero__cta" href="#projets">${lang === 'fr' ? 'Voir les projets' : 'See the work'} <span aria-hidden="true">↓</span></a>
       </div>
     </div>
   </section>

@@ -259,11 +259,12 @@ function scrollEffects() {
   const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
-    const on = Math.round(k(0.02, 0.3) * heroWords.length)
+    const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,3 à 0,58)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
   }
-  wordsSvg.forEach((w, i) => {
-    const p = k(0.3 + i * 0.14, 0.58 + i * 0.14)
+  // le nom existe en deux versions (une ligne / deux lignes sur mobile) : même avancée pour les deux
+  wordsSvg.forEach((w) => {
+    const p = k(0.3, 0.58)
     w.style.setProperty('--draw', (1 - Math.min(1, p * 1.5)).toFixed(3))
     w.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.5) / 0.5)).toFixed(3))
   })
@@ -295,11 +296,11 @@ if (spin) {
   // roue irisée du logo (comme le shader : 0 = en haut, sens horaire)
   const WHEEL = [[255, 77, 237], [255, 84, 163], [199, 84, 255], [71, 153, 255], [56, 237, 143], [255, 77, 237]]
   const wheel = (t) => { const f = (((t % 1) + 1) % 1) * 5, i = Math.floor(f), u = f - i, s3 = u * u * (3 - 2 * u); return WHEEL[i].map((c, j) => c + (WHEEL[i + 1][j] - c) * s3) }
-  const R = 44, r = 23, mid = (R + r) / 2, half = (R - r) / 2, STEP = 6, TAU = Math.PI * 2
+  const R = 44, r = 23, mid = (R + r) / 2, half = (R - r) / 2, TAU = Math.PI * 2
   let finishAt = 0, onDone = null
   // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
   finishLoader = (done) => { finishAt = performance.now(); onDone = done }
-  // dessin pixel par pixel : trame de points (comme le logo) et bord de verre des vignettes sur le contour de l'arc
+  // dessin pixel par pixel : aplat (comme le logo) et bord de verre des vignettes sur le contour de l'arc
   const P = S * dpr, img = x.createImageData(P, P)
   x.setTransform(1, 0, 0, 1, 0, 0)
   const draw = (t) => {
@@ -337,15 +338,8 @@ if (spin) {
       if (d < -0.6) { data[o + 3] = 0; continue }
       const cov = Math.min(1, (d + 0.6) / 1.2)
       const s1 = 1 - Math.min(1, Math.max(0, d / W))
-      // trame : la forme est lue plus à l'intérieur près de l'arête (réfraction)
-      // réfraction comme les vignettes : la grille de points est lue plus à l'intérieur près de l'arête
-      const bend = W * 0.42 * s1 * s1 * (3 - 2 * s1)
-      const qx = px - nx * bend, qy = py - ny * bend
-      const gx = Math.floor((qx + S / 2) / STEP) * STEP + STEP / 2 - S / 2, gy = Math.floor((qy + S / 2) / STEP) * STEP + STEP / 2 - S / 2
-      const [dq, , , kq] = shape(gx, gy)
-      const dotR = dq > 0 ? 2.5 : 0
-      const dotA = Math.min(1, Math.max(0, (dotR - Math.hypot(qx - gx, qy - gy)) * dpr + 0.5))
-      const dcol = colorAt(kq, gx, gy)   // en fin de chargement : entièrement irisé, comme le « o » du logo
+      // aplat (sans trame) : couleur lue au pixel ; en fin de chargement, entièrement irisé comme le « o » du logo
+      const dotA = 1, dcol = colorAt(k, px, py)
       // verre du bord : teinte (gris clair, irisée vers le bout), arête claire, reflets
       const tint = colorAt(Math.max(k, 0.0001), px, py).map((c, n) => 0.82 + (c - 0.82) * Math.min(1, Math.max(0, (k - 0.72) / 0.28) * 2 + fe))
       const facing = nx * L[0] + ny * L[1]
