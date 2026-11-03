@@ -171,6 +171,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
 .js .hero__line .w.on { opacity: 1; }
 .about { padding-block: var(--sp-7) var(--sp-6); display: grid; justify-items: center; gap: 18px; }
+/* À propos : un écran entier à lui seul, contenu centré sous la barre du haut : en y arrivant (menu ou défilement), on
+   ne voit plus la fin des Travaux de recherche au-dessus */
+.about { min-height: 100svh; align-content: center; padding-top: calc(var(--sp-8) + env(safe-area-inset-top, 0px)); scroll-margin-top: 0; }
 .about h2 { margin-bottom: 10px; }
 .about p { max-width: 64ch; font-size: clamp(0.95rem, 1.25vw, 1.15rem); line-height: 1.55; }
 .about strong { color: var(--ink); font-weight: 700; }
