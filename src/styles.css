@@ -156,6 +156,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-small) var(--font-text); color: var(--ink); text-decoration: none; padding: 12px 18px; display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }   /* une flèche de chaque côté */
 .js:not(.hero-done) .topbar, .js:not(.hero-done) .hero__cta { opacity: 0; visibility: hidden; }
 .topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
+.hero-done .hero__cta { transition-delay: 2s; }   /* « Voir les projets » : 2 s après la fin de l'animation de l'accueil */
 .hero__cta span { display: inline-block; animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta span { animation: none; } }
