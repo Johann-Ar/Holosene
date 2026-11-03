@@ -157,7 +157,9 @@ vec3 withLens(vec2 q, vec3 base) {
     float d = length(lp);
     if (d < uLensO + 2.0) {
       float k = smoothstep(0.72, 1.0, d / R);
-      float bend = 0.2 * k * k * k;
+      // loupe : grossissement ×1,4 au centre, qui se raccorde au bord (lentille convexe), puis bombé « verre liquide »
+      float mag = mix(0.7, 1.0, smoothstep(0.3, 1.0, d / R));
+      float bend = 1.0 - mag * (1.0 - 0.2 * k * k * k);
       vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
       vec3 orig = vec3(0.0);
       for (int i = 0; i < 4; i++) {
@@ -390,23 +392,26 @@ export function createGL(canvas, { reduced }) {
     return v.maskReady
   }
   /** Placement du monogramme. Arrivée (ms depuis la fin du chargeur) : le « o » prend exactement la place de l'anneau
-   *  du chargeur (rayon 44 px, centre de la fenêtre) et reste immobile pendant que le chargeur s'efface ; puis il grandit
-   *  sur place, son centre fixe ; puis, seulement quand le S apparaît, le monogramme glisse jusqu'à sa position.
+   *  du chargeur (rayon handoffR, centre de la fenêtre), à la vitesse où celui-ci grandissait, et continue de grandir sur
+   *  place en ralentissant ; puis, seulement quand le S apparaît, le monogramme glisse jusqu'à sa position.
    *  Ensuite le défilement p le ramène à sa place dans la composition (au-dessus du nom). Renvoie aussi l'apparition du S. */
   const O_OFF = [(MONO_O[0] - MONO_W / 2) / 1000, (MONO_O[1] - 500) / 1000], O_R = KIT.ring.outerRadius * MONO_U / 1000
-  const HOLD = 300, GROW = 750, SHIFT = 850
+  const GROW = 850, SHIFT = 850
+  const bigOf = (w, h) => Math.min(h * 0.46, w * (w < 760 ? 0.5 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil
+  const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * 0.62)   // rayon du « o » au relais avec le chargeur (px)
   function markXf(w, h, p, ms, slot, oc) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const small = w < 760
-    const big = Math.min(h * 0.46, w * (small ? 0.5 : 0.6) * 1000 / 816)   // taille maximale du logo au début de l'accueil
+    const big = bigOf(w, h)
     // fin : à sa place dans la composition de l'accueil (.hero__slot, au-dessus du nom et de la présentation)
     const q = e(k(0, 0.45))
     const size = big + (slot.h - big) * q
     const cx = w / 2 + (slot.x - w / 2) * q, cy = h / 2 + (slot.y - h / 2) * q
-    if (ms >= HOLD + GROW + SHIFT) return [cx, cy, size, 0, 1]
+    if (ms >= GROW + SHIFT) return [cx, cy, size, 0, 1]
     const io = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - Math.pow(2 - 2 * x, 3) / 2)
-    const g = io((ms - HOLD) / GROW), c = io((ms - HOLD - GROW) / SHIFT)
-    const sz = 44 / O_R + (size - 44 / O_R) * g
+    // croissance : décélération seule (le chargeur arrive en accélérant à la même vitesse : aucun arrêt au relais)
+    const gx = Math.min(1, Math.max(0, ms / GROW)), g = 1 - Math.pow(1 - gx, 3), c = io((ms - GROW) / SHIFT)
+    const s0 = handoffR(w, h) / O_R, sz = s0 + (size - s0) * g
     const ox = oc[0] - O_OFF[0] * sz, oy = oc[1] - O_OFF[1] * sz   // monogramme placé pour que son « o » soit centré en oc
     return [ox + (cx - ox) * c, oy + (cy - oy) * c, sz, 0, c]
   }
@@ -561,5 +566,7 @@ export function createGL(canvas, { reduced }) {
   // le logo de l'accueil est prêt (champ de distance chargé dès le départ) : le chargeur attend ce moment, sans quoi le
   // logo manquerait quelques images juste après lui
   const ready = Promise.all(views.filter((v) => v.mark).map(maskFor))
-  return { frame, ready }
+  // pour le chargeur : rayon du « o » au relais, rayon visé par la croissance, durée de la croissance
+  const intro = () => ({ r0: handoffR(innerWidth, innerHeight), r1: bigOf(innerWidth, innerHeight) * O_R, grow: GROW })
+  return { frame, ready, intro }
 }

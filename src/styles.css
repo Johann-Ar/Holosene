@@ -36,8 +36,11 @@ a { color: inherit; }
 
 .loader { display: none; }
 /* écran de chargement : un astérisque tramé (mêmes points que le site) qui tourne, puis fondu */
-.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: var(--bg); transition: opacity 0.3s linear, visibility 0.3s; }   /* s'efface pendant que le logo, identique dessous, reste immobile (300 ms) */
-.is-loaded .loader { opacity: 0; visibility: hidden; }
+.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: var(--bg); transition: background-color 0.6s var(--ease-flow); }
+/* fermeture : le fond du chargeur s'efface (on voit déjà le fond de page) ; au relais, l'anneau, identique au « o » du
+   logo dessiné dessous, disparaît d'un coup : aucun fondu par-dessus le logo */
+.js .loader--closing { background-color: transparent; }
+.is-loaded .loader { visibility: hidden; }
 .loader__spin { width: 96px; height: 96px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
@@ -50,11 +53,11 @@ a { color: inherit; }
 /* barre du haut : monogramme + logotype, fixe */
 .topbar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 20; display: flex; justify-content: space-between; align-items: center; padding-block: 22px; color: var(--ink); }
 .topbar::before { content: none; }
-/* mode clair : barre en verre dépoli (fond translucide + flou) pour que le menu reste lisible sur tout le contenu */
+/* mode clair : barre en verre dépoli, en dégradé (voile 33 % et flou en haut, rien en bas) pour que le menu reste lisible */
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .topbar { background: color-mix(in srgb, var(--bg) 66%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); box-shadow: inset 0 -1px 0 var(--ink-6); }
+  :root:not([data-theme="dark"]) .topbar::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--bg) 33%, transparent), transparent); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); -webkit-mask: linear-gradient(#000, #000 35%, transparent); mask: linear-gradient(#000, #000 35%, transparent); }
 }
-:root[data-theme="light"] .topbar { background: color-mix(in srgb, var(--bg) 66%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); box-shadow: inset 0 -1px 0 var(--ink-6); }
+:root[data-theme="light"] .topbar::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--bg) 33%, transparent), transparent); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); -webkit-mask: linear-gradient(#000, #000 35%, transparent); mask: linear-gradient(#000, #000 35%, transparent); }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
 .brand__mark { height: 32px; width: auto; }
 .topbar__nav { display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); font-size: 14px; }
@@ -166,9 +169,10 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__word .studio__word { width: min(64vw, 820px); height: auto; }
 .hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: clamp(1.125rem, 1.5vw, 1.375rem); line-height: 1.5; color: var(--ink-86); text-wrap: balance; }
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-small) var(--font-text); color: var(--ink); text-decoration: none; padding: 12px 18px; display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }   /* une flèche de chaque côté */
-.js:not(.hero-done) .topbar, .js:not(.hero-done) .hero__cta { opacity: 0; visibility: hidden; }
+.js:not(.hero-done) .topbar, .js:not(.is-loaded) .hero__cta { opacity: 0; visibility: hidden; }
 .topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
-.hero-done .hero__cta { transition-delay: 2s; }   /* « Voir les projets » : 2 s après la fin de l'animation de l'accueil */
+/* « Voir les projets » : 2 s après que le logo s'est posé (1,7 s après la fin du chargeur), sans attendre le défilement */
+.js.is-loaded .hero__cta { opacity: 1; visibility: visible; transition-delay: 3.7s; }
 .hero__cta span { display: inline-block; animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta span { animation: none; } }

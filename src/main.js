@@ -311,27 +311,39 @@ if (reduced) { root.classList.add('hero-done'); heroWords.forEach((w) => w.class
 
 /* Chargeur : le « o » du logo-kit. Un arc tourne ; ses couleurs sont celles de la roue du kit à leur angle exact (il
    dévoile le vrai « o »), son opacité va de 0 à la queue à 1 à la tête (arrondie) : ni noir ni gris. En fin de
-   chargement, il se referme en anneau plein, identique au « o » du logo qui prend alors le relais au même pixel.
+   chargement, il se referme en anneau plein et grandit en accélérant (60 % → 100 % du rayon du relais) ; le « o » du logo prend le relais
+   au même pixel et à la même vitesse, puis ralentit. Le fond du chargeur s'efface pendant la fermeture.
    Dégradés coniques Canvas 2D : dessinés par le navigateur, aucun calcul par pixel en JavaScript. */
-const spin = document.querySelector('.loader__spin')
+const spin = document.querySelector('.loader__spin'), loaderEl = document.querySelector('.loader')
 let finishLoader = (done) => done()
 if (spin?.getContext('2d').createConicGradient) {
   const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
   spin.width = S * dpr; spin.height = S * dpr
   const x = spin.getContext('2d')
-  const R = 44, r = R * IRIS_INNER_RATIO, mid = (R + r) / 2, TAU = Math.PI * 2, C = S / 2
+  const TAU = Math.PI * 2, C = S / 2
   // roue du kit : t = 0 en bas, sens horaire (angle canvas : 0 = à droite, sens horaire, y vers le bas → bas = π/2)
   const wheel = x.createConicGradient(Math.PI / 2, C, C)
   for (const [p, c] of IRIS_STOPS) wheel.addColorStop(p, c)
-  let finishAt = 0, onDone = null
-  // fin du chargement : l'arc s'allonge jusqu'au tour complet et sa queue devient opaque (1,3 s)
-  finishLoader = (done) => { finishAt = performance.now(); onDone = done }
+  // rayon : R1 au relais (fixé par le logo selon l'écran, 44 px au plus), R0 = 60 % de R1 pendant le chargement
+  let finishAt = 0, onDone = null, growD = 400, R1 = 44, R0 = 26, sized = false
+  // fin du chargement : l'arc s'allonge jusqu'au tour complet et sa queue devient opaque (1,3 s) ; pendant les derniers
+  // growD ms, l'anneau grandit en accélérant (t²) jusqu'à 44 px, à la vitesse initiale de la croissance du logo
+  finishLoader = (done) => {
+    finishAt = performance.now(); onDone = done
+    loaderEl?.classList.add('loader--closing')
+    const it = gl?.intro?.()
+    if (it) { R0 *= it.r0 / R1; R1 = it.r0; const v = 3 * (it.r1 - it.r0) / it.grow; growD = Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(v, 1e-3))) }
+  }
   const draw = (t) => {
+    // première image : rayon du relais selon l'écran (gl est créé plus bas dans ce fichier, il existe à ce moment-là)
+    if (!sized) { sized = true; const it = gl?.intro?.(); if (it) { R1 = it.r0; R0 = R1 * 0.6 } }
     if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
     const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
     const arc = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe          // longueur de l'arc
     const head = (t / 1000) * TAU * 0.9 - Math.PI / 2               // angle canvas de la tête
     const tail = head - arc
+    const gz = finishAt ? Math.min(1, Math.max(0, (t - finishAt - (1300 - growD)) / growD)) : 0
+    const R = R0 + (R1 - R0) * gz * gz, r = R * IRIS_INNER_RATIO, mid = (R + r) / 2
     x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, S, S)
     x.globalCompositeOperation = 'source-over'
     x.lineWidth = R - r; x.lineCap = fe >= 1 ? 'butt' : 'round'; x.strokeStyle = wheel
