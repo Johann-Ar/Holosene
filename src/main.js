@@ -243,6 +243,7 @@ function showCard(card) {
 /* À propos : le logotype se trace puis se remplit ; les grands textes s'allument mot à mot au défilement. */
 const hero = document.querySelector('.hero')
 const heroWords = [...document.querySelectorAll('.hero__line .w')]
+if (!heroWords.length) root.classList.add('hero-done')   // pages sans accueil : tout est visible d'emblée
 let heroOn = -1
 const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
 // chaque moitié du logotype (HOLO / SENE) cadrée sur ses lettres
@@ -261,6 +262,8 @@ function scrollEffects() {
   if (heroWords.length) {
     const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,3 à 0,58)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
+    // la barre du haut et « Voir les projets » apparaissent une fois la présentation entièrement affichée (et restent)
+    if (on === heroWords.length) root.classList.add('hero-done')
   }
   // le nom existe en deux versions (une ligne / deux lignes sur mobile) : même avancée pour les deux
   wordsSvg.forEach((w) => {
@@ -282,7 +285,7 @@ function scrollEffects() {
     if (lead) { const v = f.toFixed(3); if (lead.dataset.f !== v) { lead.dataset.f = v; lead.style.setProperty('--f', v) } }
   }
 }
-if (reduced) { heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
+if (reduced) { root.classList.add('hero-done'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
 /* Chargeur : le « o » du logo en miniature. Un arc lisse à bout arrondi tourne ; il s'éteint vers la queue et n'est
    irisé qu'à son bout ; en fin de chargement, il se referme en « o » irisé. */

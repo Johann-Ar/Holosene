@@ -2,6 +2,7 @@
 @import '../brand/tokens.css';
 
 @font-face { font-family: 'Archivo'; src: url('/fonts/archivo-variable.woff2') format('woff2'); font-weight: 100 900; font-stretch: 62% 125%; font-display: swap; }
+@font-face { font-family: 'Outfit'; src: url('/fonts/outfit-variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }   /* texte courant (SIL OFL 1.1) */
 @font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/ibm-plex-mono-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
 :root { color-scheme: dark; --iris: var(--iris-conic); --edge-l: max(var(--edge), env(safe-area-inset-left, 0px)); --edge-r: max(var(--edge), env(safe-area-inset-right, 0px)); }
@@ -148,6 +149,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__word .studio__word { width: min(64vw, 820px); height: auto; }
 .hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: clamp(1rem, 1.3vw, 1.2rem); line-height: 1.5; color: rgb(255 255 255 / 0.78); text-wrap: balance; }
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: #fff; text-decoration: none; padding: 12px 18px; display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }   /* une flèche de chaque côté */
+.js:not(.hero-done) .topbar, .js:not(.hero-done) .hero__cta { opacity: 0; visibility: hidden; }
+.topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
 .hero__cta span { display: inline-block; animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta span { animation: none; } }

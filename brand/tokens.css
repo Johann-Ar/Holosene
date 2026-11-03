@@ -26,7 +26,7 @@
 
   /* ---------- typographie ---------- */
   --font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;  /* titres : largeur 120 %, graisse 500 */
-  --font-text: 'Archivo', 'Helvetica Neue', Arial, sans-serif;     /* texte : largeur 100 %, graisse 400 */
+  --font-text: 'Outfit', 'Helvetica Neue', Arial, sans-serif;      /* texte courant : Outfit, graisse 400 */
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;           /* étiquettes */
   --display-stretch: 120%;
   --display-weight: 500;
