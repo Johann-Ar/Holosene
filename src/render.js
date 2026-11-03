@@ -30,23 +30,6 @@ const wordPart = (paths) => `<svg class="studio__word" viewBox="${logoBox}" aria
 </svg>`
 const logotype = wordPart(logoPaths)
 // nom de l'accueil : « Johann Arata », même dessin que le logotype (Archivo 500, largeur 120 %, approche -0,04 em)
-// monogramme de l'accueil, en ligne : le S (.hero__s) peut apparaître en fondu, le « o » est le même que celui du chargeur
-const monoSrc = readFileSync(new URL('../public/media/monogram-iris-dark.svg', import.meta.url), 'utf8').replace(/<title>.*?<\/title>/, '')
-const monoInner = monoSrc.slice(monoSrc.indexOf('>') + 1, monoSrc.lastIndexOf('</svg>'))
-// relief : biseau doux et reflet calculés sur la forme vectorielle (filtre d'éclairage SVG, en unités du monogramme :
-// même rendu à toutes les tailles), le contour reste net ; lumière en haut à gauche, comme les reflets des vignettes
-const relief = (id) => `<filter id="${id}" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-  <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="h"/>
-  <feDiffuseLighting in="h" surfaceScale="9" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="58"/></feDiffuseLighting>
-  <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="0.78" k2="0.32" result="s"/>
-  <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="h2"/>
-  <feSpecularLighting in="h2" surfaceScale="7" specularConstant="0.85" specularExponent="28" lighting-color="#fff" result="sp"><feDistantLight azimuth="225" elevation="48"/></feSpecularLighting>
-  <feComposite in="sp" in2="SourceAlpha" operator="in" result="spi"/>
-  <feComposite in="s" in2="spi" operator="arithmetic" k2="1" k3="0.55"/>
-</filter>`
-const heroMark = (label) => `<svg class="hero__mark" viewBox="0 0 816 1000" role="img" aria-label="${label}"><defs>${relief('relief')}</defs><g filter="url(#relief)">${monoInner.replace('<path ', '<path class="hero__s" ')}</g></svg>`
-// chargeur : le seul « o » (cadré sur l'anneau, rayon 176,7 autour de 639,25 / 586,8), identifiants propres
-const loaderO = `<svg class="loader__o" viewBox="462.55 410.1 353.4 353.4" aria-hidden="true"><defs>${relief('relief-o')}</defs><g filter="url(#relief-o)">${monoInner.replace(/<path d="[^"]*" fill="#FFFFFF"\/>/, '').replace(/"mc"|#mc|"mb"|#mb/g, (x) => x.replace(/(mc|mb)/, '$1o'))}</g></svg>`
 const nameSrc = readFileSync(new URL('../public/media/name-white.svg', import.meta.url), 'utf8')
 const nameParts = nameSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, ''))
 const nameWord = wordPart(nameParts.join('')).replace(`viewBox="${logoBox}"`, `viewBox="${nameSrc.match(/viewBox="([^"]+)"/)[1]}"`).replace('class="studio__word"', 'class="studio__word studio__word--line"')
@@ -137,7 +120,7 @@ export function render(lang) {
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
-<div class="loader" aria-hidden="true">${loaderO}</div>
+<div class="loader" aria-hidden="true"><canvas class="loader__spin" width="96" height="96"></canvas></div>
 <canvas class="bg-canvas" aria-hidden="true"></canvas>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
@@ -154,11 +137,14 @@ export function render(lang) {
 <main id="top">
   <section class="hero" id="accueil" aria-labelledby="hero-t">
     <div class="hero__pin">
+      <div class="hero__view" data-gl="mark" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
+        <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
+      </div>
       <div class="hero__copy">
-        <div class="hero__slot">${heroMark(esc(t(ui.lensLabel)))}</div>
+        <div class="hero__slot" aria-hidden="true"><img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000"></div>
         <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}${nameStacked}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
-        <a class="hero__cta" href="#projets"><span aria-hidden="true">↓</span>${lang === 'fr' ? 'Voir les projets' : 'See the work'}<span aria-hidden="true">↓</span></a>
+        <a class="hero__cta" href="#projets">${lang === 'fr' ? 'Voir les projets' : 'See the work'} <span aria-hidden="true">↓</span></a>
       </div>
     </div>
   </section>
