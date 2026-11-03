@@ -344,6 +344,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .notfound__lens { width: 120px; height: 120px; border-radius: 50%; background: var(--iris-conic); -webkit-mask: radial-gradient(circle, transparent 60%, #000 61%); mask: radial-gradient(circle, transparent 60%, #000 61%); opacity: 0.85; }
 
 @media (max-width: 860px) {
-  .contact { padding-block: var(--sp-8); }
+  .contact { padding-block: var(--sp-3) var(--sp-5); }   /* mobile : Contact suit le texte de près (48 + 16 px au lieu de 144) */
 }
 @media (max-width: 480px) { .facts { grid-template-columns: 1fr; } }
