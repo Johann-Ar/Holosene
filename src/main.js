@@ -20,6 +20,19 @@ root.classList.toggle('is-dev', import.meta.env.DEV || store.get('dev') === '1')
 /* Langue : à la première visite de la page française, un navigateur non francophone va vers /en/. */
 const langLink = document.querySelector('.topbar .lang')
 langLink?.addEventListener('click', () => store.set('lang', langLink.getAttribute('hreflang')))
+
+/* Thème : suit prefers-color-scheme ; le bouton bascule dark / light, pose data-theme sur <html> et retient le choix.
+   (Le script inline de <head> l'applique avant le premier rendu.) La barre du navigateur suit le thème affiché. */
+const themeBtn = document.querySelector('.theme-toggle'), lightMq = matchMedia('(prefers-color-scheme: light)')
+const themeNow = () => root.dataset.theme || (lightMq.matches ? 'light' : 'dark')
+function syncTheme() {
+  const t = themeNow(), bg = getComputedStyle(root).getPropertyValue('--bg').trim()
+  themeBtn?.setAttribute('aria-label', themeBtn.dataset[t === 'light' ? 'dark' : 'light'])
+  if (root.dataset.theme) document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg))
+}
+themeBtn?.addEventListener('click', () => { root.dataset.theme = themeNow() === 'light' ? 'dark' : 'light'; store.set('theme', root.dataset.theme); syncTheme() })
+lightMq.addEventListener?.('change', syncTheme)
+syncTheme()
 if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') && !(navigator.language || 'fr').toLowerCase().startsWith('fr')) {
   location.replace('en/' + location.hash)
 }

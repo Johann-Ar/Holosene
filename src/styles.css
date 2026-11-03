@@ -57,6 +57,9 @@ a { color: inherit; }
 .topbar__nav a:not(.lang) { position: relative; }
 .topbar__nav a:not(.lang)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1.5px; border-radius: 99px; background: var(--iris-line); clip-path: inset(0 100% 0 0 round 99px); transition: clip-path var(--dur-slow) var(--ease-flow); }
 .topbar__nav a:not(.lang):hover::after, .topbar__nav a:not(.lang):focus-visible::after { clip-path: inset(0 0 0 0 round 99px); }
+.theme-toggle { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--ink-40); border-radius: 50%; background: none; color: inherit; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.theme-toggle svg { width: 16px; height: 16px; }
+.theme-toggle:hover, .theme-toggle:focus-visible { background: var(--ink); color: var(--bg); }
 .topbar .lang { font: 400 var(--fs-label) var(--font-mono); letter-spacing: 0.06em; border: 1px solid var(--ink-40); border-radius: var(--radius-pill); padding: 6px 10px; }
 @media (max-width: 640px) { .topbar__nav a[href="#recherche"] { display: none; } .topbar__nav { gap: 12px; font-size: 13px; } .brand__mark { height: 28px; } }
 /* mobile : monogramme au centre, Projets et À propos à gauche, Contact et langue à droite */
