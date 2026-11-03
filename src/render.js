@@ -144,7 +144,7 @@ export function render(lang) {
         <div class="hero__slot" aria-hidden="true"><img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000"></div>
         <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}${nameStacked}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
-        <a class="hero__cta" href="#projets">${lang === 'fr' ? 'Voir les projets' : 'See the work'} <span aria-hidden="true">↓</span></a>
+        <a class="hero__cta" href="#projets"><span aria-hidden="true">↓</span>${lang === 'fr' ? 'Voir les projets' : 'See the work'}<span aria-hidden="true">↓</span></a>
       </div>
     </div>
   </section>

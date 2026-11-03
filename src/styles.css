@@ -33,7 +33,7 @@ a { color: inherit; }
 
 .loader { display: none; }
 /* écran de chargement : un astérisque tramé (mêmes points que le site) qui tourne, puis fondu */
-.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: #000; transition: opacity 0.45s var(--ease-flow), visibility 0.45s; }
+.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: #000; transition: opacity 0.3s linear, visibility 0.3s; }   /* s'efface pendant que le logo, identique dessous, reste immobile (300 ms) */
 .is-loaded .loader { opacity: 0; visibility: hidden; }
 .loader__spin { width: 96px; height: 96px; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -147,19 +147,18 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__word { margin: 0; line-height: 0; }
 .hero__word .studio__word { width: min(64vw, 820px); height: auto; }
 .hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: clamp(1rem, 1.3vw, 1.2rem); line-height: 1.5; color: rgb(255 255 255 / 0.78); text-wrap: balance; }
-.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: #fff; text-decoration: none; padding: 12px 18px; }
+.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: #fff; text-decoration: none; padding: 12px 18px; display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }   /* une flèche de chaque côté */
 .hero__cta span { display: inline-block; animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta span { animation: none; } }
 .hero__word .studio__word--stack { display: none; }
-/* mobile : « Arata » à la ligne sous « Johann » ; la flèche sous « Voir les projets », centrée */
+/* mobile : « Arata » à la ligne sous « Johann » */
 @media (max-width: 760px) {
   .hero__copy { gap: clamp(16px, 2.6svh, 28px); }
   .hero__slot { height: clamp(110px, 24svh, 210px); }
   .hero__word .studio__word--line { display: none; }
   .hero__word .studio__word--stack { display: block; width: min(68vw, 340px); }
   .hero__line { font-size: 1rem; max-width: 30ch; }
-  .hero__cta { display: flex; flex-direction: column; align-items: center; gap: 6px; white-space: nowrap; }
 }
 .js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
 .js .hero__line .w.on { opacity: 1; }

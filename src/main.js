@@ -292,15 +292,17 @@ if (spin) {
   const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
   spin.width = S * dpr; spin.height = S * dpr
   const x = spin.getContext('2d'); x.scale(dpr, dpr)
-  const IR = [[56, 237, 143], [71, 153, 255], [199, 84, 255], [255, 77, 237]]
+  const IR = [[80, 229, 145], [71, 128, 251], [181, 51, 238], [244, 45, 159]]
   // roue irisée du logo (comme le shader : 0 = en haut, sens horaire)
-  const WHEEL = [[255, 77, 237], [255, 84, 163], [199, 84, 255], [71, 153, 255], [56, 237, 143], [255, 77, 237]]
-  const wheel = (t) => { const f = (((t % 1) + 1) % 1) * 5, i = Math.floor(f), u = f - i, s3 = u * u * (3 - 2 * u); return WHEEL[i].map((c, j) => c + (WHEEL[i + 1][j] - c) * s3) }
-  const R = 44, r = 23, mid = (R + r) / 2, half = (R - r) / 2, TAU = Math.PI * 2
+  // couleurs du « o » du logo (24 teintes, comme logoO dans gl.js) ; 0 = en haut, sens horaire
+  const WHEEL = [[244,45,159], [223,47,184], [203,50,212], [181,51,238], [153,63,244], [123,76,247], [92,91,252], [81,109,251], [71,128,251], [63,148,249], [62,180,231], [63,215,213], [80,229,145], [102,237,105], [130,239,102], [165,208,126], [208,128,191], [224,77,227], [227,43,248], [232,41,238], [237,39,229], [242,39,218], [242,41,196], [244,43,176]]
+  const wheel = (t) => { const f = (((t % 1) + 1) % 1) * 24, i = Math.floor(f), u = f - i, a = WHEEL[i], b = WHEEL[(i + 1) % 24]; return a.map((c, j) => c + (b[j] - c) * u) }
+  const R = 44, r = 44 * 90.8 / 176.7,   // mêmes proportions que le « o » du monogramme
+    mid = (R + r) / 2, half = (R - r) / 2, TAU = Math.PI * 2
   let finishAt = 0, onDone = null
   // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
   finishLoader = (done) => { finishAt = performance.now(); onDone = done }
-  // dessin pixel par pixel : aplat (comme le logo) et bord de verre des vignettes sur le contour de l'arc
+  // dessin pixel par pixel : aplat et bord de verre des vignettes (comme le logo) sur le contour de l'arc
   const P = S * dpr, img = x.createImageData(P, P)
   x.setTransform(1, 0, 0, 1, 0, 0)
   const draw = (t) => {
@@ -308,7 +310,7 @@ if (spin) {
     const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
     const ARC = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe
     const head = (t / 1000) * TAU * 0.9
-    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid, W = 6, L = [-0.65 / 1.0018, -0.76 / 1.0018]
+    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid, W = 4, L = [-0.65 / 1.0018, -0.76 / 1.0018]
     // forme : distance à l'arête (px, positive dedans), normale sortante, position k sur l'arc (1 au bout, 0 à la queue)
     const shape = (px, py) => {
       const rr = Math.hypot(px, py)
@@ -335,24 +337,22 @@ if (spin) {
       const o = (j * P + i) * 4
       const px = (i + 0.5) / dpr - S / 2, py = (j + 0.5) / dpr - S / 2
       const [d, nx, ny, k] = shape(px, py)
-      if (d < -0.6) { data[o + 3] = 0; continue }
-      const cov = Math.min(1, (d + 0.6) / 1.2)
-      const s1 = 1 - Math.min(1, Math.max(0, d / W))
-      // aplat (sans trame) : couleur lue au pixel ; en fin de chargement, entièrement irisé comme le « o » du logo
-      const dotA = 1, dcol = colorAt(k, px, py)
-      // verre du bord : teinte (gris clair, irisée vers le bout), arête claire, reflets
-      const tint = colorAt(Math.max(k, 0.0001), px, py).map((c, n) => 0.82 + (c - 0.82) * Math.min(1, Math.max(0, (k - 0.72) / 0.28) * 2 + fe))
+      // couverture du bord sur un pixel de l'écran, comme le logo WebGL
+      const cov = Math.min(1, Math.max(0, d * dpr + 0.5))
+      if (cov <= 0) { data[o + 3] = 0; continue }
+      // verre des vignettes, sans relief (comme le logo) : intérieur en aplat, bord fin qui réfracte la couleur,
+      // léger assombrissement, liseré clair net côté lumière
+      const t = Math.min(1, Math.max(0, d / W)), xx = Math.max(0.001, t)
+      const hh = Math.pow(1 - Math.pow(1 - xx, 4), 0.25), slope = Math.pow(1 - xx, 3) / Math.max(hh * hh * hh, 0.02)
+      const th = Math.atan(slope * 0.9), bend = W * 1.15 * Math.tan(th - Math.asin(Math.sin(th) / 1.5))
+      const dcol = colorAt(k, px - nx * bend, py - ny * bend)
       const facing = nx * L[0] + ny * L[1]
-      const sp = Math.pow(Math.max(facing, 0), 2) * Math.exp(-Math.abs(d - 2) / 2.2) * 0.95 + Math.pow(Math.max(-facing, 0), 2) * Math.exp(-Math.abs(d - 3) / 3) * 0.35
+      const sp = Math.pow(Math.max(facing, 0), 2) * Math.exp(-Math.abs(d - 1.2) / 0.9) * 0.9 + Math.pow(Math.max(-facing, 0), 2) * Math.exp(-Math.abs(d - 1.6) / 1.2) * 0.3
+      const st = Math.min(1, t / 0.8), dark = 0.8 + 0.2 * st * st * (3 - 2 * st)
       const fade = Math.min(1, Math.pow(k, 0.8) * 1.15 + fe)
-      const col = [0, 1, 2].map((n) => {
-        let c = dcol[n] * dotA
-        c = c * (1 + (tint[n] * 1.15 - 1) * 0.85 * Math.pow(s1, 1.1)) + tint[n] * 0.12 * s1
-        c *= 0.62 + 0.38 * Math.min(1, Math.max(0, (1 - s1) / 0.75))
-        return c + (1 + (tint[n] - 1) * 0.5) * sp + (1 + (tint[n] - 1) * 0.4) * Math.exp(-d / 1.3) * 0.5
-      })
-      const al = Math.min(1, Math.max(dotA, s1 * 0.35)) * cov * fade
-      data[o] = Math.min(255, col[0] * 255 * cov * fade); data[o + 1] = Math.min(255, col[1] * 255 * cov * fade); data[o + 2] = Math.min(255, col[2] * 255 * cov * fade); data[o + 3] = al * 255
+      const col = dcol.map((c) => c * dark + sp)
+      const al = cov * fade
+      data[o] = Math.min(255, col[0] * 255); data[o + 1] = Math.min(255, col[1] * 255); data[o + 2] = Math.min(255, col[2] * 255); data[o + 3] = al * 255   // non prémultiplié : l'alpha porte le bord
     }
     x.putImageData(img, 0, 0)
     if (fin >= 1 && onDone) { const d = onDone; onDone = null; d() }

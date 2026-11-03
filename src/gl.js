@@ -5,7 +5,7 @@
  * Accueil : le S du monogramme en trame de points, le « o » en aplat irisé comme sur le logo ; pas de lentille.
  */
 
-import { GLASS_GLSL, insideDistance } from './glass.js'
+import { GLASS_GLSL } from './glass.js'
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 
@@ -22,7 +22,7 @@ uniform float uReveal;  // 0 : points absents, 1 : trame complète
 uniform float uFade;    // fondu des bords haut et bas
 uniform float uHasMask;
 uniform sampler2D uBg;     // fond de page (pour la réfraction du logo en verre)
-uniform sampler2D uMaskB;  // masque du monogramme adouci (relief du verre)
+uniform sampler2D uMaskB;  // champ de distance signée du monogramme
 uniform vec2 uCanvas;      // taille de la toile (px écran)
 uniform float uFloor;   // taille minimale des points dans le masque
 uniform float uRadius;  // coins arrondis (0 : aucun)
@@ -61,46 +61,74 @@ vec3 iris(float t) {
 }
 
 ${GLASS_GLSL}
+// couleurs du « o » du logo (24 teintes relevées sur le logo de référence) ; 0 = en haut, sens horaire
+vec3 logoO(float t) {
+  t = fract(t) * 24.0; float i = floor(t), f = t - i; vec3 a = vec3(0.0), b = vec3(0.0);
+  if (i == 0.0) { a = vec3(0.957, 0.176, 0.624); b = vec3(0.875, 0.184, 0.722); }
+  if (i == 1.0) { a = vec3(0.875, 0.184, 0.722); b = vec3(0.796, 0.196, 0.831); }
+  if (i == 2.0) { a = vec3(0.796, 0.196, 0.831); b = vec3(0.710, 0.200, 0.933); }
+  if (i == 3.0) { a = vec3(0.710, 0.200, 0.933); b = vec3(0.600, 0.247, 0.957); }
+  if (i == 4.0) { a = vec3(0.600, 0.247, 0.957); b = vec3(0.482, 0.298, 0.969); }
+  if (i == 5.0) { a = vec3(0.482, 0.298, 0.969); b = vec3(0.361, 0.357, 0.988); }
+  if (i == 6.0) { a = vec3(0.361, 0.357, 0.988); b = vec3(0.318, 0.427, 0.984); }
+  if (i == 7.0) { a = vec3(0.318, 0.427, 0.984); b = vec3(0.278, 0.502, 0.984); }
+  if (i == 8.0) { a = vec3(0.278, 0.502, 0.984); b = vec3(0.247, 0.580, 0.976); }
+  if (i == 9.0) { a = vec3(0.247, 0.580, 0.976); b = vec3(0.243, 0.706, 0.906); }
+  if (i == 10.0) { a = vec3(0.243, 0.706, 0.906); b = vec3(0.247, 0.843, 0.835); }
+  if (i == 11.0) { a = vec3(0.247, 0.843, 0.835); b = vec3(0.314, 0.898, 0.569); }
+  if (i == 12.0) { a = vec3(0.314, 0.898, 0.569); b = vec3(0.400, 0.929, 0.412); }
+  if (i == 13.0) { a = vec3(0.400, 0.929, 0.412); b = vec3(0.510, 0.937, 0.400); }
+  if (i == 14.0) { a = vec3(0.510, 0.937, 0.400); b = vec3(0.647, 0.816, 0.494); }
+  if (i == 15.0) { a = vec3(0.647, 0.816, 0.494); b = vec3(0.816, 0.502, 0.749); }
+  if (i == 16.0) { a = vec3(0.816, 0.502, 0.749); b = vec3(0.878, 0.302, 0.890); }
+  if (i == 17.0) { a = vec3(0.878, 0.302, 0.890); b = vec3(0.890, 0.169, 0.973); }
+  if (i == 18.0) { a = vec3(0.890, 0.169, 0.973); b = vec3(0.910, 0.161, 0.933); }
+  if (i == 19.0) { a = vec3(0.910, 0.161, 0.933); b = vec3(0.929, 0.153, 0.898); }
+  if (i == 20.0) { a = vec3(0.929, 0.153, 0.898); b = vec3(0.949, 0.153, 0.855); }
+  if (i == 21.0) { a = vec3(0.949, 0.153, 0.855); b = vec3(0.949, 0.161, 0.769); }
+  if (i == 22.0) { a = vec3(0.949, 0.161, 0.769); b = vec3(0.957, 0.169, 0.690); }
+  if (i == 23.0) { a = vec3(0.957, 0.169, 0.690); b = vec3(0.957, 0.176, 0.624); }
+  return mix(a, b, f);
+}
 // trame en un point : un point par cellule, sa taille suit la lumière de l'image (couleur prémultipliée, alpha).
 // off : décalage de la lecture de l'image seulement (la grille de points reste en place : réfraction sans traînées)
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
   if (uHasMask > 0.5) {
-    // accueil : le monogramme en aplat (S blanc, « o » irisé), avec sur son contour le bord de verre des
-    // vignettes : le verre se teinte (gris pour le S, irisé pour le « o »), arête claire, reflets orientés
+    // accueil : le monogramme en aplat (S blanc, « o » aux couleurs du logo), bordé du verre des vignettes
     vec2 toUv = 1.0 / uMarkXf.z / vec2(0.816, 1.0);
     vec2 muv = (p - uMarkXf.xy) * toUv + 0.5;
-    vec4 mkp = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
-    float cov = smoothstep(0.3, 0.7, max(mkp.r, mkp.g));
-    if (cov < 0.001) return vec4(0.0);
-    bool isO = mkp.g > mkp.r;
-    // tout est calculé dans le repère du monogramme (unités 816 × 1000) : la trame est fixée à la forme et grandit avec
-    // elle, comme une image ; mêmes proportions que le chargeur (pas de 24 unités, verre fin)
-    float upx = uMarkXf.z / 1000.0;                       // px par unité
-    vec2 lp = (p - uMarkXf.xy) / upx + vec2(408.0, 500.0);
-    vec2 e = vec2(2.0 / 816.0, 0.0), e2 = vec2(0.0, 2.0 / 1000.0);
+    if (muv.x < 0.0 || muv.x > 1.0 || muv.y < 0.0 || muv.y > 1.0) return vec4(0.0);
+    // champ de distance signée (monogram-sdf.png, en unités, positif dedans ; S en r, « o » en g) : le contour est
+    // anticrénelé au pixel de l'écran, net à toutes les tailles (pas d'image du logo agrandie)
     vec4 dc = texture2D(uMaskB, muv);
-    float dd = isO ? dc.g : dc.r;
+    float sdS = dc.r * 32.0 - 4.0, sdO = dc.g * 32.0 - 4.0;
+    bool isO = sdO > sdS;
+    float sd = max(sdS, sdO);
+    float upx = uMarkXf.z / 1000.0;                       // px par unité
+    float cov = clamp(sd * upx * uDpr + 0.5, 0.0, 1.0);
+    if (cov < 0.001) return vec4(0.0);
+    vec2 lp = (p - uMarkXf.xy) / upx + vec2(408.0, 500.0);
+    vec2 e = vec2(1.0 / 816.0, 0.0), e2 = vec2(0.0, 1.0 / 1000.0);
     float gx = isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r;
     float gy = isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r;
     vec2 n = -normalize(vec2(gx, gy) + 1e-6);
-    float dist = dd * 90.0;                                // unités
-    float W = 25.0;                                        // épaisseur du verre (unités) : même rapport à la largeur du trait que sur le chargeur
+    float dist = max(sd, 0.0);                             // unités
+    // verre des vignettes, sans relief : plaque de verre à dessus plat (intérieur en aplat, couleurs exactes), bord fin
+    // qui réfracte le contenu (même loi que les vignettes), léger assombrissement et liseré clair net côté lumière
+    float W = 16.0;                                        // largeur du bord de verre (unités du monogramme)
     float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
-    // aplat (sans trame) : S blanc, « o » irisé, lus au pixel
-    vec2 pc = lp - vec2(639.25, 586.8);
-    vec3 g = isO ? iris(atan(pc.x, -pc.y) / 6.28318) : vec3(0.95);
-    // verre du bord (comme les vignettes et le chargeur)
-    vec2 pe = lp - vec2(639.25, 586.8);
-    vec3 tint = isO ? iris(atan(pe.x, -pe.y) / 6.28318) : vec3(0.82, 0.83, 0.88);
-    g = g * mix(vec3(1.0), tint * 1.15, 0.85 * pow(s1, 1.1)) + tint * 0.12 * s1;
-    g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);
+    float x = clamp(t, 0.001, 1.0);
+    float h = pow(1.0 - pow(1.0 - x, 4.0), 0.25);
+    float slope = pow(1.0 - x, 3.0) / max(pow(h, 3.0), 0.02);
+    float th = atan(slope * 0.9), tr = asin(sin(th) / 1.5);
+    vec2 pc = lp - n * W * 1.15 * tan(th - tr) - vec2(639.25, 586.8);
+    vec3 g = isO ? logoO(atan(pc.x, -pc.y) / 6.28318) : vec3(1.0);
+    g *= 0.8 + 0.2 * smoothstep(0.0, 0.8, t);
     vec2 L = normalize(vec2(-0.65, -0.76));
     float facing = dot(n, L), dpx = dist * upx;
-    float spec = pow(max(facing, 0.0), 2.0) * exp(-abs(dpx - 2.0) / 2.2) * 0.95;
-    float back = pow(max(-facing, 0.0), 2.0) * exp(-abs(dpx - 3.0) / 3.0) * 0.35;
-    g += mix(vec3(1.0), tint, 0.5) * (spec + back);
-    g += mix(vec3(1.0), tint, isO ? 0.6 : 0.2) * exp(-dpx / 1.3) * 0.5;
+    g += vec3(pow(max(facing, 0.0), 2.0) * exp(-abs(dpx - 1.2) / 0.9) * 0.9);
+    g += vec3(pow(max(-facing, 0.0), 2.0) * exp(-abs(dpx - 1.6) / 1.2) * 0.3);
     float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
     float al = cov * shapeRev;
     return vec4(g * cov * shapeRev, al);
@@ -346,7 +374,7 @@ const BLIT = `precision highp float;
 uniform sampler2D uSrc; uniform vec2 uSize;
 void main(){ gl_FragColor = texture2D(uSrc, gl_FragCoord.xy / uSize); }`
 
-/** Monogramme (viewBox 816 × 1000) : le S et le « o ». */
+/** Monogramme (viewBox 816 × 1000) : le S et le « o » (lus par brand/tools/sdf.mjs pour le champ de distance). */
 const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
 const O_PATH = 'M462.5 586.8a176.7 176.7 0 1 0 353.5 0a176.7 176.7 0 1 0 -353.5 0ZM548.4 586.8a90.8 90.8 0 1 0 181.7 0a90.8 90.8 0 1 0 -181.7 0Z'
 
@@ -430,41 +458,40 @@ export function createGL(canvas, { reduced }) {
 
   // masque du monogramme en espace local (816 × 1000) : le S en rouge, le « o » en vert. Dessiné une fois ;
   // le placement, la taille et la rotation sont appliqués dans le shader (uMarkXf).
+  // champ de distance signée du monogramme (brand/tools/sdf.mjs), chargé une fois
   function maskFor(v) {
-    if (v.mask) return
-    const c = document.createElement('canvas'); c.width = 1632; c.height = 2000
-    const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, 1632, 2000); x.scale(2, 2)
-    x.fillStyle = '#ff0000'; x.fill(new Path2D(S_PATH))
-    x.fillStyle = '#00ff00'; x.fill(new Path2D(O_PATH), 'evenodd')
-    v.mask = newTex(); upload(v.mask, c)
-    // champ de distance à l'arête (S en r, « o » en g), 0 à 90 unités : le verre a une largeur exacte partout
-    const sm = document.createElement('canvas'); sm.width = 816; sm.height = 1000
-    const xs = sm.getContext('2d'); xs.drawImage(c, 0, 0, 816, 1000)
-    const px = xs.getImageData(0, 0, 816, 1000).data
-    const inS = new Uint8Array(816 * 1000), inO = new Uint8Array(816 * 1000)
-    for (let i = 0; i < 816 * 1000; i++) { inS[i] = px[i * 4] > 127; inO[i] = px[i * 4 + 1] > 127 }
-    const dS = insideDistance(inS, 816, 1000), dO = insideDistance(inO, 816, 1000)
-    const img = xs.createImageData(816, 1000)
-    for (let i = 0; i < 816 * 1000; i++) { img.data[i * 4] = Math.min(255, dS[i] / 90 * 255); img.data[i * 4 + 1] = Math.min(255, dO[i] / 90 * 255); img.data[i * 4 + 3] = 255 }
-    xs.putImageData(img, 0, 0)
-    v.maskB = newTex(); upload(v.maskB, sm)
+    if (v.maskB !== undefined) return
+    v.maskB = null
+    const im = new Image()
+    im.onload = () => {
+      const t = newTex()
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE)
+      upload(t, im)
+      gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL)
+      v.maskB = t
+    }
+    im.src = document.querySelector('.hero__mark').src.replace(/monogram-white\.svg$/, 'monogram-sdf.png')
   }
-  /** Placement du monogramme : intro (le « o » du chargeur, au centre, grandit et le S apparaît), puis le défilement p
-   *  le ramène à sa place dans la composition (au-dessus du nom), sans rotation. */
+  /** Placement du monogramme. Arrivée (ms depuis la fin du chargeur) : le « o » prend exactement la place de l'anneau
+   *  du chargeur (rayon 44 px, centre de la fenêtre) et reste immobile pendant que le chargeur s'efface ; puis il grandit
+   *  sur place, son centre fixe ; puis, seulement quand le S apparaît, le monogramme glisse jusqu'à sa position.
+   *  Ensuite le défilement p le ramène à sa place dans la composition (au-dessus du nom). Renvoie aussi l'apparition du S. */
   const O_OFF = [0.23125, 0.0868], O_R = 0.1767
-  function markXf(w, h, p, time, intro, slot) {
+  const HOLD = 300, GROW = 750, SHIFT = 850
+  function markXf(w, h, p, ms, slot, oc) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const small = w < 760
     const big = Math.min(h * 0.62, w * (small ? 0.62 : 0.8) * 1000 / 816)
     // fin : à sa place dans la composition de l'accueil (.hero__slot, au-dessus du nom et de la présentation)
     const q = e(k(0, 0.45))
-    let size = big + (slot.h - big) * q
-    let cx = w / 2 + (slot.x - w / 2) * q, cy = h / 2 + (slot.y - h / 2) * q
-    // intro : le « o » prend la place du chargeur (rayon extérieur 44 px, au centre), puis le monogramme s'agrandit
-    const i = e(Math.min(1, intro))
-    const s0 = 44 / O_R, c0 = [w / 2 - O_OFF[0] * s0, h / 2 - O_OFF[1] * s0]
-    size = s0 + (size - s0) * i; cx = c0[0] + (cx - c0[0]) * i; cy = c0[1] + (cy - c0[1]) * i
-    return [cx, cy, size, 0]
+    const size = big + (slot.h - big) * q
+    const cx = w / 2 + (slot.x - w / 2) * q, cy = h / 2 + (slot.y - h / 2) * q
+    if (ms >= HOLD + GROW + SHIFT) return [cx, cy, size, 0, 1]
+    const io = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - Math.pow(2 - 2 * x, 3) / 2)
+    const g = io((ms - HOLD) / GROW), c = io((ms - HOLD - GROW) / SHIFT)
+    const sz = 44 / O_R + (size - 44 / O_R) * g
+    const ox = oc[0] - O_OFF[0] * sz, oy = oc[1] - O_OFF[1] * sz   // monogramme placé pour que son « o » soit centré en oc
+    return [ox + (cx - ox) * c, oy + (cy - oy) * c, sz, 0, c]
   }
 
   // texte net d'une vignette, redessiné à la taille exacte de la vignette et à la densité de l'écran
@@ -558,7 +585,7 @@ export function createGL(canvas, { reduced }) {
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
       const reveal = (1 - Math.pow(1 - intro, 3)) * vis
-      if (v.mark) maskFor(v)
+      if (v.mark) { maskFor(v); if (!v.maskB) continue }
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
@@ -599,7 +626,8 @@ export function createGL(canvas, { reduced }) {
         const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
         const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
-        gl.uniform4f(U.uMarkXf, ...markXf(w, h, p, time, reduced ? 1 : (now - v.seen) / 1500, slot))
+        const xf = markXf(w, h, p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top])
+        gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
       }
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       if (glassy) {
