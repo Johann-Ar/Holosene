@@ -248,7 +248,25 @@ const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
 // chaque moitié du logotype (HOLO / SENE) cadrée sur ses lettres
 // même hauteur de cadre pour les deux (celle de HOLO, avec ses capitales) : les lettres gardent la même échelle
 
-const word = null
+// monogramme de l'accueil : à l'arrivée, son « o » est à la place exacte de celui du chargeur (rayon 44 px, au centre),
+// puis le logo grandit au centre de l'écran ; au défilement, il se pose dans sa place (.hero__slot), au-dessus du nom
+const mark = document.querySelector('.hero__mark'), slot = mark?.parentElement, sMark = mark?.querySelector('.hero__s')
+const O_OFF = [0.23125, 0.0868], O_R = 0.1767   // centre et rayon du « o », en fraction de la hauteur du monogramme
+let loadedAt = Infinity
+function placeMark(hp) {
+  const r = slot.getBoundingClientRect(), w = innerWidth, h = innerHeight
+  if (!r.height) return
+  const e = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3)
+  const big = Math.min(h * 0.62, w * (w < 760 ? 0.62 : 0.8) * 1000 / 816)
+  const sx = r.left + r.width / 2, sy = r.top + r.height / 2
+  const q = e(hp / 0.45)
+  let size = big + (r.height - big) * q, cx = w / 2 + (sx - w / 2) * q, cy = h / 2 + (sy - h / 2) * q
+  // le chargeur s'efface (0,5 s) au-dessus du logo, posé exactement sous son « o » ; puis le logo grandit, le S apparaît
+  const t = (performance.now() - loadedAt - 450) / 1400, i = e(t), s0 = 44 / O_R
+  sMark.style.opacity = Math.min(1, Math.max(0, t / 0.6)).toFixed(3)
+  size = s0 + (size - s0) * i; cx = w / 2 - O_OFF[0] * s0 + (cx - w / 2 + O_OFF[0] * s0) * i; cy = h / 2 - O_OFF[1] * s0 + (cy - h / 2 + O_OFF[1] * s0) * i
+  mark.style.transform = `translate(${(cx - sx).toFixed(1)}px, ${(cy - sy).toFixed(1)}px) scale(${(size / r.height).toFixed(4)})`
+}
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 function scrollEffects() {
   const vh = innerHeight
@@ -258,6 +276,7 @@ function scrollEffects() {
   const hr = hero?.getBoundingClientRect()
   const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
+  if (mark) placeMark(hp)
   if (heroWords.length) {
     const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,3 à 0,58)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
@@ -284,94 +303,24 @@ function scrollEffects() {
 }
 if (reduced) { heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
-/* Chargeur : le « o » du logo en miniature. Un arc lisse à bout arrondi tourne ; il s'éteint vers la queue et n'est
-   irisé qu'à son bout ; en fin de chargement, il se referme en « o » irisé. */
-const spin = document.querySelector('.loader__spin')
-let finishLoader = (done) => done()
-if (spin) {
-  const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
-  spin.width = S * dpr; spin.height = S * dpr
-  const x = spin.getContext('2d'); x.scale(dpr, dpr)
-  const IR = [[56, 237, 143], [71, 153, 255], [199, 84, 255], [255, 77, 237]]
-  // roue irisée du logo (comme le shader : 0 = en haut, sens horaire)
-  const WHEEL = [[255, 77, 237], [255, 84, 163], [199, 84, 255], [71, 153, 255], [56, 237, 143], [255, 77, 237]]
-  const wheel = (t) => { const f = (((t % 1) + 1) % 1) * 5, i = Math.floor(f), u = f - i, s3 = u * u * (3 - 2 * u); return WHEEL[i].map((c, j) => c + (WHEEL[i + 1][j] - c) * s3) }
-  const R = 44, r = 23, mid = (R + r) / 2, half = (R - r) / 2, TAU = Math.PI * 2
-  let finishAt = 0, onDone = null
-  // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
-  finishLoader = (done) => { finishAt = performance.now(); onDone = done }
-  // dessin pixel par pixel : aplat (comme le logo) et bord de verre des vignettes sur le contour de l'arc
-  const P = S * dpr, img = x.createImageData(P, P)
-  x.setTransform(1, 0, 0, 1, 0, 0)
-  const draw = (t) => {
-    if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
-    const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
-    const ARC = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe
-    const head = (t / 1000) * TAU * 0.9
-    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid, W = 6, L = [-0.65 / 1.0018, -0.76 / 1.0018]
-    // forme : distance à l'arête (px, positive dedans), normale sortante, position k sur l'arc (1 au bout, 0 à la queue)
-    const shape = (px, py) => {
-      const rr = Math.hypot(px, py)
-      let a = Math.atan2(px, -py) - head; a = ((a % TAU) + TAU * 2) % TAU
-      const back = TAU - a
-      if (fe > 0.9 || back <= ARC) {
-        const dOut = R - rr, dIn = rr - r, s0 = dOut < dIn ? 1 : -1
-        return [Math.min(dOut, dIn), s0 * px / (rr || 1), s0 * py / (rr || 1), fe > 0.9 ? Math.max(1 - back / ARC, fe) : 1 - back / ARC]
-      }
-      const cx = px - hx, cy = py - hy, dc = Math.hypot(cx, cy)
-      return [half - dc, cx / (dc || 1), cy / (dc || 1), 1]
-    }
-    // couleur d'un point : s'éteint vers la queue, irisé au bout ; en fin de chargement, les couleurs du « o »
-    const colorAt = (k, px, py) => {
-      const v = Math.pow(Math.min(1, k / 0.72), 1.3)
-      const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))
-      const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
-      const ic = IR[i].map((c, n) => (c + (IR[i + 1][n] - c) * w) / 255)
-      const lc = wheel(Math.atan2(px, -py) / TAU).map((c) => c / 255)
-      return [0, 1, 2].map((n) => { const c = v + (ic[n] - v) * Math.min(1, u * 2.2); return c + (lc[n] - c) * fe })
-    }
-    const data = img.data
-    for (let j = 0; j < P; j++) for (let i = 0; i < P; i++) {
-      const o = (j * P + i) * 4
-      const px = (i + 0.5) / dpr - S / 2, py = (j + 0.5) / dpr - S / 2
-      const [d, nx, ny, k] = shape(px, py)
-      if (d < -0.6) { data[o + 3] = 0; continue }
-      const cov = Math.min(1, (d + 0.6) / 1.2)
-      const s1 = 1 - Math.min(1, Math.max(0, d / W))
-      // aplat (sans trame) : couleur lue au pixel ; en fin de chargement, entièrement irisé comme le « o » du logo
-      const dotA = 1, dcol = colorAt(k, px, py)
-      // verre du bord : teinte (gris clair, irisée vers le bout), arête claire, reflets
-      const tint = colorAt(Math.max(k, 0.0001), px, py).map((c, n) => 0.82 + (c - 0.82) * Math.min(1, Math.max(0, (k - 0.72) / 0.28) * 2 + fe))
-      const facing = nx * L[0] + ny * L[1]
-      const sp = Math.pow(Math.max(facing, 0), 2) * Math.exp(-Math.abs(d - 2) / 2.2) * 0.95 + Math.pow(Math.max(-facing, 0), 2) * Math.exp(-Math.abs(d - 3) / 3) * 0.35
-      const fade = Math.min(1, Math.pow(k, 0.8) * 1.15 + fe)
-      const col = [0, 1, 2].map((n) => {
-        let c = dcol[n] * dotA
-        c = c * (1 + (tint[n] * 1.15 - 1) * 0.85 * Math.pow(s1, 1.1)) + tint[n] * 0.12 * s1
-        c *= 0.62 + 0.38 * Math.min(1, Math.max(0, (1 - s1) / 0.75))
-        return c + (1 + (tint[n] - 1) * 0.5) * sp + (1 + (tint[n] - 1) * 0.4) * Math.exp(-d / 1.3) * 0.5
-      })
-      const al = Math.min(1, Math.max(dotA, s1 * 0.35)) * cov * fade
-      data[o] = Math.min(255, col[0] * 255 * cov * fade); data[o + 1] = Math.min(255, col[1] * 255 * cov * fade); data[o + 2] = Math.min(255, col[2] * 255 * cov * fade); data[o + 3] = al * 255
-    }
-    x.putImageData(img, 0, 0)
-    if (fin >= 1 && onDone) { const d = onDone; onDone = null; d() }
-    requestAnimationFrame(draw)
-  }
-  requestAnimationFrame(draw)
+/* Chargeur : le « o » du logo, révélé par un arc qui tourne (CSS). En fin de chargement, l'arc se referme en anneau
+   complet, puis la page s'affiche : le monogramme est déjà à cette place, au même pixel, et grandit (placeMark). */
+const loaderEl = document.querySelector('.loader')
+const finishLoader = (done) => {
+  if (!loaderEl || reduced) return done()
+  loaderEl.classList.add('loader--done')
+  setTimeout(done, 650)
 }
 
 /* Écran de chargement : polices, image de l'accueil, au moins 1 s ; au plus 6 s. Le défilement est bloqué pendant ce temps. */
 lenis?.stop(); scrollTo(0, 0)
-const heroImg = document.querySelector('.hero__view img')
 Promise.race([
   Promise.all([
     document.fonts?.ready,
-    heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
     new Promise((r) => setTimeout(r, reduced ? 0 : 1000)),
   ]),
   new Promise((r) => setTimeout(r, 6000)),
-]).then(() => finishLoader(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
+]).then(() => finishLoader(() => { loadedAt = performance.now(); root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
 
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null

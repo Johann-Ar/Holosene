@@ -32,10 +32,19 @@ a { color: inherit; }
 .is-dev .todo { display: revert !important; color: #ffb36b; outline: 1px dashed #ffb36b; outline-offset: 4px; }
 
 .loader { display: none; }
-/* écran de chargement : un astérisque tramé (mêmes points que le site) qui tourne, puis fondu */
-.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: #000; transition: opacity 0.45s var(--ease-flow), visibility 0.45s; }
+/* écran de chargement : le « o » du logo (même dessin), révélé par un arc qui tourne ; en fin de chargement l'arc se
+   referme en anneau complet, exactement à la place du « o » du monogramme de l'accueil, puis le fond s'efface */
+@property --a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --gap { syntax: '<percentage>'; inherits: false; initial-value: 30%; }
+.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: #000; transition: opacity 0.5s var(--ease-flow), visibility 0.5s; }
 .is-loaded .loader { opacity: 0; visibility: hidden; }
-.loader__spin { width: 96px; height: 96px; }
+.loader__o { width: 88px; height: 88px; overflow: visible; --gap: 30%;
+  -webkit-mask: conic-gradient(from var(--a), transparent 0%, transparent var(--gap), #000 calc(var(--gap) + 45%), #000 100%);
+          mask: conic-gradient(from var(--a), transparent 0%, transparent var(--gap), #000 calc(var(--gap) + 45%), #000 100%);
+  animation: loader-turn 1.1s linear infinite; transition: --gap 0.6s var(--ease-flow); }
+.loader--done .loader__o { --gap: -45%; }
+@keyframes loader-turn { to { --a: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .loader__o { animation: none; --gap: -45%; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
 .skip:focus-visible { transform: none; }
@@ -120,12 +129,10 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .js [data-words] .w { opacity: 1; animation: none !important; }
 }
 
-/* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
+/* 1. accueil : le monogramme (vectoriel), puis le nom et la présentation */
 .hero { position: relative; height: 280svh; }   /* scène épinglée : le défilement anime le monogramme, puis le mot et la présentation */
 .hero__pin { position: sticky; top: 0; height: 100svh; min-height: 560px; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .hero { height: 100svh; } }
-.hero__view { position: absolute; inset: 0; }
-.hero__view > img { opacity: 0 !important; }
 .hero__bottom { position: absolute; left: 0; right: 0; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; gap: 16px; }
 
 /* gabarit commun À propos / Projets / Contact : libellé à gauche, grand texte à droite */
@@ -138,28 +145,27 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .studio { padding-block: var(--sp-7); }   /* pause graphique : le seul élément géant de son écran */
 /* mini à propos et à propos de fin : capitales, centrés, mots importants en gras (comme la référence) */
 .hero__line, .about p { text-align: center; letter-spacing: 0.005em; color: rgb(255 255 255 / 0.82); text-wrap: balance; }
-/* composition : logo, nom, présentation en une colonne centrée, espacements réguliers ; le logo WebGL vient se poser
-   dans .hero__slot (gl.js lit sa position), l'image du monogramme y sert de repli sans WebGL */
+/* composition : logo, nom, présentation en une colonne centrée, espacements réguliers ; le monogramme part du centre
+   de l'écran et vient se poser dans .hero__slot au défilement (main.js) */
 .hero__copy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(20px, 3.2svh, 36px); padding: 96px var(--edge-l) calc(14svh + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
 .hero__slot { height: clamp(120px, 30svh, 300px); aspect-ratio: 816 / 1000; flex: none; margin-bottom: clamp(4px, 1.2svh, 14px); }
-.hero__mark { display: block; width: 100%; height: 100%; }
-.has-gl .hero__mark { visibility: hidden; }
+.hero__mark { display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 50% 50%; will-change: transform; }
+.js:not(.is-loaded) .hero__mark { visibility: hidden; }
 .hero__word { margin: 0; line-height: 0; }
 .hero__word .studio__word { width: min(64vw, 820px); height: auto; }
 .hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: clamp(1rem, 1.3vw, 1.2rem); line-height: 1.5; color: rgb(255 255 255 / 0.78); text-wrap: balance; }
-.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: #fff; text-decoration: none; padding: 12px 18px; }
+.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; font: 400 var(--fs-label) var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: #fff; text-decoration: none; padding: 12px 18px; display: inline-flex; align-items: center; gap: 12px; white-space: nowrap; }
 .hero__cta span { display: inline-block; animation: nudge 1.8s var(--ease-in-out) infinite; }
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta span { animation: none; } }
 .hero__word .studio__word--stack { display: none; }
-/* mobile : « Arata » à la ligne sous « Johann » ; la flèche sous « Voir les projets », centrée */
+/* mobile : « Arata » à la ligne sous « Johann » */
 @media (max-width: 760px) {
   .hero__copy { gap: clamp(16px, 2.6svh, 28px); }
   .hero__slot { height: clamp(110px, 24svh, 210px); }
   .hero__word .studio__word--line { display: none; }
   .hero__word .studio__word--stack { display: block; width: min(68vw, 340px); }
   .hero__line { font-size: 1rem; max-width: 30ch; }
-  .hero__cta { display: flex; flex-direction: column; align-items: center; gap: 6px; white-space: nowrap; }
 }
 .js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
 .js .hero__line .w.on { opacity: 1; }
