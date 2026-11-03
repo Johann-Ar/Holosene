@@ -50,6 +50,35 @@ function prerender() {
   }
 }
 
+/** Arrêts de la roue du logo-kit (design/logo-kit/src/iris.js) en variables CSS : --iris-0 … --iris-10 (dans l'ordre du
+ *  dégradé, 0 = vert en bas, 5 = rose en haut), --iris-linear (le même dégradé à plat). Aucune couleur recopiée à la main. */
+function irisCss() {
+  const id = 'virtual:iris.css', rid = '\0virtual:iris.css'
+  return {
+    name: 'iris-css',
+    resolveId: (s) => (s === id ? rid : null),
+    async load(s) {
+      if (s !== rid) return null
+      const { IRIS_STOPS } = await import(pathToFileURL(resolve('design/logo-kit/src/iris.js')).href)
+      const stops = IRIS_STOPS.slice(0, -1)
+      return `:root{${stops.map(([, c], i) => `--iris-${i}:${c};`).join('')}--iris-linear:linear-gradient(90deg,${IRIS_STOPS.map(([p, c]) => `${c} ${(p * 100).toFixed(1)}%`).join(',')});}`
+    },
+  }
+}
+
+/** Toutes les pages : couleur de la barre du navigateur (fonds du logo-kit, selon le mode), insérée dans <head>. */
+function themeHead() {
+  return {
+    name: 'theme-head',
+    transformIndexHtml(html) {
+      const { colors } = JSON.parse(readFileSync(resolve('design/logo-kit/tokens/iris.json'), 'utf8'))
+      const meta = `<meta name="theme-color" content="${colors.bgDark}" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="${colors.bgLight}" media="(prefers-color-scheme: light)" />`
+      return html.replace('</head>', `  ${meta}\n</head>`)
+    },
+  }
+}
+
 /** 404 : GitHub Pages la sert à n'importe quelle adresse, ses liens doivent donc être absolus. */
 function absolute404() {
   const basePath = new URL(SITE_URL).pathname
@@ -65,7 +94,7 @@ function absolute404() {
 
 export default defineConfig({
   base: './',
-  plugins: [prerender(), absolute404()],
+  plugins: [prerender(), irisCss(), themeHead(), absolute404()],
   build: {
     target: 'es2022',
     rollupOptions: {

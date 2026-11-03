@@ -1,4 +1,6 @@
+import 'virtual:iris.css'
 import './styles.css'
+import { IRIS_STOPS, IRIS_INNER_RATIO, sampleIris } from '../design/logo-kit/src/iris.js'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
 
@@ -295,12 +297,12 @@ if (spin) {
   const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
   spin.width = S * dpr; spin.height = S * dpr
   const x = spin.getContext('2d'); x.scale(dpr, dpr)
-  const IR = [[80, 229, 145], [71, 128, 251], [181, 51, 238], [244, 45, 159]]
-  // roue irisée du logo (comme le shader : 0 = en haut, sens horaire)
-  // couleurs du « o » du logo (24 teintes, comme logoO dans gl.js) ; 0 = en haut, sens horaire
-  const WHEEL = [[244,45,159], [223,47,184], [203,50,212], [181,51,238], [153,63,244], [123,76,247], [92,91,252], [81,109,251], [71,128,251], [63,148,249], [62,180,231], [63,215,213], [80,229,145], [102,237,105], [130,239,102], [165,208,126], [208,128,191], [224,77,227], [227,43,248], [232,41,238], [237,39,229], [242,39,218], [242,41,196], [244,43,176]]
-  const wheel = (t) => { const f = (((t % 1) + 1) % 1) * 24, i = Math.floor(f), u = f - i, a = WHEEL[i], b = WHEEL[(i + 1) % 24]; return a.map((c, j) => c + (b[j] - c) * u) }
-  const R = 44, r = 44 * 90.8 / 176.7,   // mêmes proportions que le « o » du monogramme
+  // couleurs : roue du logo-kit ; bout de l'arc : vert, bleu, violet, rose du kit ; queue : de l'encre vers le fond
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+  const IR = [0, 2, 4, 5].map((i) => hex(IRIS_STOPS[i][1]))
+  const themeRGB = (name) => { const t = document.createElement('canvas').getContext('2d'); t.fillStyle = getComputedStyle(root).getPropertyValue(name).trim(); return hex(t.fillStyle).map((c) => c / 255) }
+  const BG = themeRGB('--bg'), INK = themeRGB('--ink')
+  const R = 44, r = 44 * IRIS_INNER_RATIO,   // mêmes proportions que le « o » du logo-kit
     mid = (R + r) / 2, half = (R - r) / 2, TAU = Math.PI * 2
   let finishAt = 0, onDone = null
   // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
@@ -332,8 +334,8 @@ if (spin) {
       const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))
       const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
       const ic = IR[i].map((c, n) => (c + (IR[i + 1][n] - c) * w) / 255)
-      const lc = wheel(Math.atan2(px, -py) / TAU).map((c) => c / 255)
-      return [0, 1, 2].map((n) => { const c = v + (ic[n] - v) * Math.min(1, u * 2.2); return c + (lc[n] - c) * fe })
+      const lc = sampleIris(Math.atan2(py, px))
+      return [0, 1, 2].map((n) => { const g = BG[n] + (INK[n] - BG[n]) * v, c = g + (ic[n] - g) * Math.min(1, u * 2.2); return c + (lc[n] - c) * fe })
     }
     const data = img.data
     for (let j = 0; j < P; j++) for (let i = 0; i < P; i++) {

@@ -6,26 +6,26 @@
 import { readFileSync } from 'node:fs'
 import { site, ui, projects, research, studio, about, workIntro } from './content.js'
 import sizes from './media-sizes.json' with { type: 'json' }
+import { IRIS_STOPS } from '../design/logo-kit/src/iris.js'
 
 // logotype en ligne (À propos) : le tracé se dessine, le blanc se remplit, puis ses bords se fondent dans une suite
 // répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir (étapes successives, pas en même temps).
 const logoSrc = readFileSync(new URL('../public/media/logotype-white.svg', import.meta.url), 'utf8')
 const logoPaths = logoSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, '')).join('')
 const logoBox = logoSrc.match(/viewBox="([^"]+)"/)[1]
-// couleurs irisées éclaircies vers le blanc : l'irisé reste un reflet, pas une couleur franche
-const IRIS = ['#e1adcd', '#abcce3', '#abe7c2', '#adcce4', '#e0aece', '#faafd8', '#ffaaf3', '#feacdd', '#e1adcd']
-const IRIS_LINE = ['#f0d7e7', '#d6e6f1', '#d6f3e1', '#d7e6f2', '#f0d7e7', '#fdd8ec', '#ffd5f9', '#ffd7ee', '#f0d7e7']
+// couleurs irisées : la roue du logo-kit (design/logo-kit/src/iris.js), répétée le long du mot
+const irisStops = IRIS_STOPS.map(([p, c]) => `<stop offset="${p}" stop-color="${c}"/>`).join('')
 const logoParts = logoSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, ''))
 // le logotype en deux moitiés : HOLO (H, o, l, o) et SENE (s, e, n, e)
 const wordPart = (paths) => `<svg class="studio__word" viewBox="${logoBox}" aria-hidden="true">
   <defs>
-    <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
-    <linearGradient id="iris-l" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${IRIS_LINE.map((c, i) => `<stop offset="${i / 8}" stop-color="${c}"/>`).join('')}</linearGradient>
+    <linearGradient id="iris-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${irisStops}</linearGradient>
+    <linearGradient id="iris-l" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="460" y2="230" spreadMethod="repeat">${irisStops}</linearGradient>
     <filter id="core" x="-5%" y="-5%" width="110%" height="110%"><feMorphology in="SourceGraphic" operator="erode" radius="6" result="e"/><feGaussianBlur in="e" stdDeviation="12" result="b"/><feComposite in="b" in2="SourceGraphic" operator="in"/></filter>
   </defs>
   <g class="w-edge" fill="url(#iris-g)">${paths}</g>
-  <g class="w-core" fill="#fff" filter="url(#core)">${paths}</g>
-  <g class="w-white" fill="#fff">${paths}</g>
+  <g class="w-core" fill="currentColor" filter="url(#core)">${paths}</g>
+  <g class="w-white" fill="currentColor">${paths}</g>
   <g class="w-line" fill="none" stroke="url(#iris-l)">${paths.replace(/<path /g, '<path pathLength="1" ')}</g>
 </svg>`
 const logotype = wordPart(logoPaths)
@@ -126,7 +126,8 @@ export function render(lang) {
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
   <a href="#top" class="brand" aria-label="Holosene">
-    <img class="brand__mark" draggable="false" src="${root}media/monogram-white.svg" alt="Holosene" width="816" height="1000">
+    <img class="brand__mark only-dark" draggable="false" src="${root}media/monogram-mono-white.svg" alt="Holosene" width="470" height="576">
+    <img class="brand__mark only-light" draggable="false" src="${root}media/monogram-mono-black.svg" alt="Holosene" width="470" height="576">
   </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
@@ -141,7 +142,7 @@ export function render(lang) {
         <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
       </div>
       <div class="hero__copy">
-        <div class="hero__slot" aria-hidden="true"><img class="hero__mark" src="${root}media/monogram-white.svg" alt="" width="816" height="1000"></div>
+        <div class="hero__slot" aria-hidden="true"><img class="hero__mark only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576"><img class="hero__mark only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576"></div>
         <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}${nameStacked}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
         <a class="hero__cta" href="#projets"><span aria-hidden="true">↓</span>${lang === 'fr' ? 'Voir les projets' : 'See the work'}<span aria-hidden="true">↓</span></a>

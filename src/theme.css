@@ -1,0 +1,52 @@
+/* Thème du site, dérivé du logo-kit Figma (design/logo-kit, source de vérité) : aucune teinte propre au site.
+   --bg / --ink : fonds et encres du kit ; neutres secondaires : mélanges de --ink et --bg uniquement.
+   Les arrêts de la roue (--iris-*) sont générés depuis design/logo-kit/src/iris.js (vite.config.js, virtual:iris.css). */
+@import '../design/logo-kit/tokens/iris.css';
+
+:root, :root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: var(--bg-dark);
+  --ink: white;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: var(--bg-light);
+  --ink: var(--bg-dark);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: var(--bg-light);
+    --ink: var(--bg-dark);
+  }
+}
+
+:root {
+  /* neutres dérivés (contrastes vérifiés : texte secondaire ≥ 4,5:1 sur --bg dans les deux modes) */
+  --ink-86: color-mix(in srgb, var(--ink) 86%, var(--bg));   /* texte courant atténué */
+  --ink-64: color-mix(in srgb, var(--ink) 64%, var(--bg));   /* texte secondaire, étiquettes */
+  --ink-40: color-mix(in srgb, var(--ink) 40%, var(--bg));   /* filets appuyés, non textuel */
+  --ink-22: color-mix(in srgb, var(--ink) 22%, var(--bg));   /* bordures */
+  --ink-12: color-mix(in srgb, var(--ink) 12%, var(--bg));   /* filets */
+  --ink-6: color-mix(in srgb, var(--ink) 6%, var(--bg));     /* surfaces */
+  /* vignettes : tuiles sombres dans les deux modes (les images y sont rendues en points clairs) */
+  --card-bg: var(--bg-dark);
+  /* anciens noms de brand/tokens.css (encore utilisés par les styles du site) : redirigés vers le thème */
+  --c-black-deep: var(--bg);
+  --c-black: var(--bg);
+  --c-white: var(--ink);
+  --c-graphite: var(--ink-6);
+  --c-line-dark: var(--ink-12);
+  --c-grey: var(--ink-40);
+  --c-grey-text: var(--ink-64);
+  --c-grey-light: var(--ink-86);
+}
+
+/* éléments propres à un mode (logos du kit : version dark / light) */
+.only-light { display: none !important; }
+:root[data-theme="light"] .only-dark { display: none !important; }
+:root[data-theme="light"] .only-light { display: revert !important; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .only-dark { display: none !important; }
+  :root:not([data-theme="dark"]) .only-light { display: revert !important; }
+}

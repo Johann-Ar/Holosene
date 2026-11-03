@@ -6,6 +6,22 @@
  */
 
 import { GLASS_GLSL } from './glass.js'
+import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
+import KIT from '../design/logo-kit/tokens/iris.json'
+
+// roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
+// (0 = en haut, sens horaire, y vers le bas). fwidth vient de OES_standard_derivatives (repli : 1 px).
+const IRIS_GLSL = `#ifndef GL_OES_standard_derivatives
+#define fwidth(x) (1.0)
+#endif
+${KIT_IRIS}
+vec3 irisAt(float t) { float a = t * 6.2831853; return irisColor(vec2(sin(a), -cos(a))); }`
+const DERIV = '#extension GL_OES_standard_derivatives : enable\n'
+
+// monogramme du kit (viewBox 146 154 470 576 ; anneau : tokens/iris.json), en unités de 1000 pour sa hauteur
+const MONO_VB = [146, 154, 470, 576], MONO_U = 1000 / MONO_VB[3]
+const MONO_W = MONO_VB[2] * MONO_U                                                        // ≈ 816
+const MONO_O = [(KIT.ring.center[0] - MONO_VB[0]) * MONO_U, (KIT.ring.center[1] - MONO_VB[1]) * MONO_U]   // centre du « o »
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 
@@ -38,6 +54,8 @@ uniform vec4 uScr;      // coin haut gauche de la vue à l'écran (px), taille d
 uniform float uTime;
 uniform vec4 uMarkXf;   // accueil : monogramme, centre (px), hauteur (px), rotation (rad)
 uniform vec4 uEye;      // inutilisé (xy, zw)
+uniform vec3 uInk;      // encre du thème (S du monogramme)
+uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), inutilisé
 
 vec2 cover(vec2 p) {
   float s = max(uRes.x / uImg.x, uRes.y / uImg.y);
@@ -50,54 +68,18 @@ float vnoise(vec2 x) {
   vec2 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
 }
-// roue irisée de la marque, à parts égales ; 0 = en haut, sens horaire
-vec3 iris(float t) {
-  vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
-  c[0] = vec3(1.000, 0.300, 0.930); c[1] = vec3(1.000, 0.330, 0.640); c[2] = vec3(0.780, 0.330, 1.000);
-  c[3] = vec3(0.280, 0.600, 1.000); c[4] = vec3(0.220, 0.930, 0.560); c[5] = c[0];
-  float x = fract(t) * 5.0; vec3 r = c[0];
-  for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
-  return r;
-}
+${IRIS_GLSL}
 
 ${GLASS_GLSL}
-// couleurs du « o » du logo (24 teintes relevées sur le logo de référence) ; 0 = en haut, sens horaire
-vec3 logoO(float t) {
-  t = fract(t) * 24.0; float i = floor(t), f = t - i; vec3 a = vec3(0.0), b = vec3(0.0);
-  if (i == 0.0) { a = vec3(0.957, 0.176, 0.624); b = vec3(0.875, 0.184, 0.722); }
-  if (i == 1.0) { a = vec3(0.875, 0.184, 0.722); b = vec3(0.796, 0.196, 0.831); }
-  if (i == 2.0) { a = vec3(0.796, 0.196, 0.831); b = vec3(0.710, 0.200, 0.933); }
-  if (i == 3.0) { a = vec3(0.710, 0.200, 0.933); b = vec3(0.600, 0.247, 0.957); }
-  if (i == 4.0) { a = vec3(0.600, 0.247, 0.957); b = vec3(0.482, 0.298, 0.969); }
-  if (i == 5.0) { a = vec3(0.482, 0.298, 0.969); b = vec3(0.361, 0.357, 0.988); }
-  if (i == 6.0) { a = vec3(0.361, 0.357, 0.988); b = vec3(0.318, 0.427, 0.984); }
-  if (i == 7.0) { a = vec3(0.318, 0.427, 0.984); b = vec3(0.278, 0.502, 0.984); }
-  if (i == 8.0) { a = vec3(0.278, 0.502, 0.984); b = vec3(0.247, 0.580, 0.976); }
-  if (i == 9.0) { a = vec3(0.247, 0.580, 0.976); b = vec3(0.243, 0.706, 0.906); }
-  if (i == 10.0) { a = vec3(0.243, 0.706, 0.906); b = vec3(0.247, 0.843, 0.835); }
-  if (i == 11.0) { a = vec3(0.247, 0.843, 0.835); b = vec3(0.314, 0.898, 0.569); }
-  if (i == 12.0) { a = vec3(0.314, 0.898, 0.569); b = vec3(0.400, 0.929, 0.412); }
-  if (i == 13.0) { a = vec3(0.400, 0.929, 0.412); b = vec3(0.510, 0.937, 0.400); }
-  if (i == 14.0) { a = vec3(0.510, 0.937, 0.400); b = vec3(0.647, 0.816, 0.494); }
-  if (i == 15.0) { a = vec3(0.647, 0.816, 0.494); b = vec3(0.816, 0.502, 0.749); }
-  if (i == 16.0) { a = vec3(0.816, 0.502, 0.749); b = vec3(0.878, 0.302, 0.890); }
-  if (i == 17.0) { a = vec3(0.878, 0.302, 0.890); b = vec3(0.890, 0.169, 0.973); }
-  if (i == 18.0) { a = vec3(0.890, 0.169, 0.973); b = vec3(0.910, 0.161, 0.933); }
-  if (i == 19.0) { a = vec3(0.910, 0.161, 0.933); b = vec3(0.929, 0.153, 0.898); }
-  if (i == 20.0) { a = vec3(0.929, 0.153, 0.898); b = vec3(0.949, 0.153, 0.855); }
-  if (i == 21.0) { a = vec3(0.949, 0.153, 0.855); b = vec3(0.949, 0.161, 0.769); }
-  if (i == 22.0) { a = vec3(0.949, 0.161, 0.769); b = vec3(0.957, 0.169, 0.690); }
-  if (i == 23.0) { a = vec3(0.957, 0.169, 0.690); b = vec3(0.957, 0.176, 0.624); }
-  return mix(a, b, f);
-}
 // trame en un point : un point par cellule, sa taille suit la lumière de l'image (couleur prémultipliée, alpha).
 // off : décalage de la lecture de l'image seulement (la grille de points reste en place : réfraction sans traînées)
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
   if (uHasMask > 0.5) {
-    // accueil : le monogramme en aplat (S blanc, « o » aux couleurs du logo), bordé du verre des vignettes
-    vec2 toUv = 1.0 / uMarkXf.z / vec2(0.816, 1.0);
-    vec2 muv = (p - uMarkXf.xy) * toUv + 0.5;
+    // accueil : le monogramme du kit en aplat (S à l'encre du thème, « o » : roue du kit), bordé du verre des vignettes
+    float upx = uMarkXf.z / 1000.0;                       // px par unité
+    vec2 lp = (p - uMarkXf.xy) / upx + vec2(uMono.x * 0.5, 500.0);
+    vec2 muv = lp / vec2(816.0, 1000.0);                  // champ de distance : 816 × 1000 px, 1 px par unité
     if (muv.x < 0.0 || muv.x > 1.0 || muv.y < 0.0 || muv.y > 1.0) return vec4(0.0);
     // champ de distance signée (monogram-sdf.png, en unités, positif dedans ; S en r, « o » en g) : le contour est
     // anticrénelé au pixel de l'écran, net à toutes les tailles (pas d'image du logo agrandie)
@@ -105,10 +87,8 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float sdS = dc.r * 32.0 - 4.0, sdO = dc.g * 32.0 - 4.0;
     bool isO = sdO > sdS;
     float sd = max(sdS, sdO);
-    float upx = uMarkXf.z / 1000.0;                       // px par unité
     float cov = clamp(sd * upx * uDpr + 0.5, 0.0, 1.0);
     if (cov < 0.001) return vec4(0.0);
-    vec2 lp = (p - uMarkXf.xy) / upx + vec2(408.0, 500.0);
     vec2 e = vec2(1.0 / 816.0, 0.0), e2 = vec2(0.0, 1.0 / 1000.0);
     float gx = isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r;
     float gy = isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r;
@@ -122,8 +102,8 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float h = pow(1.0 - pow(1.0 - x, 4.0), 0.25);
     float slope = pow(1.0 - x, 3.0) / max(pow(h, 3.0), 0.02);
     float th = atan(slope * 0.9), tr = asin(sin(th) / 1.5);
-    vec2 pc = lp - n * W * 1.15 * tan(th - tr) - vec2(639.25, 586.8);
-    vec3 g = isO ? logoO(atan(pc.x, -pc.y) / 6.28318) : vec3(1.0);
+    vec2 pc = lp - n * W * 1.15 * tan(th - tr) - uMono.yz;
+    vec3 g = isO ? irisColor(pc) : uInk;
     g *= 0.8 + 0.2 * smoothstep(0.0, 0.8, t);
     vec2 L = normalize(vec2(-0.65, -0.76));
     float facing = dot(n, L), dpx = dist * upx;
@@ -144,7 +124,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
     // accueil : le monogramme entier en points (S en r, « o » en g), placé et tourné par le défilement ;
     vec2 d = c - uMarkXf.xy; float cs = cos(uMarkXf.w), sn = sin(uMarkXf.w);
     vec2 lc = vec2(cs * d.x + sn * d.y, -sn * d.x + cs * d.y) / uMarkXf.z;
-    vec2 muv = lc / vec2(0.816, 1.0) + 0.5;
+    vec2 muv = lc / vec2(uMono.x / 1000.0, 1.0) + 0.5;
     vec4 mk = (muv.x > 0.0 && muv.x < 1.0 && muv.y > 0.0 && muv.y < 1.0) ? texture2D(uMask, muv) : vec4(0.0);
     inWord = max(mk.r, mk.g); inO = mk.g; m = inWord;
     l = 0.85;   // logo fixe : points de taille régulière
@@ -161,10 +141,10 @@ vec4 halftoneS(vec2 p, vec2 off) {
   if (uHasMask > 0.5) {
     // le « o » : points irisés (la couleur tourne lentement) ; le S : points blancs
     float cs = cos(uMarkXf.w), sn = sin(uMarkXf.w);
-    vec2 ol = vec2(0.23125, 0.0868) * uMarkXf.z;
+    vec2 ol = (uMono.yz - vec2(uMono.x * 0.5, 500.0)) / 1000.0 * uMarkXf.z;
     vec2 oc = uMarkXf.xy + vec2(cs * ol.x - sn * ol.y, sn * ol.x + cs * ol.y);
     vec2 ep = c - oc;
-    vec3 ic = iris(atan(ep.x, -ep.y) / 6.28318);
+    vec3 ic = irisColor(ep);
     dc = mix(vec3(mix(0.7, 1.0, l)), ic * mix(0.8, 1.05, l), step(0.5, inO));
   }
   return vec4(dc * dotA, dotA);
@@ -182,7 +162,7 @@ float sdInner(vec2 p, float w) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
-// lentille du curseur en un point q (couleur de fond base) : image d'origine, bord intérieur « verre liquide », anneau irisé
+// lentille du curseur en un point q (couleur de fond base) : image d'origine, bord intérieur « verre liquide », anneau du kit
 vec3 withLens(vec2 q, vec3 base) {
   float aa = 0.9 / uDpr;
   float R = uLens.z;
@@ -207,8 +187,8 @@ vec3 withLens(vec2 q, vec3 base) {
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       col = mix(col, orig, inner);
-      float ring = smoothstep(R - 2.0 - aa, R - 2.0 + aa, d) * (1.0 - smoothstep(uLensO - aa, uLensO + aa, d));
-      col = mix(col, iris(atan(lp.x, -lp.y) / 6.28318), ring);
+      // anneau : identique au « o » du logo (roue et proportions du kit, bords nets à toutes les densités)
+      col = mix(col, irisColor(lp), irisRing(lp, uLensO));
     }
   }
   return col;
@@ -246,16 +226,6 @@ void main() {
   gl_FragColor = vec4(col, a);
 }`
 
-const IRIS = `// roue irisée de la marque, à parts égales ; 0 = en haut, sens horaire
-vec3 iris(float t) {
-  vec3 c[6];   // cinq teintes à parts égales : rose, rose tendre, mauve, bleu, menthe
-  c[0] = vec3(1.000, 0.300, 0.930); c[1] = vec3(1.000, 0.330, 0.640); c[2] = vec3(0.780, 0.330, 1.000);
-  c[3] = vec3(0.280, 0.600, 1.000); c[4] = vec3(0.220, 0.930, 0.560); c[5] = c[0];
-  float x = fract(t) * 5.0; vec3 r = c[0];
-  for (int i = 0; i < 5; i++) { if (x >= float(i)) r = mix(c[i], c[i + 1], smoothstep(0.0, 1.0, x - float(i))); }
-  return r;
-}`
-
 // Passe « verre » des vignettes : lit le contenu déjà dessiné (trame, lentille, aspiration) dans une texture
 // intermédiaire, et le réfracte dans l'épaisseur du bord. Tout ce qui passe sous le verre est déformé de la même façon.
 const GLASS = `precision highp float;
@@ -268,7 +238,7 @@ uniform float uRadius;
 uniform float uGlass;   // survol (0 à 1) : couleurs irisées et séparation des couleurs
 uniform float uBg;
 uniform vec4 uClip;
-${IRIS}
+${IRIS_GLSL}
 float sdCard(vec2 p) {
   vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
@@ -308,7 +278,7 @@ void main() {
     float bend = W * 1.15 * tan(th - tr);                             // déviation (px)
     vec3 g = at(p - n * bend);                                        // une seule lecture : aucune image dédoublée
     vec2 cp = p - uRes * 0.5;
-    vec3 ic = iris((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
+    vec3 ic = irisAt((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
     vec3 tint = mix(vec3(1.0), ic, uGlass);
     // la couleur n'est plus appliquée à l'image (sinon une image claire se colore sur toute l'épaisseur du verre) :
     // elle n'est portée que par la lumière du verre, d'une largeur fixe, identique sur image claire ou sombre
@@ -333,13 +303,15 @@ void main() {
 }`
 
 // Fond de page (comme la référence) : noir très profond, grandes nappes de couleur qui dérivent lentement près des
-// bords (couleurs de la marque, à ~6 % d'intensité) et grain de pellicule animé.
+// bords (roue du logo-kit, à 7 % sur le fond du thème) et grain de pellicule.
 const BG = `precision highp float;
 // Fond animé : même algorithme et mêmes réglages que le fond de la référence fournie par Johann (passe « fluidText »
-// puis « post ») ; couleurs : versions très sombres de la roue irisée. Bruit noise() d'après Inigo Quilez (CC BY-NC-SA 3.0).
+// puis « post ») ; couleurs : roue du logo-kit très atténuée sur le fond du thème. Bruit noise() d'après Inigo Quilez (CC BY-NC-SA 3.0).
 uniform vec2 uView;
 uniform float uDpr;
 uniform float uTime;
+uniform vec3 uPage;   // --bg du thème
+${IRIS_GLSL}
 #define S(a,b,t) smoothstep(a,b,t)
 mat2 Rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
 vec2 hash2(vec2 p){ p = vec2(dot(p, vec2(2127.1, 81.17)), dot(p, vec2(1269.5, 283.37))); return fract(sin(p) * 43758.5453); }
@@ -352,7 +324,9 @@ float noise(vec2 p){
 float random(vec2 st){ return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123); }
 void main(){
   vec2 vUv = gl_FragCoord.xy / (uView * uDpr);
-  vec3 c1 = vec3(0.000, 0.075, 0.045), c2 = vec3(0.120, 0.020, 0.090), c3 = vec3(0.045, 0.010, 0.120), c4 = vec3(0.035, 0.035, 0.040);
+  // nappes : vert (bas), violet (droite), indigo (gauche) de la roue du kit, à 7 % sur le fond du thème
+  vec3 c1 = mix(uPage, irisColor(vec2(0.0, 1.0)), 0.07), c2 = mix(uPage, irisColor(vec2(1.0, 0.0)), 0.07);
+  vec3 c3 = mix(uPage, irisColor(vec2(-1.0, 0.0)), 0.07), c4 = uPage;
   float ratio = uView.x / uView.y;
   vec2 tuv = vUv - 0.5;
   float degree = noise(vec2(uTime * 0.1, tuv.x * tuv.y));
@@ -362,26 +336,23 @@ void main(){
   tuv.y += sin(tuv.x * frequency * 1.5 + speed) / (amplitude * 0.5);
   vec3 layer1 = mix(c1, c2, S(-0.3, 0.2, (tuv * Rot(radians(-5.0))).x));
   vec3 layer2 = mix(c3, c4, S(-0.3, 0.2, (tuv * Rot(radians(-5.0))).x));
-  vec3 color = mix(layer1, layer2, S(0.5, -0.3, tuv.y)) * 0.6;
+  vec3 color = mix(layer1, layer2, S(0.5, -0.3, tuv.y));
   vec2 vgn = vUv * (1.0 - vUv.yx);
   float vig = pow(vgn.x * vgn.y * 15.0, 0.25);
   color *= 1.0 - vec3(random(vUv + mod(uTime, 1.0))) * 0.1;
   color = pow(clamp(color, 0.0, 1.0), vec3(1.0 / 1.05));
-  color = mix(color, mix(vec3(0.0), color * vig, vig), 0.5);
+  color *= mix(0.9, 1.0, vig);   // vignette légère, dans les deux modes
   gl_FragColor = vec4(color, 1.0);
 }`
 const BLIT = `precision highp float;
 uniform sampler2D uSrc; uniform vec2 uSize;
 void main(){ gl_FragColor = texture2D(uSrc, gl_FragCoord.xy / uSize); }`
 
-/** Monogramme (viewBox 816 × 1000) : le S et le « o » (lus par brand/tools/sdf.mjs pour le champ de distance). */
-const S_PATH = 'M462.9 0C429.1 1 395.1 1.9 361.6 7.4C242.6 26.9 130.5 89.6 56.1 185.2C10.3 244.1 -23.5 327.9 20.5 397.3C59.1 458.4 133.7 450.1 194.9 467.2C249.8 482.4 286.4 527.3 301.2 581.1C322.1 657 277.4 730.6 236.4 791C213.1 825.2 177.3 871.7 197.4 914.5C205.3 931.2 217.2 944.9 234.6 952.1C261.4 963.1 342.8 960.6 385.4 973.3C410.1 980.7 435.4 999.9 461.5 1000C510 1000.1 533.4 934.5 492.7 905.9C468.4 888.7 413.8 871.4 384.1 869.8C356.7 868.4 326.8 886.2 315.8 851.7C309.4 831.5 354.2 756.1 363 731.5C391.1 653.5 394.1 567.4 353.2 493.7C323.1 439.3 273.3 408.8 220.3 380.3C202 370.4 177.4 359 163.5 343.2C159.4 338.4 156.8 331.8 153.1 326.6C148.8 320.5 144.7 316.9 143.5 309.4C140.3 287.6 139 267.2 145.7 245.9C161.7 195 232.3 143.2 281.2 127.1C307.7 118.4 336.4 116.5 364.1 114.4C390.7 112.4 472.8 111.6 490.9 102C541.3 75.2 518.8 -1.4 462.9 0Z'
-const O_PATH = 'M462.5 586.8a176.7 176.7 0 1 0 353.5 0a176.7 176.7 0 1 0 -353.5 0ZM548.4 586.8a90.8 90.8 0 1 0 181.7 0a90.8 90.8 0 1 0 -181.7 0Z'
-
 export function createGL(canvas, { reduced }) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
   if (!gl) return null
-  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s }
+  gl.getExtension('OES_standard_derivatives')   // fwidth() pour les anneaux du kit (irisRing)
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, type === gl.FRAGMENT_SHADER ? DERIV + src : src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s }
   const prog = gl.createProgram()
   gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG)); gl.bindAttribLocation(prog, 0, 'a'); gl.linkProgram(prog)
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
@@ -389,22 +360,34 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uBg, 4); gl.uniform1i(U.uMaskB, 5)
+  gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 0)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
 
   // fond de page
   const bgProg = gl.createProgram()
   gl.attachShader(bgProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(bgProg, sh(gl.FRAGMENT_SHADER, BG)); gl.bindAttribLocation(bgProg, 0, 'a'); gl.linkProgram(bgProg)
-  const BU = {}; for (const n of ['uView', 'uDpr', 'uTime']) BU[n] = gl.getUniformLocation(bgProg, n)
+  const BU = {}; for (const n of ['uView', 'uDpr', 'uTime', 'uPage']) BU[n] = gl.getUniformLocation(bgProg, n)
   const blitProg = gl.createProgram()
   gl.attachShader(blitProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(blitProg, sh(gl.FRAGMENT_SHADER, BLIT)); gl.bindAttribLocation(blitProg, 0, 'a'); gl.linkProgram(blitProg)
   const LU = { src: gl.getUniformLocation(blitProg, 'uSrc'), size: gl.getUniformLocation(blitProg, 'uSize') }
   const bgFbo = gl.createFramebuffer(), bgTex = gl.createTexture()
   let bgW = 0, bgH = 0
   const bgCanvas = document.querySelector('.bg-canvas')
+  // couleurs du thème (--bg, --ink de src/theme.css), relues quand le mode change ; le fond est alors redessiné
+  const themeRGB = () => {
+    const cs = getComputedStyle(document.documentElement), x = document.createElement('canvas').getContext('2d')
+    const rgb = (v) => { x.fillStyle = '#000'; x.fillStyle = v.trim(); const h = x.fillStyle; return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255) }
+    return { bg: rgb(cs.getPropertyValue('--bg')), ink: rgb(cs.getPropertyValue('--ink')) }
+  }
+  let theme = themeRGB(), bgDirty = false
+  const onTheme = () => { theme = themeRGB(); bgDirty = true }
+  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', onTheme)
   function ensureBg() {
+    if (bgDirty && bgW) { bgDirty = false; return true }
     if (bgW === canvas.width && bgH === canvas.height) return false
     bgW = canvas.width; bgH = canvas.height
     gl.bindTexture(gl.TEXTURE_2D, bgTex)
@@ -470,13 +453,13 @@ export function createGL(canvas, { reduced }) {
       gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL)
       v.maskB = t
     }
-    im.src = document.querySelector('.hero__mark').src.replace(/monogram-white\.svg$/, 'monogram-sdf.png')
+    im.src = new URL('monogram-sdf.png', document.querySelector('.brand__mark').src).href
   }
   /** Placement du monogramme. Arrivée (ms depuis la fin du chargeur) : le « o » prend exactement la place de l'anneau
    *  du chargeur (rayon 44 px, centre de la fenêtre) et reste immobile pendant que le chargeur s'efface ; puis il grandit
    *  sur place, son centre fixe ; puis, seulement quand le S apparaît, le monogramme glisse jusqu'à sa position.
    *  Ensuite le défilement p le ramène à sa place dans la composition (au-dessus du nom). Renvoie aussi l'apparition du S. */
-  const O_OFF = [0.23125, 0.0868], O_R = 0.1767
+  const O_OFF = [(MONO_O[0] - MONO_W / 2) / 1000, (MONO_O[1] - 500) / 1000], O_R = KIT.ring.outerRadius * MONO_U / 1000
   const HOLD = 300, GROW = 750, SHIFT = 850
   function markXf(w, h, p, ms, slot, oc) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
@@ -537,7 +520,7 @@ export function createGL(canvas, { reduced }) {
       // puis recopié dans une toile 2D posée tout au fond de la page (le mot de l'accueil passe entre les deux)
       gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo)
       gl.useProgram(bgProg); gl.disable(gl.BLEND)
-      gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, 12)
+      gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, 12); gl.uniform3f(BU.uPage, ...theme.bg)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       const px = new Uint8Array(bgW * bgH * 4); gl.readPixels(0, 0, bgW, bgH, gl.RGBA, gl.UNSIGNED_BYTE, px)
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
@@ -556,7 +539,7 @@ export function createGL(canvas, { reduced }) {
     }
     // la lentille : visible quand le pointeur est sur une carte (pas sur l'accueil)
     const small = W < 600
-    const Ro = small ? 60 : 74, Ri = Ro - (small ? 9 : 12)
+    const Ro = small ? 60 : 74, Ri = Ro * KIT.ring.innerRatio   // anneau du kit : Ri = 0,514 × Ro
     let over = null
     for (const v of views) {
       if (v.mark || !v.ready) continue
@@ -621,12 +604,13 @@ export function createGL(canvas, { reduced }) {
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
-      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 2) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
+      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) {
         const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
         const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
         const xf = markXf(w, h, p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top])
+        gl.uniform3f(U.uInk, ...theme.ink)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
       }
       gl.drawArrays(gl.TRIANGLES, 0, 3)
