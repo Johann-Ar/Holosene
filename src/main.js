@@ -25,8 +25,23 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
   location.replace('en/' + location.hash)
 }
 
-/* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut), sans réglage propre au site. */
-store.set('theme', null)   // ancien choix manuel (bouton retiré) : effacé
+/* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut). Le bouton force l'autre mode (data-theme sur
+   <html>, mémorisé ; le script inline de <head> l'applique avant le premier rendu). La barre du navigateur suit. */
+const themeBtn = document.querySelector('.theme-toggle'), darkMq = matchMedia('(prefers-color-scheme: dark)')
+const themeNow = () => root.dataset.theme || (darkMq.matches ? 'dark' : 'light')
+function syncTheme() {
+  const t = themeNow()
+  themeBtn?.setAttribute('aria-label', themeBtn.dataset[t === 'light' ? 'dark' : 'light'])
+  if (root.dataset.theme) { const bg = getComputedStyle(root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
+}
+themeBtn?.addEventListener('click', () => {
+  const next = themeNow() === 'light' ? 'dark' : 'light'
+  // revenir au mode de l'appareil efface le choix : le site suit de nouveau l'appareil
+  if (next === (darkMq.matches ? 'dark' : 'light')) { delete root.dataset.theme; store.set('theme', null) } else { root.dataset.theme = next; store.set('theme', next) }
+  syncTheme()
+})
+darkMq.addEventListener?.('change', syncTheme)
+syncTheme()
 
 /* Aspiration des images aux bords de l'écran (WebGL), sauf si l'utilisateur réduit les animations. */
 if (!reduced) root.classList.add('liquid')

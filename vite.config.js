@@ -74,7 +74,9 @@ function themeHead() {
       const { colors } = JSON.parse(readFileSync(resolve('design/logo-kit/tokens/iris.json'), 'utf8'))
       const meta = `<meta name="theme-color" content="${colors.bgDark}" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="${colors.bgLight}" media="(prefers-color-scheme: light)" />`
-      return html.replace('</head>', `  ${meta}\n</head>`)
+      // mode forcé par le bouton, appliqué avant le premier rendu (pas de flash) ; sinon le CSS suit l'appareil
+      const boot = `<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>`
+      return html.replace('</head>', `  ${meta}\n  ${boot}\n</head>`)
     },
   }
 }

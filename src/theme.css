@@ -3,7 +3,8 @@
    Les arrêts de la roue (--iris-*) sont générés depuis design/logo-kit/src/iris.js (vite.config.js, virtual:iris.css). */
 @import '../design/logo-kit/tokens/iris.css';
 
-/* thème de l'appareil (prefers-color-scheme) ; s'il n'en indique aucun : clair */
+/* thème de l'appareil (prefers-color-scheme) ; s'il n'en indique aucun : clair. Le bouton de la barre du haut peut forcer
+   l'autre mode (data-theme sur <html>, mémorisé). */
 :root {
   color-scheme: light;
   --bg: var(--bg-light);
@@ -16,6 +17,8 @@
     --ink: white;
   }
 }
+:root[data-theme="light"] { color-scheme: light; --bg: var(--bg-light); --ink: var(--bg-dark); }
+:root[data-theme="dark"] { color-scheme: dark; --bg: var(--bg-dark); --ink: white; }
 
 :root {
   /* neutres dérivés (contrastes vérifiés : texte secondaire ≥ 4,5:1 sur --bg dans les deux modes) */
@@ -44,3 +47,5 @@
   .only-light { display: none !important; }
   .only-dark { display: revert !important; }
 }
+:root[data-theme="light"] .only-dark, :root[data-theme="dark"] .only-light { display: none !important; }
+:root[data-theme="light"] .only-light, :root[data-theme="dark"] .only-dark { display: revert !important; }

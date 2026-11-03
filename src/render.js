@@ -32,12 +32,11 @@ const logotype = wordPart(logoPaths)
 // nom de l'accueil : « Johann Arata », même dessin que le logotype (Archivo 500, largeur 120 %, approche -0,04 em)
 const nameSrc = readFileSync(new URL('../public/media/name-white.svg', import.meta.url), 'utf8')
 const nameParts = nameSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, ''))
-const nameWord = wordPart(nameParts.join('')).replace(`viewBox="${logoBox}"`, `viewBox="${nameSrc.match(/viewBox="([^"]+)"/)[1]}"`).replace('class="studio__word"', 'class="studio__word studio__word--line"')
-// sur mobile : « Arata » sous « Johann », centré (Johann : x 39 à 3803 ; Arata : x 4117 à 6958) ; identifiants propres
-// pour que les dégradés restent résolus quand l'autre version est masquée
-const nameStacked = wordPart(nameParts.slice(0, 6).join('') + `<g transform="translate(-3616.5 880)">${nameParts.slice(6).join('')}</g>`)
-  .replace(`viewBox="${logoBox}"`, 'viewBox="39 -724 3764 1616"').replace('class="studio__word"', 'class="studio__word studio__word--stack"')
-  .replace(/iris-g|iris-l|"core"|#core/g, (x) => x.replace(/(iris-g|iris-l|core)/, '$1-2'))
+// nom de l'accueil : aplat à l'encre du thème, sans contour ni lueur (il apparaît en fondu, voir .w-solid)
+const nameSvg = (paths, box, cls) => `<svg class="studio__word ${cls}" viewBox="${box}" aria-hidden="true"><g class="w-solid" fill="currentColor">${paths}</g></svg>`
+const nameWord = nameSvg(nameParts.join(''), nameSrc.match(/viewBox="([^"]+)"/)[1], 'studio__word--line')
+// sur mobile : « Arata » sous « Johann », centré (Johann : x 39 à 3803 ; Arata : x 4117 à 6958)
+const nameStacked = nameSvg(nameParts.slice(0, 6).join('') + `<g transform="translate(-3616.5 880)">${nameParts.slice(6).join('')}</g>`, '39 -724 3764 1616', 'studio__word--stack')
 
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
@@ -131,6 +130,7 @@ export function render(lang) {
   </a>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
+    <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button>
     <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" lang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}">${lang === 'fr' ? 'EN' : 'FR'}</a>
   </nav>
 </header>

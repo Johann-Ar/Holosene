@@ -36,6 +36,8 @@ export const ui = {
   skip: T('Aller au contenu', 'Skip to content'),
   nav: T('Navigation principale', 'Main navigation'),
   langLabel: T('Read in English', 'Lire en français'),
+  themeLight: T('Passer en mode clair', 'Switch to light mode'),
+  themeDark: T('Passer en mode sombre', 'Switch to dark mode'),
   open: T('Voir la fiche', 'View project'),
   close: T('Fermer', 'Close'),
   specHead: T('Captation · traitement · rendu', 'Capture · processing · output'),

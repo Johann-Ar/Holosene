@@ -380,6 +380,7 @@ export function createGL(canvas, { reduced }) {
   }
   let theme = themeRGB(), bgDirty = false
   const onTheme = () => { theme = themeRGB(); bgDirty = true }
+  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', onTheme)
   function ensureBg() {
     if (bgDirty && bgW) { bgDirty = false; return true }
@@ -461,7 +462,7 @@ export function createGL(canvas, { reduced }) {
   function markXf(w, h, p, ms, slot, oc) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const small = w < 760
-    const big = Math.min(h * 0.62, w * (small ? 0.62 : 0.8) * 1000 / 816)
+    const big = Math.min(h * 0.46, w * (small ? 0.5 : 0.6) * 1000 / 816)   // taille maximale du logo au début de l'accueil
     // fin : à sa place dans la composition de l'accueil (.hero__slot, au-dessus du nom et de la présentation)
     const q = e(k(0, 0.45))
     const size = big + (slot.h - big) * q
