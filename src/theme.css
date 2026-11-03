@@ -3,21 +3,17 @@
    Les arrêts de la roue (--iris-*) sont générés depuis design/logo-kit/src/iris.js (vite.config.js, virtual:iris.css). */
 @import '../design/logo-kit/tokens/iris.css';
 
-:root, :root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: var(--bg-dark);
-  --ink: white;
-}
-:root[data-theme="light"] {
+/* thème de l'appareil (prefers-color-scheme) ; s'il n'en indique aucun : clair */
+:root {
   color-scheme: light;
   --bg: var(--bg-light);
   --ink: var(--bg-dark);
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    --bg: var(--bg-light);
-    --ink: var(--bg-dark);
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: var(--bg-dark);
+    --ink: white;
   }
 }
 
@@ -43,10 +39,8 @@
 }
 
 /* éléments propres à un mode (logos du kit : version dark / light) */
-.only-light { display: none !important; }
-:root[data-theme="light"] .only-dark { display: none !important; }
-:root[data-theme="light"] .only-light { display: revert !important; }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .only-dark { display: none !important; }
-  :root:not([data-theme="dark"]) .only-light { display: revert !important; }
+.only-dark { display: none !important; }
+@media (prefers-color-scheme: dark) {
+  .only-light { display: none !important; }
+  .only-dark { display: revert !important; }
 }

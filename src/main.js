@@ -1,6 +1,6 @@
 import 'virtual:iris.css'
 import './styles.css'
-import { IRIS_STOPS, IRIS_INNER_RATIO, sampleIris } from '../design/logo-kit/src/iris.js'
+import { IRIS_STOPS, IRIS_INNER_RATIO } from '../design/logo-kit/src/iris.js'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
 
@@ -21,21 +21,12 @@ root.classList.toggle('is-dev', import.meta.env.DEV || store.get('dev') === '1')
 const langLink = document.querySelector('.topbar .lang')
 langLink?.addEventListener('click', () => store.set('lang', langLink.getAttribute('hreflang')))
 
-/* Thème : suit prefers-color-scheme ; le bouton bascule dark / light, pose data-theme sur <html> et retient le choix.
-   (Le script inline de <head> l'applique avant le premier rendu.) La barre du navigateur suit le thème affiché. */
-const themeBtn = document.querySelector('.theme-toggle'), lightMq = matchMedia('(prefers-color-scheme: light)')
-const themeNow = () => root.dataset.theme || (lightMq.matches ? 'light' : 'dark')
-function syncTheme() {
-  const t = themeNow(), bg = getComputedStyle(root).getPropertyValue('--bg').trim()
-  themeBtn?.setAttribute('aria-label', themeBtn.dataset[t === 'light' ? 'dark' : 'light'])
-  if (root.dataset.theme) document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg))
-}
-themeBtn?.addEventListener('click', () => { root.dataset.theme = themeNow() === 'light' ? 'dark' : 'light'; store.set('theme', root.dataset.theme); syncTheme() })
-lightMq.addEventListener?.('change', syncTheme)
-syncTheme()
 if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') && !(navigator.language || 'fr').toLowerCase().startsWith('fr')) {
   location.replace('en/' + location.hash)
 }
+
+/* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut), sans réglage propre au site. */
+store.set('theme', null)   // ancien choix manuel (bouton retiré) : effacé
 
 /* Aspiration des images aux bords de l'écran (WebGL), sauf si l'utilisateur réduit les animations. */
 if (!reduced) root.classList.add('liquid')
@@ -302,69 +293,43 @@ function scrollEffects() {
 }
 if (reduced) { root.classList.add('hero-done'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
-/* Chargeur : le « o » du logo en miniature. Un arc lisse à bout arrondi tourne ; il s'éteint vers la queue et n'est
-   irisé qu'à son bout ; en fin de chargement, il se referme en « o » irisé. */
+/* Chargeur : le « o » du logo-kit. Un arc tourne ; ses couleurs sont celles de la roue du kit à leur angle exact (il
+   dévoile le vrai « o »), son opacité va de 0 à la queue à 1 à la tête (arrondie) : ni noir ni gris. En fin de
+   chargement, il se referme en anneau plein, identique au « o » du logo qui prend alors le relais au même pixel.
+   Dégradés coniques Canvas 2D : dessinés par le navigateur, aucun calcul par pixel en JavaScript. */
 const spin = document.querySelector('.loader__spin')
 let finishLoader = (done) => done()
-if (spin) {
+if (spin?.getContext('2d').createConicGradient) {
   const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
   spin.width = S * dpr; spin.height = S * dpr
-  const x = spin.getContext('2d'); x.scale(dpr, dpr)
-  // couleurs : roue du logo-kit ; bout de l'arc : vert, bleu, violet, rose du kit ; queue : de l'encre vers le fond
-  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
-  const IR = [0, 2, 4, 5].map((i) => hex(IRIS_STOPS[i][1]))
-  const themeRGB = (name) => { const t = document.createElement('canvas').getContext('2d'); t.fillStyle = getComputedStyle(root).getPropertyValue(name).trim(); return hex(t.fillStyle).map((c) => c / 255) }
-  const BG = themeRGB('--bg'), INK = themeRGB('--ink')
-  const R = 44, r = 44 * IRIS_INNER_RATIO,   // mêmes proportions que le « o » du logo-kit
-    mid = (R + r) / 2, half = (R - r) / 2, TAU = Math.PI * 2
+  const x = spin.getContext('2d')
+  const R = 44, r = R * IRIS_INNER_RATIO, mid = (R + r) / 2, TAU = Math.PI * 2, C = S / 2
+  // roue du kit : t = 0 en bas, sens horaire (angle canvas : 0 = à droite, sens horaire, y vers le bas → bas = π/2)
+  const wheel = x.createConicGradient(Math.PI / 2, C, C)
+  for (const [p, c] of IRIS_STOPS) wheel.addColorStop(p, c)
   let finishAt = 0, onDone = null
-  // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
+  // fin du chargement : l'arc s'allonge jusqu'au tour complet et sa queue devient opaque (1,3 s)
   finishLoader = (done) => { finishAt = performance.now(); onDone = done }
-  // dessin pixel par pixel : aplat aux couleurs du kit, bords nets (comme le logo)
-  const P = S * dpr, img = x.createImageData(P, P)
-  x.setTransform(1, 0, 0, 1, 0, 0)
   const draw = (t) => {
     if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
     const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
-    const ARC = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe
-    const head = (t / 1000) * TAU * 0.9
-    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid
-    // forme : distance à l'arête (px, positive dedans), normale sortante, position k sur l'arc (1 au bout, 0 à la queue)
-    const shape = (px, py) => {
-      const rr = Math.hypot(px, py)
-      let a = Math.atan2(px, -py) - head; a = ((a % TAU) + TAU * 2) % TAU
-      const back = TAU - a
-      if (fe > 0.9 || back <= ARC) {
-        const dOut = R - rr, dIn = rr - r, s0 = dOut < dIn ? 1 : -1
-        return [Math.min(dOut, dIn), s0 * px / (rr || 1), s0 * py / (rr || 1), fe > 0.9 ? Math.max(1 - back / ARC, fe) : 1 - back / ARC]
-      }
-      const cx = px - hx, cy = py - hy, dc = Math.hypot(cx, cy)
-      return [half - dc, cx / (dc || 1), cy / (dc || 1), 1]
+    const arc = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe          // longueur de l'arc
+    const head = (t / 1000) * TAU * 0.9 - Math.PI / 2               // angle canvas de la tête
+    const tail = head - arc
+    x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, S, S)
+    x.globalCompositeOperation = 'source-over'
+    x.lineWidth = R - r; x.lineCap = fe >= 1 ? 'butt' : 'round'; x.strokeStyle = wheel
+    x.beginPath(); fe >= 1 ? x.arc(C, C, mid, 0, TAU) : x.arc(C, C, mid, tail, head); x.stroke()
+    if (fe < 1) {
+      // opacité : 0 à la queue (fe à la fermeture) → 1 à la tête, courbe douce ; au-delà de la tête (bout arrondi) : 1,
+      // puis retour à la valeur de la queue au milieu de l'écart, pour que le bout arrondi de la queue reste effacé
+      const h = arc / TAU, g = (1 - h) / 2, a0 = fe
+      const fade = x.createConicGradient(tail, C, C)
+      for (let i = 0; i <= 8; i++) { const u = i / 8; fade.addColorStop(h * u, `rgb(0 0 0 / ${a0 + (1 - a0) * Math.pow(u, 1.6)})`) }
+      fade.addColorStop(Math.min(1, h + g * 0.9), 'rgb(0 0 0 / 1)')
+      fade.addColorStop(Math.min(1, h + g * 0.95), `rgb(0 0 0 / ${a0})`)
+      x.globalCompositeOperation = 'destination-in'; x.fillStyle = fade; x.fillRect(0, 0, S, S)
     }
-    // couleur d'un point : s'éteint vers la queue, irisé au bout ; en fin de chargement, les couleurs du « o »
-    const colorAt = (k, px, py) => {
-      const v = Math.pow(Math.min(1, k / 0.72), 1.3)
-      const u = Math.min(1, Math.max(0, (k - 0.72) / 0.28))
-      const f = u * (IR.length - 1), i = Math.min(IR.length - 2, Math.floor(f)), w = f - i
-      const ic = IR[i].map((c, n) => (c + (IR[i + 1][n] - c) * w) / 255)
-      const lc = sampleIris(Math.atan2(py, px))
-      return [0, 1, 2].map((n) => { const g = BG[n] + (INK[n] - BG[n]) * v, c = g + (ic[n] - g) * Math.min(1, u * 2.2); return c + (lc[n] - c) * fe })
-    }
-    const data = img.data
-    for (let j = 0; j < P; j++) for (let i = 0; i < P; i++) {
-      const o = (j * P + i) * 4
-      const px = (i + 0.5) / dpr - S / 2, py = (j + 0.5) / dpr - S / 2
-      const [d, , , k] = shape(px, py)
-      // couverture du bord sur un pixel de l'écran, comme le logo WebGL
-      const cov = Math.min(1, Math.max(0, d * dpr + 0.5))
-      if (cov <= 0) { data[o + 3] = 0; continue }
-      // aplat, comme le « o » du logo-kit : couleur lue au pixel, bords nets
-      const col = colorAt(k, px, py)
-      const fade = Math.min(1, Math.pow(k, 0.8) * 1.15 + fe)
-      const al = cov * fade
-      data[o] = Math.min(255, col[0] * 255); data[o + 1] = Math.min(255, col[1] * 255); data[o + 2] = Math.min(255, col[2] * 255); data[o + 3] = al * 255   // non prémultiplié : l'alpha porte le bord
-    }
-    x.putImageData(img, 0, 0)
     if (fin >= 1 && onDone) { const d = onDone; onDone = null; d() }
     requestAnimationFrame(draw)
   }
@@ -379,6 +344,7 @@ Promise.race([
     document.fonts?.ready,
     heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
     new Promise((r) => setTimeout(r, reduced ? 0 : 1000)),
+    new Promise((r) => setTimeout(() => (gl?.ready || Promise.resolve()).then(r))),   // logo WebGL prêt (gl créé plus bas)
   ]),
   new Promise((r) => setTimeout(r, 6000)),
 ]).then(() => finishLoader(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))

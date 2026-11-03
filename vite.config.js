@@ -66,7 +66,7 @@ function irisCss() {
   }
 }
 
-/** Toutes les pages : couleur de la barre du navigateur (fonds du logo-kit, selon le mode) et thème mémorisé, dans <head>. */
+/** Toutes les pages : couleur de la barre du navigateur (fonds du logo-kit, selon le mode de l'appareil), dans <head>. */
 function themeHead() {
   return {
     name: 'theme-head',
@@ -74,9 +74,7 @@ function themeHead() {
       const { colors } = JSON.parse(readFileSync(resolve('design/logo-kit/tokens/iris.json'), 'utf8'))
       const meta = `<meta name="theme-color" content="${colors.bgDark}" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="${colors.bgLight}" media="(prefers-color-scheme: light)" />`
-      // thème choisi (bouton) appliqué avant le premier rendu : pas de flash ; sinon le CSS suit prefers-color-scheme
-      const boot = `<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>`
-      return html.replace('</head>', `  ${meta}\n  ${boot}\n</head>`)
+      return html.replace('</head>', `  ${meta}\n</head>`)
     },
   }
 }

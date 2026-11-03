@@ -117,7 +117,10 @@ vec4 halftoneS(vec2 p, vec2 off) {
   float rev = smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
   if (uHasMask > 0.5 && inO > 0.5) rev = 1.0;   // accueil : le « o » est là dès le départ (il vient du chargeur)
   float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor * inWord) * m;
-  float r = uCell * 0.49 * kk * rev * edge;
+  // image resserrée : au-delà de ses bords haut et bas, plus de points (bord net, pas de dernière ligne étirée)
+  float qy = c.y + off.y;
+  float inV = smoothstep(-0.5 * uCell, 0.5 * uCell, qy) * smoothstep(-0.5 * uCell, 0.5 * uCell, uRes.y - qy);
+  float r = uCell * 0.49 * kk * rev * edge * inV;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
   vec3 dc = mix(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))), min(texture2D(uTex, cover(c + off)).rgb * 1.25, 1.0), uColor);   // uColor : 0 gris, 1 couleur
   if (uHasMask > 0.5) {
@@ -169,8 +172,11 @@ vec3 withLens(vec2 q, vec3 base) {
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       col = mix(col, orig, inner);
-      // anneau : identique au « o » du logo (roue et proportions du kit, bords nets à toutes les densités)
-      col = mix(col, irisColor(lp), irisRing(lp, uLensO));
+      // anneau fin (de R − 1 à uLensO), couleurs du kit ; bord anticrénelé sur un pixel d'écran exact (1 / dpr : pas de
+      // dérivées dans cette branche, où elles ne sont pas fiables)
+      float aw = 1.0 / uDpr;
+      float ring = smoothstep(uLensO + aw * 0.5, uLensO - aw * 0.5, d) * smoothstep(R - 1.0 - aw * 0.5, R - 1.0 + aw * 0.5, d);
+      col = mix(col, irisColor(lp), ring);
     }
   }
   return col;
@@ -189,6 +195,10 @@ void main() {
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + EDGE, p.x); wR = smoothstep(uClip.y - EDGE, uClip.y, p.x); }
   vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur
+  // près des bords gauche et droit de la piste, l'image est aussi resserrée vers son axe horizontal médian : on la lit
+  // plus loin du centre (jusqu'à 16 % de la demi-hauteur au ras du bord), en douceur
+  float wS = pow(max(wL, wR), 2.0);
+  suck.y += (p.y - uRes.y * 0.5) * 0.16 * wS * wS * (3.0 - 2.0 * wS);
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
   vec2 hp = p;
@@ -219,6 +229,8 @@ uniform float uDpr;
 uniform float uRadius;
 uniform float uGlass;   // survol (0 à 1) : couleurs irisées et séparation des couleurs
 uniform float uBg;
+uniform vec3 uIrisMix;  // disposition propre à chaque vignette : décalage (tours), sens (±1), répétitions sur le tour
+uniform float uVivid;   // 0 : couleurs telles quelles (sombre), 1 : plus franches (clair)
 uniform vec4 uClip;
 ${IRIS_GLSL}
 float sdCard(vec2 p) {
@@ -260,7 +272,9 @@ void main() {
     float bend = W * 1.15 * tan(th - tr);                             // déviation (px)
     vec3 g = at(p - n * bend);                                        // une seule lecture : aucune image dédoublée
     vec2 cp = p - uRes * 0.5;
-    vec3 ic = irisAt((atan(cp.x, -cp.y) / 6.28318) * 6.0 + t * 0.6);
+    vec3 ic = irisAt(uIrisMix.y * (atan(cp.x, -cp.y) / 6.28318) * uIrisMix.z + uIrisMix.x + t * 0.6);
+    // fond clair : couleurs de la roue plus franches (écart à leur gris de même luminance accentué, jamais plus sombres)
+    ic = clamp(mix(vec3(dot(ic, vec3(0.2126, 0.7152, 0.0722))), ic, 1.0 + 0.35 * uVivid), 0.0, 1.0);
     vec3 tint = mix(vec3(1.0), ic, uGlass);
     // la couleur n'est plus appliquée à l'image (sinon une image claire se colore sur toute l'épaisseur du verre) :
     // elle n'est portée que par la lumière du verre, d'une largeur fixe, identique sur image claire ou sombre
@@ -366,8 +380,7 @@ export function createGL(canvas, { reduced }) {
   }
   let theme = themeRGB(), bgDirty = false
   const onTheme = () => { theme = themeRGB(); bgDirty = true }
-  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-  matchMedia('(prefers-color-scheme: light)').addEventListener?.('change', onTheme)
+  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', onTheme)
   function ensureBg() {
     if (bgDirty && bgW) { bgDirty = false; return true }
     if (bgW === canvas.width && bgH === canvas.height) return false
@@ -383,7 +396,7 @@ export function createGL(canvas, { reduced }) {
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid']) GU[n] = gl.getUniformLocation(gProg, n)
   const fbo = gl.createFramebuffer(), fboTex = gl.createTexture()
   let fboW = 0, fboH = 0
   function ensureFbo(w, h) {
@@ -425,17 +438,19 @@ export function createGL(canvas, { reduced }) {
   // le placement, la taille et la rotation sont appliqués dans le shader (uMarkXf).
   // champ de distance signée du monogramme (brand/tools/sdf.mjs), chargé une fois
   function maskFor(v) {
-    if (v.maskB !== undefined) return
+    if (v.maskB !== undefined) return v.maskReady
     v.maskB = null
     const im = new Image()
-    im.onload = () => {
+    v.maskReady = new Promise((done) => { im.onload = im.onerror = done })
+    im.addEventListener('load', () => {
       const t = newTex()
       gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE)
       upload(t, im)
       gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL)
       v.maskB = t
-    }
+    })
     im.src = new URL('monogram-sdf.png', document.querySelector('.brand__mark').src).href
+    return v.maskReady
   }
   /** Placement du monogramme. Arrivée (ms depuis la fin du chargeur) : le « o » prend exactement la place de l'anneau
    *  du chargeur (rayon 44 px, centre de la fenêtre) et reste immobile pendant que le chargeur s'efface ; puis il grandit
@@ -521,21 +536,23 @@ export function createGL(canvas, { reduced }) {
     }
     // la lentille : visible quand le pointeur est sur une carte (pas sur l'accueil)
     const small = W < 600
-    const Ro = small ? 60 : 74, Ri = Ro * KIT.ring.innerRatio   // anneau du kit : Ri = 0,514 × Ro
+    const Ro = small ? 60 : 74, Ri = Ro - (small ? 9 : 12)   // anneau fin de la lentille (largeur d'origine, couleurs du kit)
     let over = null
     for (const v of views) {
       if (v.mark || !v.ready) continue
       const b = v.el.getBoundingClientRect(), cr = v.clip?.getBoundingClientRect()
       if (ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))) { over = v; break }
     }
+    // sur un bouton ou un lien d'interface (flèches de la piste, barre du haut…) : pas de lentille, le curseur reste visible
+    const onCtl = !!over && !!document.elementFromPoint(ptr.x, ptr.y)?.closest('button, .btn, .work__nav, .topbar, [role="button"]')
     if (over) lens.view = over
-    const show = !!over && (!ptr.touch || now - ptr.t < 1400) && !document.documentElement.classList.contains('fiche-open')
+    const show = !!over && !onCtl && (!ptr.touch || now - ptr.t < 1400) && !document.documentElement.classList.contains('fiche-open')
     if (!lens.init || (lens.s < 0.02 && show)) { lens.x = ptr.x; lens.y = ptr.y; lens.init = true }
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
     const sc = lens.s < 0.005 ? 0 : 1 - Math.pow(1 - lens.s, 2)
     // le « o » remplace le curseur : flèche masquée partout tant que le « o » est affiché (souris uniquement)
-    const hide = sc > 0.02 && hoverDevice && !ptr.touch   // tant que le « o » est visible, même en train de disparaître
+    const hide = sc > 0.02 && hoverDevice && !ptr.touch && !onCtl   // tant que le « o » est visible, sauf sur un bouton
     if (hide !== lens.hidden) { document.documentElement.classList.toggle('lens-on', hide); lens.hidden = hide }
 
     for (const v of views) {
@@ -604,7 +621,11 @@ export function createGL(canvas, { reduced }) {
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, 0.6)   // irisé du verre : une seule intensité, entre l'ancien repos et l'ancien survol ; pas de changement au survol
+        // irisé du verre : une seule intensité (pas de changement au survol) ; plus présent sur fond clair
+        const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, light ? 0.95 : 0.6); gl.uniform1f(GU.uVivid, light ? 1 : 0)
+        v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
+        gl.uniform3f(GU.uIrisMix, ...v.irisMix)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
@@ -612,5 +633,8 @@ export function createGL(canvas, { reduced }) {
     }
   }
   document.documentElement.classList.add('has-gl')
-  return { frame }
+  // le logo de l'accueil est prêt (champ de distance chargé dès le départ) : le chargeur attend ce moment, sans quoi le
+  // logo manquerait quelques images juste après lui
+  const ready = Promise.all(views.filter((v) => v.mark).map(maskFor))
+  return { frame, ready }
 }
