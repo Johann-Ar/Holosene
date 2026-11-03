@@ -320,7 +320,7 @@ if (spin) {
   let finishAt = 0, onDone = null
   // fin du chargement : encore un tour et demi, l'arc se referme et se remplit des couleurs du « o » du logo
   finishLoader = (done) => { finishAt = performance.now(); onDone = done }
-  // dessin pixel par pixel : aplat et bord de verre des vignettes (comme le logo) sur le contour de l'arc
+  // dessin pixel par pixel : aplat aux couleurs du kit, bords nets (comme le logo)
   const P = S * dpr, img = x.createImageData(P, P)
   x.setTransform(1, 0, 0, 1, 0, 0)
   const draw = (t) => {
@@ -328,7 +328,7 @@ if (spin) {
     const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
     const ARC = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe
     const head = (t / 1000) * TAU * 0.9
-    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid, W = 4, L = [-0.65 / 1.0018, -0.76 / 1.0018]
+    const hx = Math.sin(head) * mid, hy = -Math.cos(head) * mid
     // forme : distance à l'arête (px, positive dedans), normale sortante, position k sur l'arc (1 au bout, 0 à la queue)
     const shape = (px, py) => {
       const rr = Math.hypot(px, py)
@@ -354,21 +354,13 @@ if (spin) {
     for (let j = 0; j < P; j++) for (let i = 0; i < P; i++) {
       const o = (j * P + i) * 4
       const px = (i + 0.5) / dpr - S / 2, py = (j + 0.5) / dpr - S / 2
-      const [d, nx, ny, k] = shape(px, py)
+      const [d, , , k] = shape(px, py)
       // couverture du bord sur un pixel de l'écran, comme le logo WebGL
       const cov = Math.min(1, Math.max(0, d * dpr + 0.5))
       if (cov <= 0) { data[o + 3] = 0; continue }
-      // verre des vignettes, sans relief (comme le logo) : intérieur en aplat, bord fin qui réfracte la couleur,
-      // léger assombrissement, liseré clair net côté lumière
-      const t = Math.min(1, Math.max(0, d / W)), xx = Math.max(0.001, t)
-      const hh = Math.pow(1 - Math.pow(1 - xx, 4), 0.25), slope = Math.pow(1 - xx, 3) / Math.max(hh * hh * hh, 0.02)
-      const th = Math.atan(slope * 0.9), bend = W * 1.15 * Math.tan(th - Math.asin(Math.sin(th) / 1.5))
-      const dcol = colorAt(k, px - nx * bend, py - ny * bend)
-      const facing = nx * L[0] + ny * L[1]
-      const sp = Math.pow(Math.max(facing, 0), 2) * Math.exp(-Math.abs(d - 1.2) / 0.9) * 0.9 + Math.pow(Math.max(-facing, 0), 2) * Math.exp(-Math.abs(d - 1.6) / 1.2) * 0.3
-      const st = Math.min(1, t / 0.8), dark = 0.8 + 0.2 * st * st * (3 - 2 * st)
+      // aplat, comme le « o » du logo-kit : couleur lue au pixel, bords nets
+      const col = colorAt(k, px, py)
       const fade = Math.min(1, Math.pow(k, 0.8) * 1.15 + fe)
-      const col = dcol.map((c) => c * dark + sp)
       const al = cov * fade
       data[o] = Math.min(255, col[0] * 255); data[o + 1] = Math.min(255, col[1] * 255); data[o + 2] = Math.min(255, col[2] * 255); data[o + 3] = al * 255   // non prémultiplié : l'alpha porte le bord
     }

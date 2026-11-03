@@ -76,7 +76,7 @@ ${GLASS_GLSL}
 vec4 halftoneS(vec2 p, vec2 off) {
   float aa = 0.9 / uDpr;
   if (uHasMask > 0.5) {
-    // accueil : le monogramme du kit en aplat (S à l'encre du thème, « o » : roue du kit), bordé du verre des vignettes
+    // accueil : le monogramme du kit en aplat (S à l'encre du thème, « o » : roue du kit)
     float upx = uMarkXf.z / 1000.0;                       // px par unité
     vec2 lp = (p - uMarkXf.xy) / upx + vec2(uMono.x * 0.5, 500.0);
     vec2 muv = lp / vec2(816.0, 1000.0);                  // champ de distance : 816 × 1000 px, 1 px par unité
@@ -89,26 +89,8 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float sd = max(sdS, sdO);
     float cov = clamp(sd * upx * uDpr + 0.5, 0.0, 1.0);
     if (cov < 0.001) return vec4(0.0);
-    vec2 e = vec2(1.0 / 816.0, 0.0), e2 = vec2(0.0, 1.0 / 1000.0);
-    float gx = isO ? texture2D(uMaskB, muv + e).g - texture2D(uMaskB, muv - e).g : texture2D(uMaskB, muv + e).r - texture2D(uMaskB, muv - e).r;
-    float gy = isO ? texture2D(uMaskB, muv + e2).g - texture2D(uMaskB, muv - e2).g : texture2D(uMaskB, muv + e2).r - texture2D(uMaskB, muv - e2).r;
-    vec2 n = -normalize(vec2(gx, gy) + 1e-6);
-    float dist = max(sd, 0.0);                             // unités
-    // verre des vignettes, sans relief : plaque de verre à dessus plat (intérieur en aplat, couleurs exactes), bord fin
-    // qui réfracte le contenu (même loi que les vignettes), léger assombrissement et liseré clair net côté lumière
-    float W = 16.0;                                        // largeur du bord de verre (unités du monogramme)
-    float t = clamp(dist / W, 0.0, 1.0), s1 = 1.0 - t;
-    float x = clamp(t, 0.001, 1.0);
-    float h = pow(1.0 - pow(1.0 - x, 4.0), 0.25);
-    float slope = pow(1.0 - x, 3.0) / max(pow(h, 3.0), 0.02);
-    float th = atan(slope * 0.9), tr = asin(sin(th) / 1.5);
-    vec2 pc = lp - n * W * 1.15 * tan(th - tr) - uMono.yz;
-    vec3 g = isO ? irisColor(pc) : uInk;
-    g *= 0.8 + 0.2 * smoothstep(0.0, 0.8, t);
-    vec2 L = normalize(vec2(-0.65, -0.76));
-    float facing = dot(n, L), dpx = dist * upx;
-    g += vec3(pow(max(facing, 0.0), 2.0) * exp(-abs(dpx - 1.2) / 0.9) * 0.9);
-    g += vec3(pow(max(-facing, 0.0), 2.0) * exp(-abs(dpx - 1.6) / 1.2) * 0.3);
+    // aplat exact du kit (comme design/logo-kit/ref) : S à l'encre du thème, « o » : roue du kit ; bords nets, sans halo
+    vec3 g = isO ? irisColor(lp - uMono.yz) : uInk;
     float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
     float al = cov * shapeRev;
     return vec4(g * cov * shapeRev, al);
@@ -339,7 +321,7 @@ void main(){
   vec3 color = mix(layer1, layer2, S(0.5, -0.3, tuv.y));
   vec2 vgn = vUv * (1.0 - vUv.yx);
   float vig = pow(vgn.x * vgn.y * 15.0, 0.25);
-  color *= 1.0 - vec3(random(vUv + mod(uTime, 1.0))) * 0.1;
+  color += (random(vUv + mod(uTime, 1.0)) - 0.5) * 0.024;   // grain : même amplitude sur fond sombre ou clair
   color = pow(clamp(color, 0.0, 1.0), vec3(1.0 / 1.05));
   color *= mix(0.9, 1.0, vig);   // vignette légère, dans les deux modes
   gl_FragColor = vec4(color, 1.0);
