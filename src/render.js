@@ -33,9 +33,20 @@ const logotype = wordPart(logoPaths)
 // monogramme de l'accueil, en ligne : le S (.hero__s) peut apparaître en fondu, le « o » est le même que celui du chargeur
 const monoSrc = readFileSync(new URL('../public/media/monogram-iris-dark.svg', import.meta.url), 'utf8').replace(/<title>.*?<\/title>/, '')
 const monoInner = monoSrc.slice(monoSrc.indexOf('>') + 1, monoSrc.lastIndexOf('</svg>'))
-const heroMark = (label) => `<svg class="hero__mark" viewBox="0 0 816 1000" role="img" aria-label="${label}">${monoInner.replace('<path ', '<path class="hero__s" ')}</svg>`
+// relief : biseau doux et reflet calculés sur la forme vectorielle (filtre d'éclairage SVG, en unités du monogramme :
+// même rendu à toutes les tailles), le contour reste net ; lumière en haut à gauche, comme les reflets des vignettes
+const relief = (id) => `<filter id="${id}" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+  <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="h"/>
+  <feDiffuseLighting in="h" surfaceScale="9" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="58"/></feDiffuseLighting>
+  <feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="0.78" k2="0.32" result="s"/>
+  <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="h2"/>
+  <feSpecularLighting in="h2" surfaceScale="7" specularConstant="0.85" specularExponent="28" lighting-color="#fff" result="sp"><feDistantLight azimuth="225" elevation="48"/></feSpecularLighting>
+  <feComposite in="sp" in2="SourceAlpha" operator="in" result="spi"/>
+  <feComposite in="s" in2="spi" operator="arithmetic" k2="1" k3="0.55"/>
+</filter>`
+const heroMark = (label) => `<svg class="hero__mark" viewBox="0 0 816 1000" role="img" aria-label="${label}"><defs>${relief('relief')}</defs><g filter="url(#relief)">${monoInner.replace('<path ', '<path class="hero__s" ')}</g></svg>`
 // chargeur : le seul « o » (cadré sur l'anneau, rayon 176,7 autour de 639,25 / 586,8), identifiants propres
-const loaderO = `<svg class="loader__o" viewBox="462.55 410.1 353.4 353.4" aria-hidden="true">${monoInner.replace(/<path d="[^"]*" fill="#FFFFFF"\/>/, '').replace(/"mc"|#mc|"mb"|#mb/g, (x) => x.replace(/(mc|mb)/, '$1o'))}</svg>`
+const loaderO = `<svg class="loader__o" viewBox="462.55 410.1 353.4 353.4" aria-hidden="true"><defs>${relief('relief-o')}</defs><g filter="url(#relief-o)">${monoInner.replace(/<path d="[^"]*" fill="#FFFFFF"\/>/, '').replace(/"mc"|#mc|"mb"|#mb/g, (x) => x.replace(/(mc|mb)/, '$1o'))}</g></svg>`
 const nameSrc = readFileSync(new URL('../public/media/name-white.svg', import.meta.url), 'utf8')
 const nameParts = nameSrc.match(/<path [^>]*\/>/g).map((x) => x.replace(/ fill="#FFFFFF"/, ''))
 const nameWord = wordPart(nameParts.join('')).replace(`viewBox="${logoBox}"`, `viewBox="${nameSrc.match(/viewBox="([^"]+)"/)[1]}"`).replace('class="studio__word"', 'class="studio__word studio__word--line"')
