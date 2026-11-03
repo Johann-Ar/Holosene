@@ -37,7 +37,6 @@ uniform float uCell;    // pas de la trame (px CSS)
 uniform float uReveal;  // 0 : points absents, 1 : trame complète
 uniform float uFade;    // fondu des bords haut et bas
 uniform float uHasMask;
-uniform sampler2D uBg;     // fond de page (pour la réfraction du logo en verre)
 uniform sampler2D uMaskB;  // champ de distance signée du monogramme
 uniform vec2 uCanvas;      // taille de la toile (px écran)
 uniform float uFloor;   // taille minimale des points dans le masque
@@ -55,6 +54,7 @@ uniform float uTime;
 uniform vec4 uMarkXf;   // accueil : monogramme, centre (px), hauteur (px), rotation (rad)
 uniform vec4 uEye;      // inutilisé (xy, zw)
 uniform vec3 uInk;      // encre du thème (S du monogramme)
+uniform float uEdgeFloor; // opacité au ras des bords latéraux de la piste (0 en clair : effacement complet)
 uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), inutilisé
 
 vec2 cover(vec2 p) {
@@ -214,7 +214,7 @@ void main() {
 
 
   // bords latéraux fondus de la piste (vues sans verre ; sinon la passe « verre » s'en charge)
-  if (uClip.z > 0.0 && uRadius < 0.5) { float f = (0.12 + 0.88 * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6)); col *= f; a *= f; }
+  if (uClip.z > 0.0 && uRadius < 0.5) { float f = (uEdgeFloor + (1.0 - uEdgeFloor) * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6)); col *= f; a *= f; }
   gl_FragColor = vec4(col, a);
 }`
 
@@ -231,6 +231,7 @@ uniform float uGlass;   // survol (0 à 1) : couleurs irisées et séparation de
 uniform float uBg;
 uniform vec3 uIrisMix;  // disposition propre à chaque vignette : décalage (tours), sens (±1), répétitions sur le tour
 uniform float uVivid;   // 0 : couleurs telles quelles (sombre), 1 : plus franches (clair)
+uniform float uEdgeFloor;
 uniform vec4 uClip;
 ${IRIS_GLSL}
 float sdCard(vec2 p) {
@@ -294,55 +295,9 @@ void main() {
     col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
   }
   float a = 1.0 - smoothstep(-aa, aa, sd);
-  if (uClip.z > 0.0) a *= (0.12 + 0.88 * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6));
+  if (uClip.z > 0.0) a *= (uEdgeFloor + (1.0 - uEdgeFloor) * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6));
   gl_FragColor = vec4(col * a, a);
 }`
-
-// Fond de page (comme la référence) : noir très profond, grandes nappes de couleur qui dérivent lentement près des
-// bords (roue du logo-kit, à 7 % sur le fond du thème) et grain de pellicule.
-const BG = `precision highp float;
-// Fond animé : même algorithme et mêmes réglages que le fond de la référence fournie par Johann (passe « fluidText »
-// puis « post ») ; couleurs : roue du logo-kit très atténuée sur le fond du thème. Bruit noise() d'après Inigo Quilez (CC BY-NC-SA 3.0).
-uniform vec2 uView;
-uniform float uDpr;
-uniform float uTime;
-uniform vec3 uPage;   // --bg du thème
-${IRIS_GLSL}
-#define S(a,b,t) smoothstep(a,b,t)
-mat2 Rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
-vec2 hash2(vec2 p){ p = vec2(dot(p, vec2(2127.1, 81.17)), dot(p, vec2(1269.5, 283.37))); return fract(sin(p) * 43758.5453); }
-float noise(vec2 p){
-  vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
-  float n = mix(mix(dot(-1.0 + 2.0 * hash2(i), f), dot(-1.0 + 2.0 * hash2(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0)), u.x),
-                mix(dot(-1.0 + 2.0 * hash2(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0)), dot(-1.0 + 2.0 * hash2(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0)), u.x), u.y);
-  return 0.5 + 0.5 * n;
-}
-float random(vec2 st){ return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123); }
-void main(){
-  vec2 vUv = gl_FragCoord.xy / (uView * uDpr);
-  // nappes : vert (bas), violet (droite), indigo (gauche) de la roue du kit, à 7 % sur le fond du thème
-  vec3 c1 = mix(uPage, irisColor(vec2(0.0, 1.0)), 0.07), c2 = mix(uPage, irisColor(vec2(1.0, 0.0)), 0.07);
-  vec3 c3 = mix(uPage, irisColor(vec2(-1.0, 0.0)), 0.07), c4 = uPage;
-  float ratio = uView.x / uView.y;
-  vec2 tuv = vUv - 0.5;
-  float degree = noise(vec2(uTime * 0.1, tuv.x * tuv.y));
-  tuv.y *= 1.0 / ratio; tuv *= Rot(radians((degree - 0.5) * 720.0 + 180.0)); tuv.y *= ratio;
-  float frequency = 5.0, amplitude = 30.0, speed = uTime * 2.0;
-  tuv.x += sin(tuv.y * frequency + speed) / amplitude;
-  tuv.y += sin(tuv.x * frequency * 1.5 + speed) / (amplitude * 0.5);
-  vec3 layer1 = mix(c1, c2, S(-0.3, 0.2, (tuv * Rot(radians(-5.0))).x));
-  vec3 layer2 = mix(c3, c4, S(-0.3, 0.2, (tuv * Rot(radians(-5.0))).x));
-  vec3 color = mix(layer1, layer2, S(0.5, -0.3, tuv.y));
-  vec2 vgn = vUv * (1.0 - vUv.yx);
-  float vig = pow(vgn.x * vgn.y * 15.0, 0.25);
-  color += (random(vUv + mod(uTime, 1.0)) - 0.5) * 0.024;   // grain : même amplitude sur fond sombre ou clair
-  color = pow(clamp(color, 0.0, 1.0), vec3(1.0 / 1.05));
-  color *= mix(0.9, 1.0, vig);   // vignette légère, dans les deux modes
-  gl_FragColor = vec4(color, 1.0);
-}`
-const BLIT = `precision highp float;
-uniform sampler2D uSrc; uniform vec2 uSize;
-void main(){ gl_FragColor = texture2D(uSrc, gl_FragCoord.xy / uSize); }`
 
 export function createGL(canvas, { reduced }) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
@@ -356,53 +311,34 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk']) U[n] = gl.getUniformLocation(prog, n)
-  gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uBg, 4); gl.uniform1i(U.uMaskB, 5)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor']) U[n] = gl.getUniformLocation(prog, n)
+  gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uMaskB, 5)
   gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 0)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
 
   // fond de page
-  const bgProg = gl.createProgram()
-  gl.attachShader(bgProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(bgProg, sh(gl.FRAGMENT_SHADER, BG)); gl.bindAttribLocation(bgProg, 0, 'a'); gl.linkProgram(bgProg)
-  const BU = {}; for (const n of ['uView', 'uDpr', 'uTime', 'uPage']) BU[n] = gl.getUniformLocation(bgProg, n)
-  const blitProg = gl.createProgram()
-  gl.attachShader(blitProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(blitProg, sh(gl.FRAGMENT_SHADER, BLIT)); gl.bindAttribLocation(blitProg, 0, 'a'); gl.linkProgram(blitProg)
-  const LU = { src: gl.getUniformLocation(blitProg, 'uSrc'), size: gl.getUniformLocation(blitProg, 'uSize') }
-  const bgFbo = gl.createFramebuffer(), bgTex = gl.createTexture()
-  let bgW = 0, bgH = 0
-  const bgCanvas = document.querySelector('.bg-canvas')
-  // couleurs du thème (--bg, --ink de src/theme.css), relues quand le mode change ; le fond est alors redessiné
+  // couleurs du thème (--bg, --ink de src/theme.css), relues quand le mode change
   const themeRGB = () => {
     const cs = getComputedStyle(document.documentElement), x = document.createElement('canvas').getContext('2d')
     const rgb = (v) => { x.fillStyle = '#000'; x.fillStyle = v.trim(); const h = x.fillStyle; return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255) }
     return { bg: rgb(cs.getPropertyValue('--bg')), ink: rgb(cs.getPropertyValue('--ink')) }
   }
-  let theme = themeRGB(), bgDirty = false
-  const onTheme = () => { theme = themeRGB(); bgDirty = true }
+  let theme = themeRGB()
+  const onTheme = () => { theme = themeRGB() }
   new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', onTheme)
-  function ensureBg() {
-    if (bgDirty && bgW) { bgDirty = false; return true }
-    if (bgW === canvas.width && bgH === canvas.height) return false
-    bgW = canvas.width; bgH = canvas.height
-    gl.bindTexture(gl.TEXTURE_2D, bgTex)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, bgW, bgH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
-    for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, bgTex, 0); gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-    return true
-  }
-
   // passe « verre » et texture intermédiaire (contenu des vignettes)
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor']) GU[n] = gl.getUniformLocation(gProg, n)
   const fbo = gl.createFramebuffer(), fboTex = gl.createTexture()
   let fboW = 0, fboH = 0
   function ensureFbo(w, h) {
     if (w <= fboW && h <= fboH) return
     fboW = Math.max(w, fboW); fboH = Math.max(h, fboH)
+    gl.activeTexture(gl.TEXTURE2)   // unité réservée à la texture intermédiaire (lue seulement par la passe « verre »)
     gl.bindTexture(gl.TEXTURE_2D, fboTex)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, fboW, fboH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
     for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
@@ -513,22 +449,6 @@ export function createGL(canvas, { reduced }) {
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
-    if (ensureBg()) {
-      // le fond est fixe : rendu une fois (et à chaque redimensionnement) dans la texture, que le verre du logo réfracte,
-      // puis recopié dans une toile 2D posée tout au fond de la page (le mot de l'accueil passe entre les deux)
-      gl.bindFramebuffer(gl.FRAMEBUFFER, bgFbo)
-      gl.useProgram(bgProg); gl.disable(gl.BLEND)
-      gl.uniform2f(BU.uView, W, H); gl.uniform1f(BU.uDpr, dpr); gl.uniform1f(BU.uTime, 12); gl.uniform3f(BU.uPage, ...theme.bg)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
-      const px = new Uint8Array(bgW * bgH * 4); gl.readPixels(0, 0, bgW, bgH, gl.RGBA, gl.UNSIGNED_BYTE, px)
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      bgCanvas.width = bgW; bgCanvas.height = bgH
-      const img = new ImageData(bgW, bgH)
-      for (let y = 0; y < bgH; y++) img.data.set(px.subarray((bgH - 1 - y) * bgW * 4, (bgH - y) * bgW * 4), y * bgW * 4)
-      bgCanvas.getContext('2d').putImageData(img, 0, 0)
-      gl.enable(gl.BLEND)
-    }
-    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, bgTex)
     if (document.documentElement.classList.contains('fiche-open')) {
       // fiche projet ouverte : le curseur reste toujours visible
       if (lens.hidden) { document.documentElement.classList.remove('lens-on'); lens.hidden = false }
@@ -593,10 +513,14 @@ export function createGL(canvas, { reduced }) {
       if (v.maskB) { gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, v.maskB) }
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
+      gl.uniform1f(U.uEdgeFloor, theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5 ? 0 : 0.12)   // clair : effacement complet aux bords
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
-      if (v.text) { textFor(v, w, h); gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.textTex) }
+      // texte de la vignette (unité 3) ; sans texte, l'unité est vidée : elle ne doit jamais désigner la texture dans
+      // laquelle on dessine (sinon la passe est refusée : « feedback loop »)
+      if (v.text) textFor(v, w, h)
+      gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.text ? v.textTex : null)
       gl.uniform1f(U.uHasText, v.text ? 1 : 0)
       gl.uniform1f(U.uColor, v.color ? 1 : v.glass)   // au survol : la trame passe en couleur (fondu)
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
@@ -624,7 +548,7 @@ export function createGL(canvas, { reduced }) {
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
         // irisé du verre : une seule intensité (pas de changement au survol) ; plus présent sur fond clair
         const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, light ? 0.95 : 0.6); gl.uniform1f(GU.uVivid, light ? 1 : 0)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, light ? 0.95 : 0.6); gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 0 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, 120, 0)

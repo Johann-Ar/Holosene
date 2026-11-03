@@ -3,6 +3,7 @@ import './styles.css'
 import { IRIS_STOPS, IRIS_INNER_RATIO } from '../design/logo-kit/src/iris.js'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
+import { createBackdrop } from './backdrop.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -367,12 +368,16 @@ Promise.race([
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null
 try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (err) { console.warn(err) }
+// fond : formes colorées derrière une plaque dépolie, qui défilent avec la page et réagissent au curseur
+let backdrop = null
+try { backdrop = createBackdrop(document.querySelector('.bg-canvas'), { reduced }) } catch (err) { console.warn(err) }
 
 function loop(t) {
   lenis?.raf(t)
   // pistes et fiches d'abord, puis le WebGL : les images sont dessinées à la position finale des titres (même image)
   workFrame(t)
   ficheFrame(t)
+  backdrop?.frame(t)
   gl?.frame(t)
   if (!reduced) scrollEffects()
   requestAnimationFrame(loop)
