@@ -1,0 +1,6 @@
+:root{
+  --iris-conic: conic-gradient(from 180deg, #51E78E 0deg, #40DAD4 14.4deg, #3D92FB 46.8deg, #5A5BFB 90.0deg, #B333F2 133.2deg, #F42D9D 180.0deg, #F126DE 226.8deg, #E22AF8 270.0deg, #F5D147 302.4deg, #93F063 327.6deg, #5AED6B 352.8deg, #51E78E 360deg);
+  --iris-inner-ratio: 0.514;
+  --bg-dark: #1E1E1E;
+  --bg-light: #F6F5F2;
+}
