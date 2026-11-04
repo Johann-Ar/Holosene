@@ -739,9 +739,12 @@ export function createGL(canvas, { reduced }) {
           if (document.documentElement.classList.contains('intro-done') && (m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked); if (docked) document.documentElement.classList.add('bar-on') }
         }
         const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
-        // survol du « o » (souris) : son animation s'accélère seulement (flow.js)
-        { const oR = O_R * xf[2] * 1.25, ox = b.left + xf[0] + O_OFF[0] * xf[2], oy = b.top + xf[1] + O_OFF[1] * xf[2]
-          FLOW.hoverTarget = hoverDevice && !ptr.touch && !reduced && Math.hypot(ptr.x - ox, ptr.y - oy) < oR ? 1 : 0 }
+        // survol du « o » (souris) : la couleur sous le curseur s'élargit (flow.js) ; position du curseur sur la roue, dans la
+        // même convention que flowColor (u : 0 en bas, sens horaire)
+        { const oR = O_R * xf[2] * 1.3, ox = b.left + xf[0] + O_OFF[0] * xf[2], oy = b.top + xf[1] + O_OFF[1] * xf[2]
+          const dx = ptr.x - ox, dy = ptr.y - oy
+          FLOW.hoverTarget = hoverDevice && !ptr.touch && !reduced && Math.hypot(dx, dy) < oR ? 1 : 0
+          if (FLOW.hoverTarget) FLOW.hoverU = (((Math.atan2(dy, dx) * 180 / Math.PI + 90 - 180) / 360) % 1 + 1) % 1 }
         gl.uniform3f(U.uInk, ...theme.ink)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
       }

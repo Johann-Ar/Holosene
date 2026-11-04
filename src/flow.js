@@ -24,6 +24,7 @@ export const FLOW = {
   glNeeds: true,    // logo de l'accueil ou lentille à l'écran (fixé par gl.js)
   loaderNeeds: false, // (chargeur en CSS : n'utilise plus la texture)
   hoverTarget: 0,   // 1 quand le curseur survole le « o » du logo (gl.js)
+  hoverU: 0,        // position du curseur sur la roue (0 en bas, sens horaire)
   frozen: false,    // panneau ?debug=iris : roue finale (amount = 0)
   cpuMs: 0,         // temps de calcul de la dernière texture (mesure)
   t0,               // début de la montée du flux (fixé au relais du chargeur)
@@ -37,12 +38,15 @@ const amountAt = (now) => {
   return 1 - Math.pow(1 - x, 3)
 }
 
-// survol du « o » du logo (FLOW.hoverTarget, fixé par gl.js) : la roue tourne lentement, en douceur ; sans survol, elle
-// revient en douceur à sa place (rose en haut). La vitesse de rotation suit un ressort amorti : aucun à-coup.
-const ROT_SPEED = 0.09          // tours par seconde au survol
+// survol du « o » du logo (FLOW.hoverTarget, FLOW.hoverU : fixés par gl.js) : la couleur sous le curseur s'élargit. La
+// roue est déformée autour de la position du curseur (u) : s = u + d − A·sin(2πd)/2π, d = écart à u ; pente 1 − A au
+// curseur (la couleur s'étale jusqu'à 1/(1 − A) fois), 1 + A à l'opposé ; continu, sans pli. Ressorts doux : A monte
+// et redescend, la position suit le curseur (chemin le plus court sur la roue).
+const GROW_MAX = 0.6            // jusqu'à 2,5 fois la place de la couleur survolée
+const GROW_IN = 0.28, GROW_OUT = 0.5, FOLLOW = 0.16   // constantes de temps (s)
 const SMOOTH_R = 10             // lissage des transitions de couleur (échantillons, sur 512) : pas de segments visibles
 const N = 512, tmp = new Float32Array(N * 3), acc = new Float32Array(N * 3)
-let lastAmount = -1, clock = 0, lastNow = null, hover = 0, rot = 0, rotV = 0
+let lastAmount = -1, clock = 0, lastNow = null, grow = 0, focus = 0
 // flou circulaire (deux passes de moyenne glissante ≈ gaussien) : transitions de couleur fondues
 function smoothRing(src) {
   for (let i = 0; i < N; i++) for (let c = 0; c < 3; c++) tmp[i * 3 + c] = src[i * 4 + c]
@@ -61,26 +65,23 @@ function smoothRing(src) {
 }
 export function updateFlow(now) {
   const dt = lastNow === null ? 0 : Math.min(0.1, (now - lastNow) / 1000); lastNow = now
-  hover += (FLOW.hoverTarget - hover) * (1 - Math.exp(-dt / 0.35))
   clock += dt
-  // rotation : au survol, vitesse ROT_SPEED ; sinon ressort vers le tour entier le plus proche (retour à la place)
-  const target = hover > 0.5 ? null : Math.round(rot)
-  const want = target === null ? ROT_SPEED * hover : (target - rot) * 1.6
-  rotV += (want - rotV) * (1 - Math.exp(-dt / 0.45))
-  rot += rotV * dt
+  const tgt = FLOW.hoverTarget ? GROW_MAX : 0
+  grow += (tgt - grow) * (1 - Math.exp(-dt / (tgt > grow ? GROW_IN : GROW_OUT)))
+  if (FLOW.hoverTarget) { const d = ((FLOW.hoverU - focus + 1.5) % 1) - 0.5; focus = (focus + d * (1 - Math.exp(-dt / FOLLOW)) + 1) % 1 }
   const amount = amountAt(now)
   // pause : rien de visible, ou roue figée déjà calculée
-  const moving = Math.abs(rotV) > 1e-4 || Math.abs(rot - Math.round(rot)) > 1e-4
-  if (!(FLOW.glNeeds || FLOW.loaderNeeds) || (amount === 0 && lastAmount === 0 && !moving)) return
+  if (!(FLOW.glNeeds || FLOW.loaderNeeds) || (amount === 0 && lastAmount === 0 && grow < 1e-3)) return
   const s = performance.now()
   const cfg = irisFlowMix(FLOW.mix)
   cfg.amount = amount
   irisFlowLUT(clock, cfg, N, FLOW.lut)
   smoothRing(FLOW.lut)
-  // rotation de la roue (interpolation linéaire entre échantillons voisins : rotation continue, sans saut)
-  const off = (((rot % 1) + 1) % 1) * N
+  // déformation autour de la couleur survolée (interpolation linéaire : continue, sans saut)
   for (let i = 0; i < N; i++) {
-    const x = i - off, i0 = Math.floor(x), f = x - i0, a = ((i0 % N) + N) % N, b2 = (a + 1) % N
+    const u = i / N, d = ((u - focus + 1.5) % 1) - 0.5
+    const x = (((focus + d - grow * Math.sin(2 * Math.PI * d) / (2 * Math.PI)) % 1 + 1) % 1) * N
+    const i0 = Math.floor(x), f = x - i0, a = i0 % N, b2 = (a + 1) % N
     for (let c = 0; c < 3; c++) FLOW.lut[i * 4 + c] = Math.round(tmp[a * 3 + c] + (tmp[b2 * 3 + c] - tmp[a * 3 + c]) * f)
   }
   FLOW.cpuMs = performance.now() - s
