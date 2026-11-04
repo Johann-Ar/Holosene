@@ -43,7 +43,7 @@ const amountAt = (now) => {
 // curseur (la couleur s'étale jusqu'à 1/(1 − A) fois), 1 + A à l'opposé ; continu, sans pli. Ressorts doux : A monte
 // et redescend, la position suit le curseur (chemin le plus court sur la roue).
 const GROW_MAX = 0.6            // jusqu'à 2,5 fois la place de la couleur survolée
-const GROW_IN = 0.28, GROW_OUT = 0.5, FOLLOW = 0.16   // constantes de temps (s)
+const GROW_IN = 0.6, GROW_OUT = 0.95, FOLLOW = 0.32   // constantes de temps (s) : lent et fluide
 const SMOOTH_R = 10             // lissage des transitions de couleur (échantillons, sur 512) : pas de segments visibles
 const N = 512, tmp = new Float32Array(N * 3), acc = new Float32Array(N * 3)
 let lastAmount = -1, clock = 0, lastNow = null, grow = 0, focus = 0

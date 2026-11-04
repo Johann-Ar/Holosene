@@ -135,7 +135,7 @@ export function render(lang) {
     return out }).join(' ') }
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
-<div class="loader" aria-hidden="true"><div class="loader__o"><div class="loader__arc loader__arc--soft"><i class="loader__ring"></i></div><div class="loader__arc loader__arc--sharp"><i class="loader__ring"></i></div><i class="loader__ring loader__full"></i></div></div>
+<div class="loader" aria-hidden="true"><div class="loader__o">${[4, 3, 2, 1, 0].map((k) => `<div class="loader__arc loader__arc--k${k}"><div class="loader__band"><i class="loader__ring"></i></div></div>`).join('')}<i class="loader__ring loader__full"></i></div></div>
 <canvas class="bg-canvas" aria-hidden="true"></canvas>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>

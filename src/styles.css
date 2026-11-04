@@ -64,14 +64,15 @@ a { color: inherit; }
 .loader__arc { position: absolute; inset: 0; animation: spin 1.111s linear infinite;
   -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(rgb(0 0 0 / 0.000) 0.00%, rgb(0 0 0 / 0.036) 10.62%, rgb(0 0 0 / 0.109) 21.25%, rgb(0 0 0 / 0.208) 31.88%, rgb(0 0 0 / 0.330) 42.50%, rgb(0 0 0 / 0.471) 53.12%, rgb(0 0 0 / 0.631) 63.75%, rgb(0 0 0 / 0.808) 74.38%, rgb(0 0 0 / 1.000) 85.00%, transparent 85.01%);
           mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(rgb(0 0 0 / 0.000) 0.00%, rgb(0 0 0 / 0.036) 10.62%, rgb(0 0 0 / 0.109) 21.25%, rgb(0 0 0 / 0.208) 31.88%, rgb(0 0 0 / 0.330) 42.50%, rgb(0 0 0 / 0.471) 53.12%, rgb(0 0 0 / 0.631) 63.75%, rgb(0 0 0 / 0.808) 74.38%, rgb(0 0 0 / 1.000) 85.00%, transparent 85.01%); }
-.loader__arc > .loader__ring { animation: spin 1.111s linear infinite reverse; }
+.loader__band { position: absolute; inset: 0; }
+.loader__band > .loader__ring { animation: spin 1.111s linear infinite reverse; }
 /* fermeture (1,3 s) : l'anneau se complète, puis grandit en accélérant (t²) jusqu'au rayon du relais */
 .loader__full { opacity: 0; }
 .loader--closing .loader__full { opacity: 1; transition: opacity 1.3s cubic-bezier(0.45, 0, 0.55, 1); }
 .loader--closing .loader__o { transform: scale(1); transition: transform var(--grow, 400ms) cubic-bezier(0.333, 0, 0.667, 0.333) calc(1300ms - var(--grow, 400ms)); }
 /* l'anneau n'apparaît qu'une fois à sa vraie taille (is-ready, main.js), en fondu : aucun saut de taille */
 .loader.is-ready .loader__o { opacity: 1; filter: none; }   /* apparition : fondu et flou, comme les autres éléments */
-@media (prefers-reduced-motion: reduce) { .loader__arc, .loader__arc > .loader__ring { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .loader__arc, .loader__band > .loader__ring { animation: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
 .skip:focus-visible { transform: none; }
@@ -600,12 +601,18 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .btn--light.copy { color: #1E1E1E !important; background: linear-gradient(#1E1E1E, #1E1E1E) no-repeat left / 0% 100%, #fff !important; }
 .btn--light.copy:hover, .btn--light.copy:focus-visible, .btn--light.copy:active { color: #fff !important; background-size: 100% 100%, auto !important; }
 
-/* chargeur : la tête de l'arc est nette et pleine ; la queue se dissout dans le flou (copie floutée, pleine), seule son
-   extrémité garde un court fondu ; plus de longue traîne transparente */
-.loader__arc.loader__arc--sharp { -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 34%, #000 50%, #000 85%, transparent 85.01%);
-  mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 34%, #000 50%, #000 85%, transparent 85.01%); }
-.loader__arc.loader__arc--soft { -webkit-mask: conic-gradient(transparent 0%, #000 14%, #000 48%, transparent 60%); mask: conic-gradient(transparent 0%, #000 14%, #000 48%, transparent 60%); }
-.loader__arc--soft > .loader__ring { filter: blur(calc(var(--r1) * 0.11)); }
+/* chargeur : plus l'arc s'amenuise vers sa queue, plus il est flou (cinq tranches qui se fondent l'une dans l'autre, de
+   la tête nette au bout très flou) ; chaque tranche est d'abord découpée (.loader__band), puis floutée (.loader__arc) : aucun
+   bord net (aucun contour net à peine visible) */
+.loader__arc--k0 > .loader__band { -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 44%, #000 56%, #000 85%, transparent 85.01%); mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 44%, #000 56%, #000 85%, transparent 85.01%); }
+.loader__arc.loader__arc--k1 { filter: blur(calc(var(--r1) * 0.05)); }
+.loader__arc--k1 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 30%, #000 44%, transparent 56%); mask: conic-gradient(transparent 0%, transparent 30%, #000 44%, transparent 56%); }
+.loader__arc.loader__arc--k2 { filter: blur(calc(var(--r1) * 0.1)); }
+.loader__arc--k2 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 18%, #000 30%, transparent 44%); mask: conic-gradient(transparent 0%, transparent 18%, #000 30%, transparent 44%); }
+.loader__arc.loader__arc--k3 { filter: blur(calc(var(--r1) * 0.17)); }
+.loader__arc--k3 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 8%, #000 18%, transparent 30%); mask: conic-gradient(transparent 0%, transparent 8%, #000 18%, transparent 30%); }
+.loader__arc.loader__arc--k4 { filter: blur(calc(var(--r1) * 0.26)); }
+.loader__arc--k4 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, #000 8%, transparent 18%); mask: conic-gradient(transparent 0%, #000 8%, transparent 18%); }
 /* bouton clair / sombre : texte, comme EN / FR (le mode vers lequel on bascule) */
 .theme-toggle { width: auto !important; height: auto !important; font: 800 var(--fs-small)/1.5 var(--font-text); text-transform: uppercase; letter-spacing: 0.02em; padding: 0.12em 0.32em !important; }
 
