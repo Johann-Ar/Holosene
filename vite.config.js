@@ -50,8 +50,8 @@ function prerender() {
   }
 }
 
-/** Arrêts de la roue du logo-kit (design/logo-kit/src/iris.js) en variables CSS : --iris-0 … --iris-10 (dans l'ordre du
- *  dégradé, 0 = vert en bas, 5 = rose en haut), --iris-linear (le même dégradé à plat). Aucune couleur recopiée à la main. */
+/** Valeurs du logo-kit en variables CSS (aucune couleur recopiée à la main) : --bg-dark / --bg-light (tokens/iris.json)
+ *  et --iris-linear, la roue v2 à plat (src/iris.js), pour les filets irisés. */
 function irisCss() {
   const id = 'virtual:iris.css', rid = '\0virtual:iris.css'
   return {
@@ -60,8 +60,8 @@ function irisCss() {
     async load(s) {
       if (s !== rid) return null
       const { IRIS_STOPS } = await import(pathToFileURL(resolve('design/logo-kit/src/iris.js')).href)
-      const stops = IRIS_STOPS.slice(0, -1)
-      return `:root{${stops.map(([, c], i) => `--iris-${i}:${c};`).join('')}--iris-linear:linear-gradient(90deg,${IRIS_STOPS.map(([p, c]) => `${c} ${(p * 100).toFixed(1)}%`).join(',')});}`
+      const { colors } = JSON.parse(readFileSync(resolve('design/logo-kit/tokens/iris.json'), 'utf8'))
+      return `:root{--bg-dark:${colors.bgDark};--bg-light:${colors.bgLight};--iris-linear:linear-gradient(90deg,${IRIS_STOPS.map(([p, c]) => `${c} ${(p * 100).toFixed(1)}%`).join(',')});}`
     },
   }
 }

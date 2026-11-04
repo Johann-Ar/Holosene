@@ -1,7 +1,9 @@
 /* Thème du site, dérivé du logo-kit Figma (design/logo-kit, source de vérité) : aucune teinte propre au site.
    --bg / --ink : fonds et encres du kit ; neutres secondaires : mélanges de --ink et --bg uniquement.
-   Les arrêts de la roue (--iris-*) sont générés depuis design/logo-kit/src/iris.js (vite.config.js, virtual:iris.css). */
-@import '../design/logo-kit/tokens/iris.css';
+   Roue v2 : --iris-cyan … --iris-vert, --iris-conic et --title-fringe viennent de design/logo-kit/tokens/theme.css ;
+   --bg-dark, --bg-light et --iris-linear sont générés depuis le kit (vite.config.js, virtual:iris.css). Le
+   tokens/iris.css du kit v2 contient encore la roue v1 : il n'est pas importé. */
+@import '../design/logo-kit/tokens/theme.css';
 
 /* thème de l'appareil (prefers-color-scheme) ; s'il n'en indique aucun : clair. Le bouton de la barre du haut peut forcer
    l'autre mode (data-theme sur <html>, mémorisé). */

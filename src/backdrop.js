@@ -9,9 +9,9 @@
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 
 const N = 12   // nombre de formes réparties dans la page
-// couleurs des formes (positions sur la roue du kit), alternées pour que deux voisines ne se ressemblent pas ; les roses
-// et violets (0,37 à 0,75 sur la roue) sont limités à deux formes sur douze
-const HUES = [0.04, 0.84, 0.13, 0.95, 0.5, 0.0, 0.25, 0.88, 0.08, 0.62, 0.17, 0.91]   // + 0,5 : irisAt compte depuis le haut
+// couleurs des formes : positions sur la roue v2 du kit (0 cyan, 0,1 bleu, 0,2 indigo, 0,3 violet, 0,4 magenta, 0,5 rose,
+// 0,6 corail, 0,7 jaune, 0,8 vert-jaune, 0,9 vert), alternées ; roses, magentas et violets limités à deux formes sur douze
+const HUES = [0.0, 0.7, 0.1, 0.9, 0.6, 0.05, 0.2, 0.75, 0.85, 0.5, 0.15, 0.95]   // + 0,5 : irisAt compte depuis le haut
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 const FRAG = `precision highp float;

@@ -20,7 +20,7 @@ img { max-width: 100%; display: block; }
 img, svg, canvas { -webkit-user-drag: none; user-select: none; }
 .brand, .hero, .studio__word { -webkit-user-select: none; user-select: none; }
 a { color: inherit; }
-:focus-visible { outline: 2px solid var(--iris-2); outline-offset: 4px; }   /* bleu de la roue : ≥ 3:1 sur les deux fonds */
+:focus-visible { outline: 2px solid var(--iris-bleu); outline-offset: 4px; }   /* bleu de la roue : ≥ 3:1 sur les deux fonds */
 
 .wrap { padding-left: var(--edge-l); padding-right: var(--edge-r); }
 .lbl { font: 400 var(--fs-text)/1.55 var(--font-text); color: var(--ink-86); }   /* étiquettes, sous-titres, genres : même style que le texte courant */
@@ -46,8 +46,8 @@ a { color: inherit; }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
 .skip:focus-visible { transform: none; }
 
-/* sélection de texte : bleu-violet de la roue (--iris-3), texte blanc, dans les deux modes */
-::selection { background: var(--iris-3); color: white; }
+/* sélection de texte : bleu-violet de la roue (--iris-indigo), texte blanc, dans les deux modes */
+::selection { background: var(--iris-indigo); color: white; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* barre du haut : monogramme + logotype, fixe */
@@ -97,7 +97,7 @@ a { color: inherit; }
 .btn--light { position: relative; background: none; color: var(--ink); border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 18px; font: 400 var(--fs-small) var(--font-text); transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast); }
 /* même famille que les pastilles (langue, fermer) : contour fin à l'encre, au survol fond à l'encre et contour épaissi */
 .btn--light:hover, .btn--light:focus-visible { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 1px var(--ink); }
-@keyframes chroma { from { text-shadow: -0.04em 0 0.1em color-mix(in srgb, var(--iris-6) 45%, transparent), 0.04em 0 0.1em color-mix(in srgb, var(--iris-0) 45%, transparent); } to { text-shadow: 0 0 0 transparent, 0 0 0 transparent; } }
+@keyframes chroma { from { text-shadow: -0.04em 0 0.1em color-mix(in srgb, var(--iris-magenta) 45%, transparent), 0.04em 0 0.1em color-mix(in srgb, var(--iris-vert) 45%, transparent); } to { text-shadow: 0 0 0 transparent, 0 0 0 transparent; } }
 
 /* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
 .edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
@@ -151,7 +151,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .js [data-words] .w.on { opacity: 1; }
 /* mot en cours d'apparition : encre derrière le front, front irisé (roue du kit), encore éteint devant */
 .js [data-words] .w.lead { opacity: 1; color: transparent; -webkit-background-clip: text; background-clip: text;
-  background-image: linear-gradient(90deg, var(--ink) calc(var(--f, 0) * 116% - 16%), var(--iris-5) calc(var(--f, 0) * 116% - 10%), var(--iris-2) calc(var(--f, 0) * 116% - 5%), var(--iris-0) calc(var(--f, 0) * 116% - 1%), color-mix(in srgb, var(--ink) 16%, transparent) calc(var(--f, 0) * 116% + 2%)); }
+  background-image: linear-gradient(90deg, var(--ink) calc(var(--f, 0) * 116% - 16%), var(--iris-rose) calc(var(--f, 0) * 116% - 10%), var(--iris-bleu) calc(var(--f, 0) * 116% - 5%), var(--iris-vert) calc(var(--f, 0) * 116% - 1%), color-mix(in srgb, var(--ink) 16%, transparent) calc(var(--f, 0) * 116% + 2%)); }
 @media (prefers-reduced-motion: reduce) {
   .js [data-reveal], .js [data-reveal="line"] > span { transform: none !important; transition: opacity var(--dur-base); animation: none !important; }
   .js [data-reveal="clip"] { clip-path: none; }
@@ -283,8 +283,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .work--research { padding-top: var(--sp-6); }
 .lens-on:not(.fiche-open), .lens-on:not(.fiche-open) * { cursor: none !important; }   /* seulement sur les vignettes, jamais dans une fiche */
 .card__media--text, .has-gl .card__media--text { display: grid; place-items: center;
-  background: radial-gradient(120% 90% at 15% 10%, color-mix(in srgb, var(--iris-5) 34%, transparent), transparent 60%), radial-gradient(90% 80% at 85% 20%, color-mix(in srgb, var(--iris-2) 34%, transparent), transparent 60%),
-    radial-gradient(110% 90% at 70% 100%, color-mix(in srgb, var(--iris-0) 30%, transparent), transparent 60%), radial-gradient(90% 80% at 10% 95%, color-mix(in srgb, var(--iris-4) 30%, transparent), transparent 60%), var(--card-bg); }
+  background: radial-gradient(120% 90% at 15% 10%, color-mix(in srgb, var(--iris-rose) 34%, transparent), transparent 60%), radial-gradient(90% 80% at 85% 20%, color-mix(in srgb, var(--iris-bleu) 34%, transparent), transparent 60%),
+    radial-gradient(110% 90% at 70% 100%, color-mix(in srgb, var(--iris-vert) 30%, transparent), transparent 60%), radial-gradient(90% 80% at 10% 95%, color-mix(in srgb, var(--iris-violet) 30%, transparent), transparent 60%), var(--card-bg); }
 .card__media--text .disp { font-size: clamp(2rem, 4vw, 3.6rem); color: white; }   /* sur tuile sombre dans les deux modes */
 
 /* 5. contact, pied de page */
