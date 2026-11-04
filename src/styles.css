@@ -644,9 +644,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* À propos : texte long, apparition légèrement plus rapide (≈ 2 s pour l'ensemble) */
 .js .about [data-seq] .w { transition-delay: calc(var(--i, 0) * 28ms); }
 
-/* adresse mail : lettre par lettre, à la suite du texte d'À propos (défilement) */
-.js .mail [data-sw] .w { filter: blur(4px); transition-duration: 0.25s, 0.3s; }
-.js .mail [data-sw] .w.on { filter: none; }
 
 /* grille : le texte des liens et boutons surlignés tombe exactement sur la marge (le rembourrage du surlignage est
    compensé ; seul l'aplat déborde, au survol) */
@@ -662,10 +659,10 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* flèche : cachée pendant le défilement (cta-idle-off, main.js), retour en fondu et flou */
 .cta-idle-off .hero__cta { opacity: 0 !important; filter: blur(6px); visibility: hidden; transition: opacity 0.35s var(--ease-flow), filter 0.35s var(--ease-flow), visibility 0.35s !important; }
-/* survol et appui des boutons : les lettres deviennent légèrement floues (tant que dure le survol ou l'appui) */
+/* survol et appui des boutons : une lueur douce autour des lettres (tant que dure le survol ou l'appui) */
 .topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle, .fiche__open, .legal a:not(.btn) { --hl-blur: 0px; }
 .topbar__nav a:not(.lang):hover, .socials a:hover, .foot a:hover, .mail:hover, .fiche__close:hover, .topbar .lang:hover, .btn--light:hover, .theme-toggle:hover, .fiche__open:hover, .legal a:not(.btn):hover,
-.topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { text-shadow: 0 0 0.6px currentColor, 0 0 1.4px currentColor; filter: blur(0.55px); }
+.topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { text-shadow: 0 0 4px color-mix(in srgb, currentColor 75%, transparent), 0 0 11px color-mix(in srgb, currentColor 45%, transparent); }   /* lueur autour des lettres */
 @media (hover: none) { .topbar__nav a:not(.lang):hover:not(:active), .socials a:hover:not(:active), .foot a:hover:not(:active), .mail:hover:not(:active), .fiche__close:hover:not(:active), .topbar .lang:hover:not(:active), .btn--light:hover:not(:active), .theme-toggle:hover:not(:active), .fiche__open:hover:not(:active) { text-shadow: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .cta-idle-off .hero__cta { opacity: 1 !important; visibility: visible; filter: none; } }
 

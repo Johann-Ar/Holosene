@@ -176,7 +176,7 @@ vec3 withLens(vec2 q, vec3 base) {
                      texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.988) + o)).b);
       }
       orig *= 0.25;
-      if (uHasText > 0.5) orig = mix(orig, vec3(1.0), texture2D(uText, q / uRes).a);
+      if (uHasText > 0.5) orig = mix(orig, vec3(1.0), texture2D(uText, (c0 + lp * (1.0 - bend)) / uRes).a);   // le texte est grossi comme l'image
       vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
@@ -658,7 +658,9 @@ export function createGL(canvas, { reduced }) {
     if (Math.abs(scrollY - lastSY) > 1) scrollT = now
     lastSY = scrollY
     const still = now - scrollT > 120 || now - ptr.t < 300
-    const show = !!over && !onCtl && (still || lens.s > 0.5) && !ptr.touch   /* au doigt : pas de « o » (pas de curseur à remplacer) */ && !document.documentElement.classList.contains('fiche-open')
+    // le « o » suit le curseur même pendant le défilement (il passe tout de suite d'une vignette à l'autre) ; seule la mise
+    // en couleur des vignettes attend la fin du défilement (pas de clignotement des vignettes qui défilent dessous)
+    const show = !!over && !onCtl && !ptr.touch   /* au doigt : pas de « o » (pas de curseur à remplacer) */ && !document.documentElement.classList.contains('fiche-open')
     if (!lens.init || (lens.s < 0.02 && show)) { lens.x = ptr.x; lens.y = ptr.y; lens.init = true }
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
