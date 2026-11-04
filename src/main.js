@@ -65,6 +65,16 @@ document.querySelectorAll('.copy').forEach((b) => {
 /* Défilement doux (désactivé si l'utilisateur réduit les animations) ; une seule boucle d'affichage pour le
    défilement et le WebGL, pour que la trame reste collée au texte. */
 const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both' })   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
+// clavier : Espace (Maj+Espace pour remonter), Page suivante / précédente font défiler en douceur de 80 % d'écran, au
+// lieu du saut instantané du navigateur (Lenis ne lisse que la molette et le pavé tactile)
+addEventListener('keydown', (e) => {
+  if (!lenis || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || root.classList.contains('fiche-open')) return
+  if (e.target.closest?.('input, textarea, select, button, a, [contenteditable], .work__track')) return   // Espace y garde son rôle
+  const dir = e.key === ' ' ? (e.shiftKey ? -1 : 1) : e.key === 'PageDown' ? 1 : e.key === 'PageUp' ? -1 : 0
+  if (!dir) return
+  e.preventDefault()
+  lenis.scrollTo(lenis.targetScroll + dir * innerHeight * 0.8, { duration: 0.9, easing: (t) => 1 - Math.pow(1 - t, 3) })
+})
 document.addEventListener('click', (e) => {
   const a = e.target.closest('a[href^="#"]')
   const id = a?.getAttribute('href').slice(1)

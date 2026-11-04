@@ -55,9 +55,9 @@ a { color: inherit; }
 .topbar::before { content: none; }
 /* mode clair : barre en verre dépoli, en dégradé (voile 33 % et flou en haut, rien en bas) pour que le menu reste lisible */
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .topbar::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--bg) 33%, transparent), transparent); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); -webkit-mask: linear-gradient(#000, #000 35%, transparent); mask: linear-gradient(#000, #000 35%, transparent); }
+  :root:not([data-theme="dark"]) .topbar::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--bg) 33%, transparent), transparent); -webkit-backdrop-filter: blur(8px) saturate(1.3); backdrop-filter: blur(8px) saturate(1.3); -webkit-mask: linear-gradient(#000 20%, rgb(0 0 0 / 0.5) 55%, transparent 85%); mask: linear-gradient(#000 20%, rgb(0 0 0 / 0.5) 55%, transparent 85%); }
 }
-:root[data-theme="light"] .topbar::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--bg) 33%, transparent), transparent); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); -webkit-mask: linear-gradient(#000, #000 35%, transparent); mask: linear-gradient(#000, #000 35%, transparent); }
+:root[data-theme="light"] .topbar::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--bg) 33%, transparent), transparent); -webkit-backdrop-filter: blur(8px) saturate(1.3); backdrop-filter: blur(8px) saturate(1.3); -webkit-mask: linear-gradient(#000 20%, rgb(0 0 0 / 0.5) 55%, transparent 85%); mask: linear-gradient(#000 20%, rgb(0 0 0 / 0.5) 55%, transparent 85%); }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
 .brand__mark { height: 32px; width: auto; }
 .topbar__nav { display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); font-size: 14px; }
@@ -82,15 +82,9 @@ a { color: inherit; }
    - lueur fine : un léger dédoublement irisé pendant les apparitions, qui s'efface pour laisser le blanc */
 :root { --edge-fx: 120px;   /* largeur commune des fondus et de l'aspiration aux bords (référence : bord haut) */ }
 :root { --iris-line: var(--iris-linear); }   /* filets irisés : la roue du kit à plat */
-.btn--light { position: relative; isolation: isolate; overflow: hidden; background: var(--ink); color: var(--bg); border: 0; padding: 13px 21px; transition: transform var(--dur-base) var(--ease-flow); }
-/* bords teintés des couleurs de la roue, fondues vers le centre : sans contour, sans assombrir */
-.btn--light::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; opacity: 0.75; pointer-events: none;
-  background: repeating-linear-gradient(110deg, var(--iris-0) 0, var(--iris-2) 12px, var(--iris-4) 24px, var(--iris-5) 36px, var(--iris-7) 48px, var(--iris-8) 60px, var(--iris-0) 72px);
-  -webkit-mask: linear-gradient(90deg, #000, transparent 22px, transparent calc(100% - 22px), #000), linear-gradient(#000, transparent 10px, transparent calc(100% - 10px), #000);
-  mask: linear-gradient(90deg, #000, transparent 22px, transparent calc(100% - 22px), #000), linear-gradient(#000, transparent 10px, transparent calc(100% - 10px), #000);
-  transition: opacity var(--dur-base) var(--ease-flow); }
-.btn--light:hover { background: var(--ink); color: var(--bg); transform: translateY(-1px); }
-.btn--light:hover::before { opacity: 1; }
+.btn--light { position: relative; background: none; color: var(--ink); border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 18px; font: 400 var(--fs-small) var(--font-text); transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast); }
+/* même famille que les pastilles (langue, fermer) : contour fin à l'encre, au survol fond à l'encre et contour épaissi */
+.btn--light:hover, .btn--light:focus-visible { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 1px var(--ink); }
 @keyframes chroma { from { text-shadow: -0.04em 0 0.1em color-mix(in srgb, var(--iris-6) 45%, transparent), 0.04em 0 0.1em color-mix(in srgb, var(--iris-0) 45%, transparent); } to { text-shadow: 0 0 0 transparent, 0 0 0 transparent; } }
 
 /* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */

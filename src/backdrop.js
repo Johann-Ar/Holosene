@@ -9,7 +9,7 @@
  */
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 
-const N = 18   // nombre de formes réparties dans la page
+const N = 12   // nombre de formes réparties dans la page
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 const FRAG = `precision highp float;
@@ -32,19 +32,16 @@ void main() {
   vec2 w = s + vec2(0.0, uScroll);                                        // position dans la page
   // proximité du curseur : les formes se rapprochent de la plaque
   float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * 220.0 * 220.0));
-  vec3 acc = vec3(0.0); float tot = 0.0;
+  // chaque forme n'agit que sur sa zone (somme de taches, sans moyenne) : entre elles, le fond reste celui du thème
+  vec3 base = uPage * mix(0.9, 1.0, uLight);       // sombre : gris un peu moins clair
+  float amp = mix(0.16, 0.2, uLight) * (1.0 + 1.5 * P);   // renforcée sous le curseur
+  vec3 col = base;
   for (int i = 0; i < ${N}; i++) {
     vec4 b = uB[i];
     vec2 d = (w - b.xy) / b.z;
     float k = exp(-dot(d, d) * mix(1.0, 1.9, P));   // plus près de la plaque : bord plus net
-    acc += irisAt(b.w) * k; tot += k;
+    col = mix(col, irisAt(b.w), clamp(k * amp, 0.0, 0.55));
   }
-  vec3 tint = acc / max(tot, 1e-4);
-  float cover = 1.0 - exp(-tot * 1.4);
-  // intensité : un peu plus présente qu'avant en sombre, nettement plus en clair ; renforcée sous le curseur
-  float amp = mix(0.14, 0.22, uLight) * (1.0 + 1.5 * P);
-  vec3 base = uPage * mix(0.9, 1.0, uLight);       // sombre : gris un peu moins clair
-  vec3 col = mix(base, tint, clamp(cover * amp, 0.0, 0.6));
   // plaque dépolie : grain lissé (deux échelles proches du pixel CSS), atténué sous le curseur
   float g = vnoise(s / 1.15) * 0.6 + vnoise(s / 2.7 + 17.0) * 0.4 - 0.5;
   col += g * mix(0.022, 0.03, uLight) * (1.0 - 0.6 * P);
@@ -53,7 +50,7 @@ void main() {
 }`
 
 export function createBackdrop(canvas, { reduced }) {
-  const gl = canvas?.getContext('webgl', { antialias: false, alpha: false, premultipliedAlpha: true, powerPreference: 'low-power' })
+  const gl = canvas?.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'low-power' })
   if (!gl) return null
   gl.getExtension('OES_standard_derivatives')
   const sh = (type, src) => { const x = gl.createShader(type); gl.shaderSource(x, src); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(x)); return x }
@@ -82,7 +79,7 @@ export function createBackdrop(canvas, { reduced }) {
   // formes : réparties sur la hauteur du document, positions et couleurs tirées une fois (graine fixe : même fond à
   // chaque visite), couleurs espacées sur la roue
   let rnd = 7; const R = () => ((rnd = (rnd * 16807) % 2147483647) - 1) / 2147483646
-  const shapes = Array.from({ length: N }, (_, i) => ({ fx: R(), fy: (i + 0.25 + R() * 0.5) / N, r: 0.75 + R() * 0.6, t: (i * 0.382 + R() * 0.1) % 1, ph: R() * 6.28, sp: 0.6 + R() * 0.8 }))
+  const shapes = Array.from({ length: N }, (_, i) => ({ fx: (i % 2 ? 0.62 : 0.08) + R() * 0.3, fy: (i + 0.25 + R() * 0.5) / N, r: 0.8 + R() * 0.5, t: (i * 0.382 + R() * 0.1) % 1, ph: R() * 6.28, sp: 0.6 + R() * 0.8 }))
   const B = new Float32Array(N * 4)
 
   // curseur : suivi amorti ; présence qui s'efface quand la souris ne bouge plus (jamais au doigt)
@@ -90,6 +87,7 @@ export function createBackdrop(canvas, { reduced }) {
   addEventListener('pointermove', (e) => { if (e.pointerType === 'touch') return; ptr.tx = e.clientX; ptr.ty = e.clientY; if (ptr.a < 0.01) { ptr.x = ptr.tx; ptr.y = ptr.ty } ptr.last = performance.now() }, { passive: true })
   document.addEventListener('pointerleave', () => { ptr.last = -1e9 })
 
+  const hero = document.querySelector('.hero')
   let dpr = 1, W = 0, H = 0, docH = 0, t0 = performance.now(), prev = t0
   const resize = () => {
     dpr = Math.min(devicePixelRatio || 1, 1.5)   // fond très doux : 1,5 suffit, grain compris
@@ -107,17 +105,20 @@ export function createBackdrop(canvas, { reduced }) {
     const want = !reduced && now - ptr.last < 2500 ? 1 : 0
     ptr.a += (want - ptr.a) * (1 - Math.exp(-dt / (want ? 0.35 : 1.2)))
     const k = 1 - Math.exp(-dt / 0.18); ptr.x += (ptr.tx - ptr.x) * k; ptr.y += (ptr.ty - ptr.y) * k
-    const base = Math.max(W, 700) * 0.3
+    // pendant la scène épinglée de l'accueil, le fond ne bouge pas : il ne défile qu'une fois l'accueil terminé ;
+    // les formes sont réparties sur la hauteur réellement parcourue
+    const pin = hero ? Math.max(0, hero.offsetHeight - H) : 0, span = Math.max(H, docH - pin)
+    const base = Math.max(W, 700) * 0.2
     shapes.forEach((s, i) => {
       // dérive lente (période de l'ordre de la minute), dans un rayon d'un quart de largeur
       const a = time * 0.05 * s.sp + s.ph
       B[i * 4] = s.fx * W + Math.sin(a) * W * 0.18
-      B[i * 4 + 1] = s.fy * docH + Math.cos(a * 0.8) * H * 0.22
+      B[i * 4 + 1] = s.fy * span + Math.cos(a * 0.8) * H * 0.22
       B[i * 4 + 2] = base * s.r
       B[i * 4 + 3] = s.t
     })
     gl.viewport(0, 0, canvas.width, canvas.height)
-    gl.uniform2f(U.uRes, W, H); gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uScroll, scrollY)
+    gl.uniform2f(U.uRes, W, H); gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uScroll, Math.max(0, scrollY - pin))
     gl.uniform3f(U.uPage, ...page); gl.uniform1f(U.uLight, light)
     gl.uniform3f(U.uPtr, ptr.x, ptr.y, ptr.a); gl.uniform4fv(U.uB, B)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
