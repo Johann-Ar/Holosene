@@ -59,6 +59,7 @@ uniform vec4 uEye;      // inutilisé (xy, zw)
 uniform vec3 uInk;      // encre du thème (S du monogramme)
 uniform float uEdgeFloor; // opacité au ras des bords latéraux de la piste (0 en clair : effacement complet)
 uniform float uHal;      // halation (fx-config.js)
+uniform float uNoSideX;  // touche F maintenue : 1 = plus d'aspiration horizontale sur les côtés
 uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), inutilisé
 uniform sampler2D uFlow; // roue animée « flux » (texture 1D du kit, partagée avec le chargeur)
 
@@ -203,7 +204,7 @@ void main() {
   float wT = 1.0 - smoothstep(0.0, EDGE, sc.y), wB = 1.0 - smoothstep(0.0, EDGE, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + uClip.z, p.x); wR = smoothstep(uClip.y - uClip.z, uClip.y, p.x); }   // côtés : largeur uClip.z (120 px, 28 px sur mobile)
-  vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur
+  vec2 suck = vec2((pow(wL, 2.0) - pow(wR, 2.0)) * (1.0 - uNoSideX), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur (touche F : sans la composante horizontale des côtés)
   // halation : l'aspiration varie lentement d'un endroit à l'autre (± uHal), le sombre bave de façon irrégulière
   suck *= 1.0 + uHal * sin(sc.x * 0.031 + sc.y * 0.017) * sin(sc.y * 0.027 - sc.x * 0.013);
 
@@ -408,7 +409,7 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow', 'uHal']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow', 'uHal', 'uNoSideX']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uMaskB, 5)
   gl.uniform1f(U.uHal, FX.halation)
   gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 0)
@@ -619,9 +620,15 @@ export function createGL(canvas, { reduced }) {
     }
   }
   let halSent = -1
+  // touche F maintenue : l'aspiration horizontale des côtés est coupée (seule reste l'aspiration verticale), en douceur
+  let noSideX = 0, noSideXTarget = 0
+  addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) noSideXTarget = 1 })
+  addEventListener('keyup', (e) => { if (e.code === 'KeyF') noSideXTarget = 0 })
+  addEventListener('blur', () => { noSideXTarget = 0 })
   function draw(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
+    noSideX = reduced ? noSideXTarget : noSideX + (noSideXTarget - noSideX) * (1 - Math.exp(-dt / 0.18))
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
@@ -691,6 +698,7 @@ export function createGL(canvas, { reduced }) {
       const sx = x0, sy = y0
       gl.useProgram(prog)
       if (halSent !== FX.version) { halSent = FX.version; gl.uniform1f(U.uHal, FX.halation) }
+      gl.uniform1f(U.uNoSideX, noSideX)
       if (glassy) {
         // passe 1 : le contenu de la vignette dans la texture intermédiaire
         ensureFbo(pw, ph)
