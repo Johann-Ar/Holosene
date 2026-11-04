@@ -54,7 +54,7 @@ export const ui = {
     processing: T('Reconstruction et traitement', 'Reconstruction and processing'),
     staging: T('Mise en scène', 'Staging'),
     learned: T('Ce que j’ai appris, limites', 'What I learned, limits'),
-    credits: T('Rôle, outils, crédits', 'Role, tools, credits'),
+    credits: T('Fiche technique', 'Fact sheet'),   // titre de la rubrique (ses lignes : rôle, outils, année, crédits)
   },
   role: T('Rôle', 'Role'),
   tools: T('Outils', 'Tools'),

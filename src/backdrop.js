@@ -93,7 +93,7 @@ export function createBackdrop(canvas, { reduced }) {
   // hauteurs mises en cache (lues au redimensionnement seulement : pas de mise en page forcée à chaque image)
   const measure = () => { docH = Math.max(document.documentElement.scrollHeight, H); pin = hero ? Math.max(0, hero.offsetHeight - H) : 0 }
   const resize = () => {
-    W = innerWidth; H = innerHeight
+    W = innerWidth; H = canvas.clientHeight || innerHeight   // toile en 100lvh (CSS) : jamais plus courte que l'écran
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
     measure()
   }

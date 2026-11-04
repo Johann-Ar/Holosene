@@ -258,7 +258,7 @@ void main() {
   // comprimé dans cette hauteur (on lit plus loin de l'axe médian) ; zone : 30 % de la piste, 160 px au plus
   float sqz = 1.0;
   if (uClip.z > 0.0) {
-    float zone = min(160.0, 0.3 * (uClip.y - uClip.x));
+    float zone = (uClip.y - uClip.x) < 769.0 ? 0.1 * (uClip.y - uClip.x) : min(160.0, 0.3 * (uClip.y - uClip.x));   // mobile : zone trois fois plus étroite
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));   // distance au bord le plus proche de la piste
     sqz = 1.0 - 0.12 * exp(-d / (0.28 * zone));                // décroissance exponentielle : forte au ras du bord seulement
     p.y = uRes.y * 0.5 + (p.y - uRes.y * 0.5) / sqz;
@@ -460,7 +460,7 @@ export function createGL(canvas, { reduced }) {
   let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false
   const brandMark = document.querySelector('.topbar .brand')
   function resize() {
-    W = innerWidth; H = innerHeight
+    W = innerWidth; H = canvas.clientHeight || innerHeight   // toile en 100lvh (CSS) : jamais plus courte que l'écran
     dpr = Math.min(devicePixelRatio || 1, W < 760 ? 1.75 : 2)
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
   }
@@ -511,7 +511,7 @@ export function createGL(canvas, { reduced }) {
     if (Math.abs(scrollY - lastSY) > 1) scrollT = now
     lastSY = scrollY
     const still = now - scrollT > 120 || now - ptr.t < 300
-    const show = !!over && !onCtl && (still || lens.s > 0.5) && (!ptr.touch || now - ptr.t < 1400) && !document.documentElement.classList.contains('fiche-open')
+    const show = !!over && !onCtl && (still || lens.s > 0.5) && !ptr.touch   /* au doigt : pas de « o » (pas de curseur à remplacer) */ && !document.documentElement.classList.contains('fiche-open')
     if (!lens.init || (lens.s < 0.02 && show)) { lens.x = ptr.x; lens.y = ptr.y; lens.init = true }
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
@@ -558,7 +558,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
       gl.uniform1f(U.uEdgeFloor, theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5 ? 1 : 0.12)   // clair : pas d'effacement (flou CSS aux bords)
-      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : (w < 760 ? Math.max(5, v.cell - 1) : v.cell) * cellScale)
+      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : v.cell * Math.min(1, Math.max(0.55, W / 1100)) * cellScale   /* trame proportionnelle à la largeur d'écran (mobile : 0,55) */)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       // texte de la vignette (unité 3) ; sans texte, l'unité est vidée : elle ne doit jamais désigner la texture dans

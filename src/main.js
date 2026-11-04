@@ -74,7 +74,18 @@ document.querySelectorAll('.copy').forEach((b) => {
 
 /* Défilement doux (désactivé si l'utilisateur réduit les animations) ; une seule boucle d'affichage pour le
    défilement et le WebGL, pour que la trame reste collée au texte. */
-const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both' })   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
+// au doigt (syncTouch) : le défilement est aussi piloté par Lenis, dans la même image que le WebGL : les vignettes
+// restent collées à la page (le défilement natif du téléphone, en avance d'une image sur le dessin, les faisait trembler).
+// Un geste qui commence à l'horizontale appartient aux pistes : il ne fait pas défiler la page.
+let touchAxis = null
+addEventListener('touchstart', () => { touchAxis = null }, { passive: true, capture: true })
+const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both',   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
+  syncTouch: true, syncTouchLerp: 0.08, touchMultiplier: 1,
+  virtualScroll: ({ deltaX, deltaY, event }) => {
+    if (!event.type.includes('touch')) return true
+    if (!touchAxis && (deltaX || deltaY)) touchAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'x' : 'y'
+    return touchAxis !== 'x'
+  } })
 // clavier : Espace (Maj+Espace pour remonter), Page suivante / précédente font défiler en douceur de 80 % d'écran, au
 // lieu du saut instantané du navigateur (Lenis ne lisse que la molette et le pavé tactile) ; flèches gauche / droite :
 // taille des points de la trame
@@ -238,11 +249,13 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
   let down = null, moved = false
   track.addEventListener('pointerdown', (e) => {
     if (e.button) return
-    down = { x: e.clientX, t0: r.target, px: e.clientX, pt: performance.now(), id: e.pointerId }; moved = false; r.vel = 0
+    down = { x: e.clientX, y: e.clientY, t0: r.target, px: e.clientX, pt: performance.now(), id: e.pointerId, touch: e.pointerType === 'touch' }; moved = false; r.vel = 0
   })
   addEventListener('pointermove', (e) => {
     if (!down || e.pointerId !== down.id) return
     const dx = e.clientX - down.x
+    // au doigt : un geste d'abord vertical fait défiler la page, la piste ne bouge pas
+    if (!moved && down.touch && Math.abs(e.clientY - down.y) > 6 && Math.abs(e.clientY - down.y) >= Math.abs(dx)) { down = null; return }
     if (!moved && Math.abs(dx) > 6) { moved = true; track.classList.add('is-drag'); track.setPointerCapture?.(e.pointerId) }
     if (!moved) return
     const now = performance.now(), dt = Math.max(1, now - down.pt)
