@@ -8,7 +8,7 @@
  */
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 
-const N = 12   // nombre de formes réparties dans la page
+const N = 14   // nombre de formes réparties dans la page
 // couleurs des formes : positions sur la roue v2 du kit (0 cyan, 0,1 bleu, 0,2 indigo, 0,3 violet, 0,4 magenta, 0,5 rose,
 // 0,6 corail, 0,7 jaune, 0,8 vert-jaune, 0,9 vert), alternées ; roses, magentas et violets limités à deux formes sur douze
 const HUES = [0.0, 0.7, 0.1, 0.9, 0.6, 0.05, 0.2, 0.75, 0.85, 0.5, 0.15, 0.95]   // + 0,5 : irisAt compte depuis le haut
@@ -22,6 +22,7 @@ uniform vec3 uPage;     // --bg du thème
 uniform float uLight;   // 1 : mode clair
 uniform vec3 uPtr;      // curseur (px CSS, dans la fenêtre), présence (0 à 1)
 uniform vec4 uB[${N}];  // formes : centre (px CSS, dans la page), rayon (px), position sur la roue (0 à 1)
+uniform float uA[${N}]; // intensité de chaque forme (cycle de vie : naît, s'intensifie, s'éteint)
 ${KIT_IRIS}
 vec3 irisAt(float t) { float a = t * 6.2831853; return irisColor(vec2(sin(a), -cos(a))); }
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -31,14 +32,14 @@ void main() {
   // proximité du curseur : les formes se rapprochent de la plaque
   float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * 260.0 * 260.0));
   // chaque forme n'agit que sur sa zone (somme de taches, sans moyenne) : entre elles, le fond reste celui du thème
-  vec3 base = uPage * mix(0.8, 1.0, uLight);       // sombre : fond assombri
+  vec3 base = uPage * mix(0.7, 1.0, uLight);       // sombre : fond assombri
   float amp = mix(0.16, 0.2, uLight) * (1.0 + 2.6 * P);   // nettement renforcée sous le curseur
   vec3 col = base;
   for (int i = 0; i < ${N}; i++) {
     vec4 b = uB[i];
     vec2 d = (w - b.xy) / b.z;
     float k = exp(-dot(d, d) * mix(1.0, 1.9, P));   // plus près de la plaque : bord plus net
-    col = mix(col, irisAt(b.w), clamp(k * amp, 0.0, 0.7));
+    col = mix(col, irisAt(b.w), clamp(k * amp * uA[i], 0.0, 0.7));
   }
   col += (hash(gl_FragCoord.xy) - 0.5) / 255.0;   // tramage invisible (±0,5/255) : pas de bandes dans les dégradés
   gl_FragColor = vec4(col, 1.0);
@@ -58,7 +59,7 @@ export function createBackdrop(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uRes', 'uDpr', 'uScroll', 'uPage', 'uLight', 'uPtr', 'uB']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uRes', 'uDpr', 'uScroll', 'uPage', 'uLight', 'uPtr', 'uB', 'uA']) U[n] = gl.getUniformLocation(prog, n)
 
   // thème : --bg du site, relu quand le mode change
   const root = document.documentElement
@@ -71,10 +72,12 @@ export function createBackdrop(canvas, { reduced }) {
   new MutationObserver(readTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] })
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', readTheme)
 
-  // formes : réparties sur la hauteur du document, positions et couleurs tirées une fois (graine fixe : même fond à
-  // chaque visite), couleurs espacées sur la roue
-  let rnd = 7; const R = () => ((rnd = (rnd * 16807) % 2147483647) - 1) / 2147483646
-  const shapes = Array.from({ length: N }, (_, i) => ({ fx: (i % 2 ? 0.62 : 0.08) + R() * 0.3, fy: (i + 0.25 + R() * 0.5) / N, r: 0.8 + R() * 0.5, t: (HUES[i % HUES.length] + 0.5) % 1, ph: R() * 6.28, sp: 0.6 + R() * 0.8 }))
+  // formes : placées au hasard (différent à chaque visite) ; chacune vit 24 à 40 s : elle naît, s'intensifie, dérive,
+  // s'éteint, puis renaît ailleurs avec une autre couleur ; les cycles sont décalés, il y a toujours des couleurs
+  const R = Math.random
+  const spawn = (s, now) => Object.assign(s, { fx: R(), fy: R(), r: 0.8 + R() * 0.6, t: (HUES[Math.floor(R() * HUES.length)] + 0.5) % 1, ph: R() * 6.28, sp: 0.6 + R() * 0.8, born: now, life: 24000 + R() * 16000 })
+  const shapes = Array.from({ length: N }, () => { const s = spawn({}, 0); s.born = -R() * s.life; return s })
+  const A = new Float32Array(N)
   const B = new Float32Array(N * 4)
 
   // curseur : suivi amorti ; présence qui s'efface quand la souris ne bouge plus (jamais au doigt)
@@ -83,17 +86,21 @@ export function createBackdrop(canvas, { reduced }) {
   document.addEventListener('pointerleave', () => { ptr.last = -1e9 })
 
   const hero = document.querySelector('.hero')
-  let dpr = 1, W = 0, H = 0, docH = 0, t0 = performance.now(), prev = t0
+  // résolution : le fond n'est fait que de dégradés très doux (sans texture) : un demi-pixel CSS suffit, l'agrandissement
+  // par le navigateur ne se voit pas (9 fois moins de pixels qu'en 1,5×)
+  const DPR = 0.5
+  let dpr = DPR, W = 0, H = 0, docH = 0, pin = 0, t0 = performance.now(), prev = t0
+  // hauteurs mises en cache (lues au redimensionnement seulement : pas de mise en page forcée à chaque image)
+  const measure = () => { docH = Math.max(document.documentElement.scrollHeight, H); pin = hero ? Math.max(0, hero.offsetHeight - H) : 0 }
   const resize = () => {
-    dpr = Math.min(devicePixelRatio || 1, 1.5)   // fond très doux : 1,5 suffit, grain compris
-    W = innerWidth; H = innerHeight; docH = Math.max(document.documentElement.scrollHeight, H)
+    W = innerWidth; H = innerHeight
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
+    measure()
   }
   resize(); addEventListener('resize', resize)
-  new ResizeObserver(() => { docH = Math.max(document.documentElement.scrollHeight, H) }).observe(document.body)
+  new ResizeObserver(measure).observe(document.body)
 
   function frame(now) {
-    if (canvas.width !== Math.round(innerWidth * Math.min(devicePixelRatio || 1, 1.5))) resize()
     const dt = Math.min(0.05, (now - prev) / 1000); prev = now
     const time = reduced ? 0 : (now - t0) / 1000
     // présence du curseur : 1 en mouvement, retombe doucement après 2,5 s d'immobilité
@@ -102,9 +109,14 @@ export function createBackdrop(canvas, { reduced }) {
     const k = 1 - Math.exp(-dt / 0.18); ptr.x += (ptr.tx - ptr.x) * k; ptr.y += (ptr.ty - ptr.y) * k
     // pendant la scène épinglée de l'accueil, le fond ne bouge pas : il ne défile qu'une fois l'accueil terminé ;
     // les formes sont réparties sur la hauteur réellement parcourue
-    const pin = hero ? Math.max(0, hero.offsetHeight - H) : 0, span = Math.max(H, docH - pin)
+    const span = Math.max(H, docH - pin)
     const base = Math.max(W, 700) * 0.2
+    const clock = reduced ? 12000 : now - t0
     shapes.forEach((s, i) => {
+      // cycle de vie : intensité 0 → 1 → 0 (sin²) ; à la fin, la forme renaît ailleurs
+      let age = clock - s.born
+      if (age >= s.life) { spawn(s, clock); age = 0 }
+      const env = Math.sin(Math.PI * age / s.life); A[i] = env * env
       // dérive lente (période de l'ordre de la minute), dans un rayon d'un quart de largeur
       const a = time * 0.05 * s.sp + s.ph
       B[i * 4] = s.fx * W + Math.sin(a) * W * 0.18
@@ -115,7 +127,7 @@ export function createBackdrop(canvas, { reduced }) {
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.uniform2f(U.uRes, W, H); gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uScroll, Math.max(0, scrollY - pin))
     gl.uniform3f(U.uPage, ...page); gl.uniform1f(U.uLight, light)
-    gl.uniform3f(U.uPtr, ptr.x, ptr.y, ptr.a); gl.uniform4fv(U.uB, B)
+    gl.uniform3f(U.uPtr, ptr.x, ptr.y, ptr.a); gl.uniform4fv(U.uB, B); gl.uniform1fv(U.uA, A)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
   return { frame }

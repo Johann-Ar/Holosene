@@ -60,19 +60,16 @@ a { color: inherit; }
 .brand-on .topbar .brand { opacity: 1; visibility: visible; }
 .has-gl .topbar .brand { transition: none; }   /* relais au même pixel avec le gros logo qui l'a rejoint : pas de fondu */
 .topbar__tools { display: flex; align-items: center; gap: 12px; }
-/* mode clair : verre dépoli de la barre en flou progressif (8 couches empilées, flou doublé à chaque couche, chacune
+/* mode clair : verre dépoli de la barre en flou progressif (5 couches empilées, flou doublé à chaque couche de 1 à 16 px, chacune
    visible sur une bande ; le flou croît vers le haut, sans palier) ; il descend sous les liens pour que le dégradé
    finisse en dessous d'eux ; voile léger dégradé par-dessus */
 .topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 48px); z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, white 72%, transparent), color-mix(in srgb, white 34%, transparent) 55%, transparent); }   /* voile blanc : boutons et liens mieux contrastés */
 .topbar__glass i { position: absolute; inset: 0; }
-.topbar__glass i:nth-child(1) { -webkit-backdrop-filter: blur(0.5px); backdrop-filter: blur(0.5px); -webkit-mask: linear-gradient(to top, transparent 0%, #000 12.5%, #000 25%, transparent 37.5%); mask: linear-gradient(to top, transparent 0%, #000 12.5%, #000 25%, transparent 37.5%); }
-.topbar__glass i:nth-child(2) { -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px); -webkit-mask: linear-gradient(to top, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%); mask: linear-gradient(to top, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%); }
-.topbar__glass i:nth-child(3) { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); -webkit-mask: linear-gradient(to top, transparent 25%, #000 37.5%, #000 50%, transparent 62.5%); mask: linear-gradient(to top, transparent 25%, #000 37.5%, #000 50%, transparent 62.5%); }
-.topbar__glass i:nth-child(4) { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); -webkit-mask: linear-gradient(to top, transparent 37.5%, #000 50%, #000 62.5%, transparent 75%); mask: linear-gradient(to top, transparent 37.5%, #000 50%, #000 62.5%, transparent 75%); }
-.topbar__glass i:nth-child(5) { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); -webkit-mask: linear-gradient(to top, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%); mask: linear-gradient(to top, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%); }
-.topbar__glass i:nth-child(6) { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); -webkit-mask: linear-gradient(to top, transparent 62.5%, #000 75%, #000 87.5%, transparent 100%); mask: linear-gradient(to top, transparent 62.5%, #000 75%, #000 87.5%, transparent 100%); }
-.topbar__glass i:nth-child(7) { -webkit-backdrop-filter: blur(32px); backdrop-filter: blur(32px); -webkit-mask: linear-gradient(to top, transparent 75%, #000 87.5%, #000 100%); mask: linear-gradient(to top, transparent 75%, #000 87.5%, #000 100%); }
-.topbar__glass i:nth-child(8) { -webkit-backdrop-filter: blur(64px); backdrop-filter: blur(64px); -webkit-mask: linear-gradient(to top, transparent 87.5%, #000 100%); mask: linear-gradient(to top, transparent 87.5%, #000 100%); }
+.topbar__glass i:nth-child(1) { -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px); -webkit-mask: linear-gradient(to top, transparent 0%, #000 20%, #000 40%, transparent 60%); mask: linear-gradient(to top, transparent 0%, #000 20%, #000 40%, transparent 60%); }
+.topbar__glass i:nth-child(2) { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); -webkit-mask: linear-gradient(to top, transparent 20%, #000 40%, #000 60%, transparent 80%); mask: linear-gradient(to top, transparent 20%, #000 40%, #000 60%, transparent 80%); }
+.topbar__glass i:nth-child(3) { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); -webkit-mask: linear-gradient(to top, transparent 40%, #000 60%, #000 80%, transparent 100%); mask: linear-gradient(to top, transparent 40%, #000 60%, #000 80%, transparent 100%); }
+.topbar__glass i:nth-child(4) { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); -webkit-mask: linear-gradient(to top, transparent 60%, #000 80%, #000 100%); mask: linear-gradient(to top, transparent 60%, #000 80%, #000 100%); }
+.topbar__glass i:nth-child(5) { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); -webkit-mask: linear-gradient(to top, transparent 80%, #000 100%); mask: linear-gradient(to top, transparent 80%, #000 100%); }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .topbar__glass { display: block; } }
 :root[data-theme="light"] .topbar__glass { display: block; }
 .brand__mark { height: 32px; width: auto; }
@@ -190,10 +187,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: var(--fs-text); line-height: 1.55; color: var(--ink-86); text-wrap: balance; }
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 48px; height: 48px; color: var(--ink); }   /* un seul chevron arrondi, centré */
 .hero__cta svg { width: 30px; height: 30px; animation: nudge 1.8s var(--ease-in-out) infinite; }
-.js:not(.hero-done) .topbar, .js:not(.is-loaded) .hero__cta { opacity: 0; visibility: hidden; }
+/* accueil : rien d'autre que le fond, le gros logo et la présentation tant que l'écran ne descend pas */
+.js:not(.hero-done) .topbar, .js:not(.hero-done) .hero__cta, .js:not(.hero-done) .edge { opacity: 0; visibility: hidden; }
 .topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
-/* « Voir les projets » : 2 s après que le logo s'est posé (1,7 s après la fin du chargeur), sans attendre le défilement */
-.js.is-loaded .hero__cta { opacity: 1; visibility: visible; transition-delay: 3.7s; }
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta svg { animation: none; } }
 .hero__word .studio__word--stack { display: none; }

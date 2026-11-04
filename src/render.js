@@ -124,7 +124,7 @@ export function render(lang) {
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
-  <div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(8)}</div>
+  <div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(5)}</div>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
   </nav>

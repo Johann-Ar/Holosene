@@ -307,8 +307,9 @@ function scrollEffects() {
   if (heroWords.length) {
     const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,3 à 0,58)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
-    // la barre du haut et « Voir les projets » apparaissent une fois la présentation entièrement affichée (et restent)
-    if (on === heroWords.length) root.classList.add('hero-done')
+    // la barre du haut et le reste du site n'apparaissent qu'une fois la scène de l'accueil finie, quand l'écran
+    // commence à descendre (jusque-là : le fond, le gros logo et la présentation seulement)
+    if (on === heroWords.length && hp >= 0.999) root.classList.add('hero-done')
   }
   // le nom existe en deux versions (une ligne / deux lignes sur mobile) : même avancée pour les deux
   wordsSvg.forEach((w) => {
