@@ -309,7 +309,7 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
     const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0
     if (!dx) return
     e.preventDefault(); e.stopPropagation()
-    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = performance.now(); r.wheel = true
+    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = performance.now(); r.wheel = true; r.dir = Math.sign(dx)   // sens de l'élan (magnétisme)
   }, { passive: false })
   // glisser (souris, doigt, stylet) ; le défilement vertical au doigt reste au navigateur (touch-action: pan-y)
   let down = null, moved = false
@@ -329,12 +329,13 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
     down.px = e.clientX; down.pt = now
     let x = down.t0 - dx
     if (r.finite) { const max = (r.n - 1) * r.step; x = x < 0 ? x * 0.35 : x > max ? max + (x - max) * 0.35 : x }   // butée élastique
+    if (x !== r.target) r.dir = Math.sign(x - r.target)
     r.target = r.x = x; r.last = now
   })
   const up = (e) => {
     if (!down || (e.pointerId !== undefined && e.pointerId !== down.id)) return
     down = null; track.classList.remove('is-drag')
-    if (moved) { r.target += r.vel * 320; r.wheel = false; r.last = performance.now() - 120 }   // inertie
+    if (moved) { r.target += r.vel * 320; r.wheel = false; r.last = performance.now() - 120; if (Math.abs(r.vel) > 0.02) r.dir = Math.sign(r.vel) }   // inertie
   }
   addEventListener('pointerup', up); addEventListener('pointercancel', up)
   track.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false } }, true)
@@ -358,8 +359,13 @@ function workFrame(now = performance.now()) {
     // PC : léger magnétisme, dans la continuité de l'élan. Une fois le geste fini, la cible (où la piste allait s'arrêter,
     // inertie comprise) glisse doucement vers la carte la plus proche ; la piste la suit avec sa douceur habituelle
     if (!r.finite && !r.isDown() && now - r.last > (r.wheel ? 180 : 90)) {
-      const goal = Math.round(r.target / r.step) * r.step
-      r.target += (goal - r.target) * (reduced ? 1 : 1 - Math.exp(-dt / 0.22))
+      // la carte d'arrivée est prise dans le sens de l'élan (jamais de retour en arrière), sauf si la carte d'où l'on vient
+      // est toute proche : alors léger recul, plus doux
+      const pos = r.target / r.step, lo = Math.floor(pos), frac = pos - lo, NEAR = 0.14
+      const cell = r.dir > 0 ? (frac < NEAR ? lo : lo + 1) : r.dir < 0 ? (frac > 1 - NEAR ? lo + 1 : lo) : Math.round(pos)
+      const goal = cell * r.step, back = r.dir && Math.sign(goal - r.target) === -r.dir
+      r.target += (goal - r.target) * (reduced ? 1 : 1 - Math.exp(-dt / (back ? 0.4 : 0.22)))
+      if (Math.abs(goal - r.target) < 0.5) r.dir = 0
       r.wheel = false
     }
     // PC (défilement libre) : quand la piste est entièrement hors de l'écran, elle se recale d'un coup sur la carte la plus
