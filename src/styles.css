@@ -8,7 +8,14 @@
 /* texte courant : Futura Bold, pour toutes les graisses (police du système : Mac, iPhone, iPad ; non embarquée, sous
    licence). Sans Futura sur l'appareil (Windows, Android), le texte reste en Outfit. */
 @font-face { font-family: 'Texte Futura'; src: local('Futura-Bold'), local('Futura Bold'), local('FuturaPT-Bold'), local('Futura PT Bold'), local('Futura Std Bold'); font-weight: 100 900; font-style: normal; }
-:root { --font-text: 'Texte Futura', 'Outfit', 'Helvetica Neue', Arial, sans-serif; }
+/* titres : Futura Bold aussi (même police que le texte courant), approche resserrée à peine */
+/* textes secondaires discrets : police extra-condensée ; Franklin Gothic Condensed et Univers Condensed étant sous licence,
+   on prend la condensée déjà présente sur l'appareil : Franklin Gothic Medium Cond (Windows), Futura Condensed (Mac,
+   iPhone, iPad), Roboto Condensed (Android), à défaut Arial Narrow */
+@font-face { font-family: 'Texte Condense'; src: local('FranklinGothic-MediumCond'), local('Franklin Gothic Medium Cond'), local('Futura-CondensedMedium'), local('Futura Condensed Medium'), local('RobotoCondensed-Regular'), local('Roboto Condensed'), local('AvenirNextCondensed-Medium'), local('ArialNarrow'); font-weight: 100 900; font-style: normal; }
+:root { --font-text: 'Texte Futura', 'Outfit', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Texte Futura', 'Archivo', 'Helvetica Neue', Arial, sans-serif; --display-track: -0.015em;
+  --font-cond: 'Texte Condense', 'Arial Narrow', sans-serif-condensed, sans-serif; }
 @font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/ibm-plex-mono-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
 :root { --fs-body: 1.1875rem; --fs-small: 0.9375rem; --fs-text: clamp(1.125rem, 1.45vw, 1.35rem);   /* texte courant : un seul style (À propos, présentation, sous-titres, genres) */ --iris: var(--iris-conic); --edge-l: max(var(--edge), env(safe-area-inset-left, 0px)); --edge-r: max(var(--edge), env(safe-area-inset-right, 0px)); }
@@ -503,3 +510,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 @media (max-width: 860px) {
   .contact { padding-block: var(--sp-6) var(--sp-5); }   /* mobile : Contact suit le texte de près (48 + 16 px au lieu de 144) */
 }
+
+/* textes secondaires discrets : police extra-condensée (voir --font-cond en tête de fichier) */
+.card__genre, .credit, .foot .lbl, .fiche__next .lbl, .fiche__infos { font-family: var(--font-cond); letter-spacing: 0.02em; }
+.fiche__infos { font-size: 0.95rem; }   /* condensée : un peu plus grande à lisibilité égale */
+@media (max-width: 760px) { .card__genre { font-size: 0.9rem; } }
