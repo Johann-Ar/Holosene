@@ -609,7 +609,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* bouton clair / sombre : texte, comme EN / FR (le mode vers lequel on bascule) */
 .theme-toggle { width: auto !important; height: auto !important; font: 800 var(--fs-small)/1.5 var(--font-text); text-transform: uppercase; letter-spacing: 0.02em; padding: 0.12em 0.32em !important; }
 
-/* Sombre / Clair, EN / FR, Copier l'adresse : contour fin à l'encre au repos, sans fond ; au survol, le surlignage */
-.theme-toggle, .topbar .lang, .btn--light.copy { box-shadow: inset 0 0 0 1px var(--ink) !important; }
+/* Copier l'adresse : sans fond ni contour au repos ; au survol, le surlignage */
 .btn--light.copy { color: var(--ink) !important; background: linear-gradient(var(--ink), var(--ink)) no-repeat left / 0% 100% !important; }
 .btn--light.copy:hover, .btn--light.copy:focus-visible, .btn--light.copy:active { color: var(--bg) !important; background-size: 100% 100% !important; }
