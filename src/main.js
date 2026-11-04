@@ -41,7 +41,11 @@ else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl') 
    d'une fiche) inverse le mode de la partie où l'on est, et ce mode vaut ensuite pour tout le site (mémorisé). */
 const applyThemeColor = () => { const bg = getComputedStyle(root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
 const themeOf = (el) => (!root.classList.contains('theme-chosen') && el.closest('.fiche') ? 'dark' : root.dataset.theme || 'light')
-const labelThemes = () => document.querySelectorAll('.theme-toggle').forEach((b) => b.setAttribute('aria-label', b.dataset[themeOf(b) === 'light' ? 'dark' : 'light']))
+const THEME_WORD = root.lang === 'en' ? { dark: 'Dark', light: 'Light' } : { dark: 'Sombre', light: 'Clair' }
+const labelThemes = () => document.querySelectorAll('.theme-toggle').forEach((b) => {
+  const next = themeOf(b) === 'light' ? 'dark' : 'light'
+  b.setAttribute('aria-label', b.dataset[next]); const t = b.querySelector('.theme-toggle__t'); if (t) t.textContent = THEME_WORD[next]
+})
 document.addEventListener('click', (e) => {
   const b = e.target.closest('.theme-toggle')
   if (!b) return

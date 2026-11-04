@@ -135,7 +135,7 @@ export function render(lang) {
     return out }).join(' ') }
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
-<div class="loader" aria-hidden="true"><div class="loader__o"><div class="loader__arc"><i class="loader__ring"></i></div><i class="loader__ring loader__full"></i></div></div>
+<div class="loader" aria-hidden="true"><div class="loader__o"><div class="loader__arc loader__arc--soft"><i class="loader__ring"></i></div><div class="loader__arc loader__arc--sharp"><i class="loader__ring"></i></div><i class="loader__ring loader__full"></i></div></div>
 <canvas class="bg-canvas" aria-hidden="true"></canvas>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
@@ -149,7 +149,7 @@ export function render(lang) {
     <img class="brand__mark only-light" draggable="false" src="${root}media/monogram-iris-light.svg" alt="Holosene" width="470" height="576">
   </a>
   <div class="topbar__tools">
-    <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button>
+    <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><span class="theme-toggle__t">${lang === "fr" ? "Sombre" : "Dark"}</span></button>
     <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" lang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}">${lang === 'fr' ? 'EN' : 'FR'}</a>
   </div>
 </header>

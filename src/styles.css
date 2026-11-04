@@ -599,3 +599,12 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* « Copier l'adresse » : toujours surligné (blanc) pour être bien visible ; au survol, surlignage noir et texte blanc */
 .btn--light.copy { color: #1E1E1E !important; background: linear-gradient(#1E1E1E, #1E1E1E) no-repeat left / 0% 100%, #fff !important; }
 .btn--light.copy:hover, .btn--light.copy:focus-visible, .btn--light.copy:active { color: #fff !important; background-size: 100% 100%, auto !important; }
+
+/* chargeur : la tête de l'arc est nette et pleine ; la queue se dissout dans le flou (copie floutée, pleine), seule son
+   extrémité garde un court fondu ; plus de longue traîne transparente */
+.loader__arc.loader__arc--sharp { -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 34%, #000 50%, #000 85%, transparent 85.01%);
+  mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 34%, #000 50%, #000 85%, transparent 85.01%); }
+.loader__arc.loader__arc--soft { -webkit-mask: conic-gradient(transparent 0%, #000 14%, #000 48%, transparent 60%); mask: conic-gradient(transparent 0%, #000 14%, #000 48%, transparent 60%); }
+.loader__arc--soft > .loader__ring { filter: blur(calc(var(--r1) * 0.11)); }
+/* bouton clair / sombre : texte, comme EN / FR (le mode vers lequel on bascule) */
+.theme-toggle { width: auto !important; height: auto !important; font: 800 var(--fs-small)/1.5 var(--font-text); text-transform: uppercase; letter-spacing: 0.02em; padding: 0.12em 0.32em !important; }
