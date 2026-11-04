@@ -367,7 +367,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 28px calc(28px + env(safe-area-inset-bottom, 0px)); }
 
 /* fiches projet : ouvertes par l'ancre (:target), sans JavaScript ; le script ajoute focus, Échap et le défilement */
-.fiche { position: fixed; inset: 0; z-index: 50; background: var(--c-black-deep); overflow-y: auto; overscroll-behavior: contain; display: none; scrollbar-width: none; }
+.fiche { position: fixed; inset: 0; z-index: 50; color: var(--ink-86); background: var(--c-black-deep); overflow-y: auto; overscroll-behavior: contain; display: none; scrollbar-width: none; }
 .fiche::-webkit-scrollbar { display: none; }
 /* transitions des fiches : un rideau entre par la droite, puis le contenu arrive en séquence ;
    d'un projet à l'autre, l'ancien contenu glisse à gauche sous le nouveau rideau ; à la fermeture, le rideau se retire */
@@ -380,15 +380,20 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche:target:not(.is-in)::before { content: ''; position: fixed; top: 0; bottom: 0; left: calc(var(--cut) - 18vw); width: 18vw; z-index: 60; pointer-events: none;
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   -webkit-mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); }
-.fiche:target .fiche__head > *, .fiche:target .fiche__col, .fiche:target .fiche__media > *, .fiche:target .fiche__next { animation: rise 0.9s var(--ease-flow) both; }
-.fiche:target .fiche__head > * { animation-delay: 0.3s; }
-.fiche:target .fiche__col { animation-delay: 0.42s; }
-.fiche:target .fiche__col + .fiche__col { animation-delay: 0.5s; }
-.fiche:target .fiche__media > :nth-child(1) { animation-delay: 0.5s; }
-.fiche:target .fiche__media > :nth-child(2) { animation-delay: 0.58s; }
-.fiche:target .fiche__media > :nth-child(3) { animation-delay: 0.66s; }
-.fiche:target .fiche__media > :nth-child(n + 4) { animation-delay: 0.74s; }
-.fiche:target .fiche__next { animation-delay: 0.8s; }
+/* arrivée en cascade (courbe de la référence) : barre, titre, texte paragraphe par paragraphe, fiche technique, lien ;
+   les images glissent de 100 px en fondu */
+.fiche { --ease-case: cubic-bezier(0.75, 0, 0.25, 1); }
+.fiche:target .fiche__head > *, .fiche:target .fiche__title, .fiche:target .fiche__body p, .fiche:target .fiche__infos, .fiche:target .fiche__open { animation: rise-y 0.8s var(--ease-case) both; }
+.fiche:target .fiche__head > * { animation-delay: 0.35s; }
+.fiche:target .fiche__title { animation-delay: 0.45s; }
+.fiche:target .fiche__body p:nth-child(1) { animation-delay: 0.6s; }
+.fiche:target .fiche__body p:nth-child(2) { animation-delay: 0.65s; }
+.fiche:target .fiche__body p:nth-child(3) { animation-delay: 0.7s; }
+.fiche:target .fiche__infos { animation-delay: 0.8s; }
+.fiche:target .fiche__open { animation-delay: 0.9s; }
+.fiche:target .fiche__media, .fiche:target .fiche__next { animation: gallery-in 1s var(--ease-case) 0.55s both; }
+@keyframes rise-y { from { opacity: 0; transform: translateY(0.5rem); } }
+@keyframes gallery-in { from { opacity: 0; transform: translateX(100px); } }
 .fiche.is-under { z-index: 49; pointer-events: none; }
 .fiche.is-under .fiche__head, .fiche.is-under .fiche__row { animation: slide-away 0.6s var(--ease-in-out) forwards; }
 .fiche.is-closing { z-index: 51; pointer-events: none; animation: fiche-close 0.6s var(--ease-flow) forwards; }
@@ -400,56 +405,61 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .fiche:target, .fiche:target *, .fiche.is-under *, .fiche.is-closing, .fiche.is-closing * { animation: none !important; }
   .fiche.is-leaving { display: none; }
 }
-/* en-tête : catégorie, titre et Fermer restent visibles, comme la barre de menu */
-.fiche__head { position: sticky; top: 0; z-index: 3; display: flex; justify-content: space-between; align-items: end; gap: 20px; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 12px; background: linear-gradient(color-mix(in srgb, var(--bg) 96%, transparent) 70%, color-mix(in srgb, var(--bg) 0%, transparent)); }
-.fiche__head > div { display: grid; gap: 8px; min-width: 0; }
-.fiche__head h2 { font-size: clamp(1.7rem, 3.4vw, 3rem); }
+/* barre de la fiche : clair/sombre et Fermer, en haut à droite */
+.fiche__head { position: sticky; top: 0; z-index: 3; display: flex; justify-content: flex-end; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 12px; }
+.fiche__tools { display: flex; align-items: center; gap: 12px; flex: none; }
 .fiche__close { flex: none; font: 400 var(--fs-small) var(--font-text); color: var(--c-white); text-decoration: none; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 16px; }
-.fiche__part { display: grid; gap: 6px; }
-.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.facts div { min-width: 0; }
-.facts dd { color: var(--c-white); font-size: 15px; }
-.fiche__col { display: grid; gap: var(--sp-4); align-content: start; justify-items: start; }
-.fiche__col:empty, .fiche__col:not(:has(> :not(.todo))) { display: none; }
-.is-dev .fiche__col:has(> .todo) { display: grid; }
-.fiche__media figure { border-radius: 26px; overflow: hidden; background: var(--card-bg); }
+/* colonne de texte : titre, un seul texte explicatif, fiche technique, lien vers le projet */
+.fiche__title { font-size: 3.5rem; line-height: 1; margin-bottom: 50px; text-wrap: balance; }
+.fiche__body p { font: 500 1.1rem/1.5 var(--font-text); color: var(--ink-86); }
+.fiche__body p + p { margin-top: 0.9em; }
+.fiche__infos { margin: 30px 0 0; display: grid; gap: 6px; text-transform: uppercase; font: 500 0.82rem/1.45 var(--font-text); letter-spacing: 0.03em; color: var(--ink-86); }
+.fiche__info { display: grid; grid-template-columns: 100px minmax(0, 1fr); column-gap: 0; }
+.fiche__info dt { grid-column: 1; font-weight: 700; color: var(--ink); }
+.fiche__info dd { grid-column: 2; margin: 0; }
+.fiche__info dd::before { content: '//'; font-weight: 800; margin-right: 8px; color: var(--ink); }
+/* lien « ouvrir le projet » : capitales, un aplat glisse de la gauche au survol */
+.fiche__open { position: relative; isolation: isolate; display: inline-block; overflow: hidden; margin: 30px 0 0 -0.3em; padding: 0 0.3em; font: 800 1.1rem/1.6 var(--font-text); text-transform: uppercase; color: var(--ink); text-decoration: none; transition: color 0.2s cubic-bezier(0.75, 0, 0, 1); }
+.fiche__open::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--ink); transform: translateX(-102%); transition: transform 0.2s cubic-bezier(0.75, 0, 0, 1); }
+.fiche__open:hover, .fiche__open:focus-visible { color: var(--bg); }
+.fiche__open:hover::before, .fiche__open:focus-visible::before { transform: none; }
+/* images : coins de 30 px, recadrées dans leur format (jeu fixe 16:9 → 9:16, render.js), jamais déformées */
+.fiche__media figure { margin: 0; border-radius: 30px; overflow: hidden; background: var(--card-bg); }
 .fiche__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .fiche__next { display: grid; justify-items: start; gap: 10px; text-decoration: none; color: var(--c-white); }
 .fiche__next .disp { font-size: clamp(2.2rem, 4vw, 3.6rem); max-width: 8.5em; text-wrap: balance; overflow-wrap: normal; word-break: normal; hyphens: manual; }   /* « Photographique / Volume » : à la ligne */
 
-/* grand écran : une seule rangée, qui défile à l'horizontale (molette, pavé tactile, doigt) */
+/* grand écran : une seule bande horizontale (défilement vertical → horizontal, main.js), marge de 120 px tout autour ;
+   texte en colonne de 500 px ; 240 px jusqu'à la première image ; toutes les images à la même hauteur (écran − 240 px),
+   leur largeur suit leur format ; 30 px entre elles */
 @media (min-width: 769px) {
   .fiche { overflow: hidden; }
-  .fiche__row { display: flex; align-items: center; gap: clamp(28px, 3vw, 48px); width: max-content; height: calc(100svh - var(--fh, 120px)); padding: 0 var(--edge-r) 40px var(--edge-l); will-change: transform; }
-  .fiche__col { flex: 0 0 clamp(260px, 21vw, 320px); align-self: center; font-size: 15px; line-height: 1.5; }
-  .fiche__col .fiche__part p { font-size: 15px; }
-  /* images : environ 72 % de la hauteur d'écran, serrées, coins doux (comme la page projet de dorianlods.com) */
-  .fiche__media { flex: none; display: flex; gap: 16px; height: min(72svh, calc(100% - 24px)); margin-left: 2vw; }
-  .fiche__media figure, .duo figure { border-radius: 18px; }
+  .fiche__head { position: absolute; top: 0; left: 0; right: 0; padding: 30px var(--edge-r) 0; pointer-events: none; }
+  .fiche__head > * { pointer-events: auto; }
+  .fiche__row { display: flex; align-items: center; width: max-content; height: 100svh; padding: 120px; will-change: transform; }
+  .fiche__text { flex: 0 0 500px; align-self: center; }
+  .fiche__media { flex: none; display: flex; align-items: center; gap: 30px; height: 100%; padding-left: 120px; }
   .fiche__media > figure { flex: none; height: 100%; width: auto; aspect-ratio: var(--r); }
-  .duo { flex: none; display: grid; grid-template-rows: 1fr 1fr; gap: 16px; height: 100%; aspect-ratio: 0.72; }
-  .duo figure { min-height: 0; }
-  .fiche__next { flex: none; align-self: center; padding: 0 4vw 0 2vw; }
+  .duo { flex: none; display: flex; flex-direction: column; gap: 30px; height: 100%; width: 50svh; }
+  .duo figure { flex: 1; min-height: 0; }
+  .fiche__next { flex: none; align-self: center; padding-left: 120px; }
 }
 /* mobile : tout à la suite, à la verticale */
 @media (max-width: 768px) {
-  .fiche__row { display: grid; gap: var(--sp-5); padding: 8px var(--edge-r) var(--sp-7) var(--edge-l); }
-  .fiche__media { display: grid; gap: 12px; }
-  .fiche__media figure { aspect-ratio: var(--r); }
-  .duo { display: grid; gap: 12px; }
+  .fiche__row { display: block; padding: 12px 25px 40px; }
+  .fiche__title { font-size: 2.6rem; margin-bottom: 28px; }
+  .fiche__body p { font-size: 1rem; }
+  .fiche__info { grid-template-columns: 80px minmax(0, 1fr); }
+  .fiche__media { display: grid; gap: 30px; margin-top: 40px; }
+  .fiche__media figure { aspect-ratio: var(--r); border-radius: 24px; }
+  .duo { display: grid; gap: 30px; }
+  .fiche__next { margin-top: 48px; }
   .fiche__next .disp { white-space: normal; }
-  /* titre de la fiche : même barre que l'accueil. Clair : flou progressif et voile blanc (topbar__glass) ; sombre :
-     dégradé couvrant du fond, qui se prolonge sous le titre */
+  /* barre de la fiche : fond plein et court fondu dessous (le contenu ne transparaît pas) */
   .fiche__head { background: none; }
   .fiche__head::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 18px); z-index: -1; pointer-events: none;
-    background: linear-gradient(180deg, var(--bg) calc(100% - 18px), color-mix(in srgb, var(--bg) 0%, transparent) 100%); }   /* titre sur fond plein, fondu dessous */
-  .fiche__head .topbar__glass { top: 100%; height: 20px; }   /* clair : flou progressif sous le titre */
-  /* titres des rubriques nettement distincts du texte courant */
-  .fiche__part { gap: 10px; }
-  .fiche__part > h3.lbl { font: 600 1.2rem/1.25 var(--font-display); font-stretch: var(--display-stretch); letter-spacing: var(--display-track); color: var(--ink); }
+    background: linear-gradient(180deg, var(--bg) calc(100% - 18px), color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
 }
-/* barre de titre des fiches (sombres) : dégradé du fond, sans le flou de la barre claire */
-:root .fiche__head .topbar__glass { display: none; }
 
 /* pages annexes */
 .legal { padding-block: 120px var(--sp-8); max-width: 820px; display: grid; gap: 14px; }
@@ -465,4 +475,3 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 @media (max-width: 860px) {
   .contact { padding-block: var(--sp-6) var(--sp-5); }   /* mobile : Contact suit le texte de près (48 + 16 px au lieu de 144) */
 }
-@media (max-width: 480px) { .facts { grid-template-columns: 1fr; } }

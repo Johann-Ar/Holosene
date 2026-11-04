@@ -74,8 +74,6 @@ export function render(lang) {
 
   // fiche projet : en-tête fixe, puis une rangée qui défile à l'horizontale (texte en colonnes, images, projet suivant)
   const fiche = (p, i) => {
-    const s = ui.sections
-    const sect = (label, v) => (v ? `<section class="fiche__part${v.todo ? ' todo' : ''}"><h3 class="lbl">${esc(t(label))}</h3><p>${esc(t(v))}</p></section>` : '')
     const credits = [...(p.credits || []), ...(p.coverCredit ? [p.coverCredit] : [])]
     const next = projects[(i + 1) % projects.length]
     // petites images (moins de 700 px de large) regroupées par deux, l'une sur l'autre
@@ -90,25 +88,30 @@ export function render(lang) {
       const a = p.media[k], b = p.media[k + 1]
       if (small(a) && b && small(b)) { media.push(`<div class="duo">${fig(a)}${fig(b)}</div>`); k++ } else media.push(fig(a))
     }
+    // un seul texte explicatif (sans rubriques) : intention et contexte, captation et traitement, mise en scène et limites
+    const body = [[p.intent, p.context], [p.capture, p.processing], [p.staging, p.learned]]
+      .map((g) => g.filter((v) => v && !v.todo).map((v) => esc(t(v))).join(' ')).filter(Boolean)
+    // fiche technique : étiquettes alignées, séparateur « // »
+    const info = (label, values, todo = false) => (values.length ? `<div class="fiche__info${todo ? ' todo' : ''}"><dt>${esc(t(label))}</dt>${values.map((v) => `<dd>${v}</dd>`).join('')}</div>` : '')
+    const infos = [
+      info({ fr: 'Milieu', en: 'Setting' }, [esc(t(p.milieu))]),
+      info(ui.role, [esc(t(p.role))], !!p.role?.todo),
+      info(ui.tools, [esc(p.tools)]),
+      info(ui.year, [esc(p.year)]),
+      info(ui.creditsLabel, credits.filter((c) => !c.todo).map((c) => esc(t(c)))),
+    ].join('')
+    const toggle = `<button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button>`
     return `
   <section class="fiche" id="p-${p.slug}" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="p-${p.slug}-t" tabindex="-1">
-    <header class="fiche__head wrap"><div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(5)}</div>
-      <div><p class="lbl">${esc(t(p.milieu))} · ${esc(p.year)}</p><h2 class="disp" id="p-${p.slug}-t">${esc(p.title)}</h2></div>
-      <div class="fiche__tools"><button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button><a class="fiche__close" href="#${p.research ? 'recherche' : 'projet'}-${p.slug}">${esc(t(ui.close))}</a></div>
+    <header class="fiche__head wrap">
+      <div class="fiche__tools">${toggle}<a class="fiche__close" href="#${p.research ? 'recherche' : 'projet'}-${p.slug}">${esc(t(ui.close))}</a></div>
     </header>
     <div class="fiche__row">
-      <div class="fiche__col">${sect(s.intent, p.intent)}${sect(s.context, p.context)}${sect(s.capture, p.capture)}${sect(s.processing, p.processing)}</div>
-      <div class="fiche__col">
-        ${sect(s.staging, p.staging)}${sect(s.learned, p.learned)}
-        <section class="fiche__part"><h3 class="lbl">${esc(t(s.credits))}</h3>
-          <dl class="facts">
-            <div${p.role?.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.role))}</dt><dd>${esc(t(p.role))}</dd></div>
-            <div><dt class="lbl">${esc(t(ui.tools))}</dt><dd>${esc(p.tools)}</dd></div>
-            <div><dt class="lbl">${esc(t(ui.year))}</dt><dd>${esc(p.year)}</dd></div>
-            ${credits.length ? `<div${credits.every((c) => c.todo) ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.creditsLabel))}</dt>${credits.map((c) => `<dd${c.todo ? ' class="todo"' : ''}>${esc(t(c))}</dd>`).join('')}</div>` : ''}
-          </dl>
-        </section>
-        ${p.link ? `<a class="btn btn--light" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
+      <div class="fiche__text">
+        <h2 class="disp fiche__title" id="p-${p.slug}-t">${esc(p.title)}</h2>
+        <div class="fiche__body">${body.map((x) => `<p>${x}</p>`).join('')}</div>
+        <dl class="fiche__infos">${infos}</dl>
+        ${p.link ? `<a class="fiche__open" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
       </div>
       <div class="fiche__media">${media.join('')}</div>
       <a class="fiche__next" href="#p-${next.slug}">
