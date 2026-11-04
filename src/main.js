@@ -422,31 +422,41 @@ const word = null
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 // À propos : mots allumés au fil du défilement (comme la présentation de l'accueil), dans l'ordre de lecture ; tout est
 // allumé quand le dernier paragraphe atteint le milieu de l'écran ; en remontant, ils s'éteignent dans l'ordre inverse
-// textes des sections (Projets choisis, Travaux de recherche, À propos, adresse) : exactement comme la présentation de
-// l'accueil — les mots s'allument un par un, régulièrement, au fil du défilement, et s'éteignent dans l'ordre inverse.
-// Chaque section est une séquence, calée sur une ligne de l'écran aux 7/8 de sa hauteur : elle commence quand son
-// premier mot franchit la ligne et finit quand son dernier mot la franchit (au plus tard en bas de page). Positions en
-// cache (dans la page), recalculées au redimensionnement et au changement de langue.
-const SW_LINE = 7 / 8, SW_MIN_STEP = 14   // px de défilement au moins par mot (une séquence d'une ligne reste progressive)
-let swGroups = null
-const resetScrollWords = () => { swGroups = null }
+// textes des sections (Projets choisis, Travaux de recherche, À propos, adresse) : chaque mot apparaît exactement quand
+// il franchit une ligne fixe de l'écran, aux 7/8 de sa hauteur, et disparaît en repassant dessous (même fondu et même
+// flou que la présentation de l'accueil). Sur une même ligne de texte, les mots se suivent de gauche à droite à mesure
+// que la ligne monte de sa hauteur : l'effet reste mot par mot. Les derniers mots de la page, qui n'atteindraient jamais
+// la ligne, ont leur seuil ramené juste avant le bas de page. Seuils en cache, recalculés au redimensionnement et au
+// changement de langue.
+const SW_LINE = 7 / 8, SW_MIN_STEP = 10
+let swWords = null, swT = null, swOn = null
+const resetScrollWords = () => { swWords = null }
 addEventListener('resize', resetScrollWords)
 addEventListener('load', resetScrollWords)
 function scrollWords(vh) {
-  const line = vh * SW_LINE, max = document.documentElement.scrollHeight - innerHeight
-  if (!swGroups) {
-    const m = new Map()
-    for (const el of document.querySelectorAll('[data-sw]')) { const g = el.closest('section') || el.parentElement; if (!m.has(g)) m.set(g, []); m.get(g).push(...el.querySelectorAll('.w')) }
-    swGroups = [...m.values()].filter((w) => w.length).map((words) => {
-      const y = (w) => w.getBoundingClientRect().top + scrollY + w.offsetHeight * 0.5
-      const s0 = Math.min(y(words[0]) - line, max - 30 - words.length * SW_MIN_STEP)
-      const s1 = Math.min(Math.max(y(words[words.length - 1]) - line, s0 + words.length * SW_MIN_STEP), max - 30)
-      return { words, s0, s1: Math.max(s1, s0 + 1), on: words.filter((w) => w.classList.contains('on')).length }
-    })
+  if (!swWords) {
+    swWords = [...document.querySelectorAll('[data-sw] .w')]
+    const line = vh * SW_LINE, max = document.documentElement.scrollHeight - innerHeight
+    const r = swWords.map((w) => { const q = w.getBoundingClientRect(); return { top: q.top + scrollY, mid: q.top + scrollY + q.height / 2, h: q.height } })
+    // rang de chaque mot dans sa ligne de texte (même hauteur à 3 px près)
+    swT = new Array(swWords.length)
+    for (let i = 0; i < swWords.length;) {
+      let j = i; while (j < swWords.length && Math.abs(r[j].top - r[i].top) < 3) j++
+      for (let k = i; k < j; k++) swT[k] = r[k].mid - line + ((k - i) / Math.max(1, j - i)) * r[i].h * 1.1
+      i = j
+    }
+    // seuls les derniers mots qui n'atteindraient jamais la ligne (seuil au-delà du bas de page) sont recalés : répartis
+    // dans l'ordre sur la fin du défilement ; tous les autres restent exactement calés sur la ligne
+    const end = max - 20, tail = swT.findIndex((t) => t > end)
+    if (tail >= 0) {
+      const n = swWords.length - tail, start = Math.max(tail > 0 ? swT[tail - 1] + SW_MIN_STEP : 0, end - n * SW_MIN_STEP * 2.5)
+      for (let i = tail; i < swWords.length; i++) swT[i] = Math.min(swT[i], start + ((i - tail) / Math.max(1, n - 1)) * (end - start))
+    }
+    swOn = swWords.map((w) => w.classList.contains('on'))
   }
-  for (const g of swGroups) {
-    const on = Math.round(Math.min(1, Math.max(0, (scrollY - g.s0) / (g.s1 - g.s0))) * g.words.length)
-    if (on !== g.on) { g.words.forEach((w, i) => w.classList.toggle('on', i < on)); g.on = on }
+  for (let i = 0; i < swWords.length; i++) {
+    const on = scrollY >= swT[i]
+    if (on !== swOn[i]) { swOn[i] = on; swWords[i].classList.toggle('on', on) }
   }
 }
 function scrollEffects() {

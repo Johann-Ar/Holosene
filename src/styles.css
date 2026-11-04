@@ -527,8 +527,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche__infos { font-size: 0.95rem; }   /* condensée : un peu plus grande à lisibilité égale */
 @media (max-width: 760px) { .card__genre { font-size: 0.9rem; } }
 
-/* sélection de texte (clic maintenu) : bleu #3300FF, texte blanc */
-::selection { background: #3300FF; color: #fff; }
+/* sélection de texte (clic maintenu) : bleu #5D5FFE, texte blanc */
+::selection { background: #5D5FFE; color: #fff; }
 
 /* ——— bandes de flou (PC) : haut et bas de l'écran, barre du haut, côtés des pistes ———
    même épaisseur partout (--band), même flou, fondus complémentaires dans les coins (un seul flou continu) ; chacune
