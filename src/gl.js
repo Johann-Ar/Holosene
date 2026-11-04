@@ -235,6 +235,7 @@ uniform vec3 uIrisMix;  // disposition propre à chaque vignette : décalage (to
 uniform float uVivid;   // 0 : couleurs telles quelles (sombre), 1 : plus franches (clair)
 uniform float uEdgeFloor;
 uniform vec4 uClip;
+uniform vec2 uScrY;   // haut de la vignette à l'écran, hauteur de l'écran (px CSS)
 ${IRIS_GLSL}
 float sdCard(vec2 p) {
   vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
@@ -253,17 +254,24 @@ vec3 at(vec2 q) {
 void main() {
   vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
   p.y = uRes.y - p.y;
-  // aspiration verticale aux bords gauche et droit de la piste : même principe que l'aspiration horizontale, la vignette
-  // perd de la hauteur en approchant du bord (jusqu'à 12 % au ras du bord, décroissance exponentielle), contour de verre compris, et son contenu est
-  // comprimé dans cette hauteur (on lit plus loin de l'axe médian) ; zone : 30 % de la piste, 160 px au plus
-  float sqz = 1.0;
+  // aspiration aux bords, même principe des quatre côtés (décroissance exponentielle, forte au ras du bord seulement) :
+  // - bords gauche et droit de la piste : la vignette perd de la hauteur (jusqu'à 8 % sur PC, 12 % sur mobile) ;
+  // - haut et bas de l'écran : elle perd de la largeur, dans la même proportion et sur la même zone ;
+  // contour de verre compris ; son contenu est comprimé d'autant (on lit plus loin de l'axe médian)
+  float sqz = 1.0, sqx = 1.0;
+  float scrY = uScrY.x + p.y;   // position du point à l'écran (px CSS, depuis le haut)
   if (uClip.z > 0.0) {
-    float zone = (uClip.y - uClip.x) < 769.0 ? 0.075 * (uClip.y - uClip.x) : min(160.0, 0.3 * (uClip.y - uClip.x));   // mobile : zone étroite
-    float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));   // distance au bord le plus proche de la piste
-    sqz = 1.0 - ((uClip.y - uClip.x) < 769.0 ? 0.12 : 0.08) * exp(-d / (0.28 * zone));   // PC : 8 % au plus (mobile 12 %)                // décroissance exponentielle : forte au ras du bord seulement
+    float trackW = uClip.y - uClip.x;
+    float zone = trackW < 769.0 ? 0.075 * trackW : min(160.0, 0.3 * trackW);   // mobile : zone étroite
+    float k = trackW < 769.0 ? 0.12 : 0.08;
+    float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));             // distance au bord le plus proche de la piste
+    sqz = 1.0 - k * exp(-d / (0.28 * zone));
+    float dy = max(0.0, min(scrY, uScrY.y - scrY));                     // distance au haut ou au bas de l'écran
+    sqx = 1.0 - k * exp(-dy / (0.28 * zone));
     p.y = uRes.y * 0.5 + (p.y - uRes.y * 0.5) / sqz;
+    p.x = uRes.x * 0.5 + (p.x - uRes.x * 0.5) / sqx;
   }
-  float aa = 0.9 / (uDpr * sqz);
+  float aa = 0.9 / (uDpr * min(sqz, sqx));
   float sd = sdCard(p);
   vec3 col = at(p);
   float W = (uClip.z > 0.0 && uClip.z < 25.0) ? 26.0 : 34.0;   // épaisseur du verre (mobile : × 0,75)
@@ -357,7 +365,7 @@ export function createGL(canvas, { reduced }) {
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY']) GU[n] = gl.getUniformLocation(gProg, n)
   const fbo = gl.createFramebuffer(), fboTex = gl.createTexture()
   let fboW = 0, fboH = 0
   function ensureFbo(w, h) {
@@ -624,6 +632,7 @@ export function createGL(canvas, { reduced }) {
         gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
+        gl.uniform2f(GU.uScrY, b.top, H)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 120, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
