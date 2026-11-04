@@ -254,13 +254,13 @@ void main() {
   vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
   p.y = uRes.y - p.y;
   // aspiration verticale aux bords gauche et droit de la piste : même principe que l'aspiration horizontale, la vignette
-  // perd de la hauteur en approchant du bord (jusqu'à 22 % au ras du bord), contour de verre compris, et son contenu est
+  // perd de la hauteur en approchant du bord (jusqu'à 12 % au ras du bord, décroissance exponentielle), contour de verre compris, et son contenu est
   // comprimé dans cette hauteur (on lit plus loin de l'axe médian) ; zone : 30 % de la piste, 160 px au plus
   float sqz = 1.0;
   if (uClip.z > 0.0) {
     float zone = min(160.0, 0.3 * (uClip.y - uClip.x));
-    float w = max(1.0 - smoothstep(uClip.x, uClip.x + zone, p.x), smoothstep(uClip.y - zone, uClip.y, p.x));
-    sqz = 1.0 - 0.22 * w * w * (3.0 - 2.0 * w);
+    float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));   // distance au bord le plus proche de la piste
+    sqz = 1.0 - 0.12 * exp(-d / (0.28 * zone));                // décroissance exponentielle : forte au ras du bord seulement
     p.y = uRes.y * 0.5 + (p.y - uRes.y * 0.5) / sqz;
   }
   float aa = 0.9 / (uDpr * sqz);
