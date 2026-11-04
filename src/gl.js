@@ -316,7 +316,7 @@ void main() {
     float zone = trackW < 769.0 ? 0.075 * trackW : min(75.0, 0.14 * trackW);   // portée : PC 110 px au plus ; mobile, zone étroite
     float k = trackW < 769.0 ? 0.12 : 0.08;
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));             // distance au bord le plus proche de la piste
-    sqz = 1.0 - k * exp(-d / (0.28 * zone));
+    sqz = 1.0 - 0.8 * k * exp(-d / (0.28 * zone));   // côtés : un peu moins fort (PC 6,4 %, mobile 9,6 %)
     float dy = max(0.0, min(scrY, uScrY.y - scrY));                     // distance au haut ou au bas de l'écran
     sqx = 1.0 - (k / 1.5) * exp(-dy / (0.28 * zone));   // haut et bas : force ÷ 1,5
     p.y = uRes.y * 0.5 + (p.y - uRes.y * 0.5) / sqz;
