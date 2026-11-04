@@ -32,7 +32,8 @@ void main() {
   vec2 s = vec2(gl_FragCoord.x, uRes.y * uDpr - gl_FragCoord.y) / uDpr;   // px CSS, y vers le bas
   vec2 w = s + vec2(0.0, uScroll);                                        // position dans la page
   // proximité du curseur : les formes se rapprochent de la plaque
-  float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * 260.0 * 260.0));
+  float PR = mix(165.0, 260.0, uLight);   // rayon de l'effet du curseur (sombre : plus petit)
+  float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * PR * PR));
   // chaque forme n'agit que sur sa zone (somme de taches, sans moyenne) : entre elles, le fond reste celui du thème
   vec3 base = uPage * mix(0.75, 1.0, uLight);      // sombre : fond assombri (#161616 × 0,75 ≈ #101010)
   float amp = mix(0.16, 0.2, uLight) * (1.0 + 2.6 * P);   // nettement renforcée sous le curseur

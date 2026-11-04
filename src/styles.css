@@ -544,7 +544,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* textes des sections (Projets choisis, Travaux de recherche, À propos) : apparition mot à mot, comme la présentation de
    l'accueil (fondu d'opacité et flou), quand ils arrivent à l'écran ; une seule fois par chargement (main.js) */
-.js [data-seq] .w { opacity: 0; filter: blur(6px); transition: opacity 0.4s var(--ease-flow), filter 0.5s var(--ease-flow); transition-delay: calc(var(--i, 0) * 45ms); }
+.js [data-seq] .w { opacity: 0; filter: blur(6px); transition: opacity 0.4s var(--ease-flow), filter 0.5s var(--ease-flow); transition-delay: calc(var(--i, 0) * 38ms); }
 .js [data-seq].in .w { opacity: 1; filter: none; }
 @media (prefers-reduced-motion: reduce) { .js [data-seq] .w { opacity: 1; filter: none; transition: none; } }
 

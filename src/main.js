@@ -338,8 +338,16 @@ const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
 
 const word = null
 // textes des sections : apparition mot à mot quand ils arrivent à l'écran, une seule fois par chargement de page
-{ const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } }), { threshold: 0.35 })
-  document.querySelectorAll('[data-seq]').forEach((el) => io.observe(el)) }
+// une section = une seule séquence, dans l'ordre de lecture : le rang des mots se poursuit d'un paragraphe à l'autre
+// (chaque mot attend le précédent), et toute la séquence démarre quand son premier paragraphe arrive à l'écran
+{ const groups = new Map()
+  for (const el of document.querySelectorAll('[data-seq]')) { const g = el.closest('section') || el.parentElement; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(el) }
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (!e.isIntersecting) return; const list = groups.get(e.target._seqGroup); list.forEach((el) => el.classList.add('in')); io.unobserve(e.target) }), { threshold: 0.35 })
+  for (const [g, list] of groups) {
+    let i = 0
+    for (const el of list) for (const w of el.querySelectorAll('.w')) w.style.setProperty('--i', i++)
+    list[0]._seqGroup = g; io.observe(list[0])
+  } }
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 function scrollEffects() {
   const vh = innerHeight
