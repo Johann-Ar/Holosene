@@ -644,5 +644,5 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* page annexe (sans menu) : la barre défile avec la page (pas de fondu dessous, rien ne passe sous le lien) */
 .topbar:not(:has(.topbar__nav)) { position: absolute; }
 
-/* À propos : texte long, apparition plus rapide (≈ 1,4 s pour l'ensemble) */
-.js .about [data-seq] .w { transition-duration: 0.3s, 0.35s; transition-delay: calc(var(--i, 0) * 16ms); }
+/* À propos : texte long, apparition légèrement plus rapide (≈ 2 s pour l'ensemble) */
+.js .about [data-seq] .w { transition-delay: calc(var(--i, 0) * 28ms); }
