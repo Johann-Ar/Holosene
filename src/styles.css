@@ -678,7 +678,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* FR/EN : la langue affichée à l'encre, la barre et l'autre langue en gris (comme les mentions légales) ; le gris suit
    la langue de la page (même balisage dans les deux langues : changement de langue sans rechargement) */
 .topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: var(--c-grey-text); transition: color var(--hl-dur) var(--hl-ease); }
-.topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: inherit; }
+.topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: inherit !important; }   /* au survol : FR, / et EN en couleur du fond */
 
 /* touche F maintenue (main.js) : en haut, exactement la bande du bas (hauteur, flou, fondu), à la place du voile clair */
 .f-band .topbar__glass { display: none !important; }
