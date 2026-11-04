@@ -117,10 +117,7 @@ vec4 halftoneS(vec2 p, vec2 off) {
   float rev = smoothstep(rnd * 0.6, rnd * 0.6 + 0.4, uReveal);
   if (uHasMask > 0.5 && inO > 0.5) rev = 1.0;   // accueil : le « o » est là dès le départ (il vient du chargeur)
   float kk = max(sqrt(clamp(l * 1.2, 0.0, 1.0)), uFloor * inWord) * m;
-  // image resserrée : au-delà de ses bords haut et bas, plus de points (bord net, pas de dernière ligne étirée)
-  float qy = c.y + off.y;
-  float inV = smoothstep(-0.5 * uCell, 0.5 * uCell, qy) * smoothstep(-0.5 * uCell, 0.5 * uCell, uRes.y - qy);
-  float r = uCell * 0.49 * kk * rev * edge * inV;
+  float r = uCell * 0.49 * kk * rev * edge;
   float dotA = (1.0 - smoothstep(r - aa, r + aa, length(p - c))) * clamp(r / aa, 0.0, 1.0);
   vec3 dc = mix(vec3(mix(0.2, 0.95, clamp(l * 1.1, 0.0, 1.0))), min(texture2D(uTex, cover(c + off)).rgb * 1.25, 1.0), uColor);   // uColor : 0 gris, 1 couleur
   if (uHasMask > 0.5) {
@@ -156,10 +153,10 @@ vec3 withLens(vec2 q, vec3 base) {
     vec2 lp = q - uLens.xy;
     float d = length(lp);
     if (d < uLensO + 2.0) {
-      float k = smoothstep(0.72, 1.0, d / R);
-      // loupe : grossissement ×1,4 au centre, qui se raccorde au bord (lentille convexe), puis bombé « verre liquide »
-      float mag = mix(0.7, 1.0, smoothstep(0.3, 1.0, d / R));
-      float bend = 1.0 - mag * (1.0 - 0.2 * k * k * k);
+      // loupe sur le bord intérieur seulement : le centre reste net et non déformé ; dans une bande étroite contre
+      // l'anneau (derniers 30 % du rayon), l'image est lue plus vers le centre (grossie, comme au bord d'une lentille)
+      float k = smoothstep(0.7, 1.0, d / R);
+      float bend = 0.32 * k * k;
       vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
       vec3 orig = vec3(0.0);
       for (int i = 0; i < 4; i++) {
@@ -197,10 +194,6 @@ void main() {
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + EDGE, p.x); wR = smoothstep(uClip.y - EDGE, uClip.y, p.x); }
   vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur
-  // près des bords gauche et droit de la piste, l'image est aussi resserrée vers son axe horizontal médian : on la lit
-  // plus loin du centre (jusqu'à 16 % de la demi-hauteur au ras du bord), en douceur
-  float wS = pow(max(wL, wR), 2.0);
-  suck.y += (p.y - uRes.y * 0.5) * 0.16 * wS * wS * (3.0 - 2.0 * wS);
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
   vec2 hp = p;
@@ -518,7 +511,7 @@ export function createGL(canvas, { reduced }) {
       if (v.maskB) { gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, v.maskB) }
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
-      gl.uniform1f(U.uEdgeFloor, theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5 ? 0 : 0.12)   // clair : effacement complet aux bords
+      gl.uniform1f(U.uEdgeFloor, theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5 ? 1 : 0.12)   // clair : pas d'effacement (flou CSS aux bords)
       gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : w < 760 ? Math.max(5, v.cell - 1) : v.cell)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
@@ -553,7 +546,7 @@ export function createGL(canvas, { reduced }) {
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
         // irisé du verre : une seule intensité (pas de changement au survol) ; plus présent sur fond clair
         const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, light ? 0.95 : 0.6); gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 0 : 0.12)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, light ? 0.95 : 0.6); gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
