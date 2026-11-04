@@ -521,7 +521,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* ——— bandes de flou (PC) : haut et bas de l'écran, barre du haut, côtés des pistes ———
    même épaisseur partout (--band), même flou, fondus complémentaires dans les coins (un seul flou continu) ; chacune
-   porte le calque .fx (grain et colorisation vivante, fx-css.js) */
+   porte le calque .fx (grain, fx-css.js) */
 :root { --band: 96px; }
 .side { display: none; position: absolute; top: 0; bottom: 0; width: var(--band); z-index: 2; pointer-events: none;
   -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
@@ -540,14 +540,10 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   :root[data-theme="light"] .edge--bottom { opacity: 1; background: none; }   /* bas : flou plein (le haut garde son fondu d'origine) */
   .work__track { --fade: var(--band); }
 }
-/* calque de grain et de couleur : les couleurs viennent du fond, aux endroits couverts par la bande (fx-css.js) */
-/* clair : « éclaircir » ne change que ce qui est plus sombre que la teinte (les formes sombres) ; le fond clair reste
-   intact. Sombre : « assombrir », l'inverse (seules les formes claires se teintent, le noir reste noir). */
-.fx { position: absolute; inset: 0; pointer-events: none; opacity: var(--fx-a, 0); mix-blend-mode: lighten; }   /* dégradé posé par fx-css.js (couleurs du fond) */
-:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { mix-blend-mode: darken; }
-/* grain : seulement dans les sombres en clair (et les clairs en sombre), comme dans le WebGL */
-.fx::after { content: ''; position: absolute; inset: 0; background: url('/media/grain.png'); mix-blend-mode: lighten; opacity: 0.5; filter: brightness(0.55); }
-:root[data-theme="dark"] .fx::after, :root:not(.theme-chosen) .fiche .fx::after { mix-blend-mode: darken; filter: brightness(1.6); }
+/* grain des flous (même texture que le bord des vignettes), fondu comme son flou ; aucune colorisation */
+.fx { position: absolute; inset: 0; pointer-events: none; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.55; }
+:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { opacity: 0.4; }
+.edge--top .fx, .topbar__glass .fx { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
 .edge--bottom .fx { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
 
 /* fond : même grain que les zones floues, posé sur les couleurs floutées du fond (doux sur le blanc) ; fixe, au pixel */

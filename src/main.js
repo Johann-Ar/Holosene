@@ -449,7 +449,7 @@ Promise.race([
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null
 try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (err) { console.warn(err) }
-startFxCss({ reduced })   // grain et colorisation vivante des bandes de flou CSS
+startFxCss()   // grain des bandes de flou CSS
 sizeLoader()
 // le chargeur ne s'affiche qu'une fois à sa taille définitive (image suivante, taille appliquée), en fondu
 requestAnimationFrame(() => requestAnimationFrame(() => loaderEl?.classList.add('is-ready')))
