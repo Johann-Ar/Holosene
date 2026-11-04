@@ -543,7 +543,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* grain des flous (même texture que le bord des vignettes), fondu comme son flou ; aucune colorisation */
 .fx { position: absolute; inset: 0; pointer-events: none; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.28; }   /* discret : se sent plus qu'il ne se voit */
 :root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { opacity: 0.2; }
-.edge--top .fx, .topbar__glass .fx { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
 .edge--bottom .fx { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
 
 /* fond : même grain que les zones floues, posé sur les couleurs floutées du fond (doux sur le blanc) ; fixe, au pixel */
