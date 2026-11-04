@@ -535,11 +535,11 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 :root[data-theme="light"] .side { display: block; }   /* mobile : côtés en clair seulement (comme avant) */
 @media (min-width: 769px) {
   .side { display: block; }
-  .edge--top, .edge--bottom { height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
+  .edge--bottom { height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
+  :root[data-theme="dark"] .edge--top { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   .edge--top { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
   .edge--bottom { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
-  :root[data-theme="light"] .edge { opacity: 1; background: none; }
-  .topbar__glass { height: var(--band); }
+  :root[data-theme="light"] .edge--bottom { opacity: 1; background: none; }   /* bas : flou plein (le haut garde son fondu d'origine) */
   .work__track { --fade: var(--band); }
 }
 /* calque de grain et de couleur : dégradé conique fixé sur l'écran (0° à droite), même répartition que le WebGL */
