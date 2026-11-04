@@ -1,7 +1,7 @@
 import 'virtual:iris.css'
 import './styles.css'
 import { IRIS_INNER_RATIO } from '../design/logo-kit/src/iris.js'
-import { FLOW, updateFlow } from './flow.js'
+import { FLOW, FLOW_HOME_MIX, updateFlow } from './flow.js'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
 import { createBackdrop } from './backdrop.js'
@@ -371,7 +371,7 @@ if (spin?.getContext('2d').createConicGradient) {
     const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
     // flux : de « loading » vers « idle » pendant les 600 premières ms de la fermeture
     const toIdle = finishAt ? Math.min(1, (t - finishAt) / 600) : 0
-    FLOW.mix = 1 - toIdle * toIdle * (3 - 2 * toIdle)
+    FLOW.mix = 1 - (1 - FLOW_HOME_MIX) * toIdle * toIdle * (3 - 2 * toIdle)
     const arc = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe          // longueur de l'arc
     const head = (t / 1000) * TAU * 0.9 - Math.PI / 2               // angle canvas de la tête
     const tail = head - arc
@@ -391,7 +391,7 @@ if (spin?.getContext('2d').createConicGradient) {
       fade.addColorStop(Math.min(1, h + g * 0.95), `rgb(0 0 0 / ${a0})`)
       x.globalCompositeOperation = 'destination-in'; x.fillStyle = fade; x.fillRect(0, 0, S, S)
     }
-    if (fin >= 1 && onDone) { const d = onDone; onDone = null; FLOW.mix = 0; FLOW.loaderNeeds = false; d() }
+    if (fin >= 1 && onDone) { const d = onDone; onDone = null; FLOW.mix = FLOW_HOME_MIX; FLOW.loaderNeeds = false; d() }
     requestAnimationFrame(draw)
   }
   requestAnimationFrame(draw)

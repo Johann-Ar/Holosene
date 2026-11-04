@@ -7,6 +7,12 @@
  */
 import { irisFlowLUT, irisFlowMix, IRIS_FLOW } from '../design/logo-kit/src/iris-flow.js'
 
+// accueil : les réglages « idle » du kit sont si discrets que le flux passe inaperçu ; on les pousse au maximum des
+// plages autorisées par le kit (commentaires de iris-flow.js), sans en sortir
+Object.assign(IRIS_FLOW.idle, { breath: 0.45, breathPeriod: 8, waves: 0.8, waveSpeed: 0.07, waveWidth: 1.2 })
+// et le logo de l'accueil garde 35 % des réglages « loading » du kit (mélange irisFlowMix du kit) : un flux plus vif
+export const FLOW_HOME_MIX = 0.35
+
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
 const t0 = performance.now()
 
@@ -14,7 +20,7 @@ export const FLOW = {
   size: 512,
   lut: new Uint8Array(512 * 4),
   version: 0,       // incrémenté à chaque nouvelle texture (gl.js la ré-envoie au GPU)
-  mix: 0,           // 0 : réglages idle (logo de l'accueil), 1 : loading (chargeur) ; fixé par le chargeur
+  mix: 0.35,        // 0 : réglages idle, 1 : loading (chargeur) ; logo de l'accueil : FLOW_HOME_MIX ; fixé par le chargeur
   glNeeds: true,    // logo de l'accueil ou lentille à l'écran (fixé par gl.js)
   loaderNeeds: true, // chargeur affiché (fixé par main.js)
   frozen: false,    // panneau ?debug=iris : roue finale (amount = 0)
