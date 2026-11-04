@@ -150,7 +150,7 @@ export function render(lang) {
   </a>
   <div class="topbar__tools">
     <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><span class="theme-toggle__t">${lang === "fr" ? "Sombre" : "Dark"}</span></button>
-    <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" lang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}">${lang === 'fr' ? 'EN' : 'FR'}</a>
+    <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}"><span class="lang__fr">FR</span><span class="lang__sep">/</span><span class="lang__en">EN</span></a>
   </div>
 </header>
 
