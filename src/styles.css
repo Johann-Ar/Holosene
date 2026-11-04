@@ -607,15 +607,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* chargeur : plus l'arc s'amenuise vers sa queue, plus il est flou (cinq tranches qui se fondent l'une dans l'autre, de
    la tête nette au bout très flou) ; chaque tranche est d'abord découpée (.loader__band), puis floutée (.loader__arc) : aucun
    bord net (aucun contour net à peine visible) */
-.loader__arc--k0 > .loader__band { -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 38%, #000 44%, #000 85%, transparent 85.01%); mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 38%, #000 44%, #000 85%, transparent 85.01%); }
-.loader__arc.loader__arc--k1 { filter: blur(calc(var(--r1) * 0.035)); }
-.loader__arc--k1 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 26%, #000 31%, #000 38%, transparent 44%); mask: conic-gradient(transparent 0%, transparent 26%, #000 31%, #000 38%, transparent 44%); }
-.loader__arc.loader__arc--k2 { filter: blur(calc(var(--r1) * 0.07)); }
-.loader__arc--k2 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 15%, #000 20%, #000 26%, transparent 31%); mask: conic-gradient(transparent 0%, transparent 15%, #000 20%, #000 26%, transparent 31%); }
-.loader__arc.loader__arc--k3 { filter: blur(calc(var(--r1) * 0.11)); }
-.loader__arc--k3 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 6%, #000 10%, #000 15%, transparent 20%); mask: conic-gradient(transparent 0%, transparent 6%, #000 10%, #000 15%, transparent 20%); }
-.loader__arc.loader__arc--k4 { filter: blur(calc(var(--r1) * 0.16)); }
-.loader__arc--k4 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, #000 3%, #000 6%, transparent 10%); mask: conic-gradient(transparent 0%, #000 3%, #000 6%, transparent 10%); }
 /* bouton clair / sombre : texte, comme EN / FR (le mode vers lequel on bascule) */
 .theme-toggle { width: auto !important; height: auto !important; font: 800 var(--fs-small)/1.5 var(--font-text); text-transform: uppercase; letter-spacing: 0.02em; padding: 0.12em 0.32em !important; }
 
@@ -674,3 +665,12 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { text-shadow: 0 0 0.6px currentColor, 0 0 1.4px currentColor; filter: blur(0.55px); }
 @media (hover: none) { .topbar__nav a:not(.lang):hover:not(:active), .socials a:hover:not(:active), .foot a:hover:not(:active), .mail:hover:not(:active), .fiche__close:hover:not(:active), .topbar .lang:hover:not(:active), .btn--light:hover:not(:active), .theme-toggle:hover:not(:active), .fiche__open:hover:not(:active) { text-shadow: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .cta-idle-off .hero__cta { opacity: 1 !important; visibility: visible; filter: none; } }
+
+/* chargeur : un seul calque. Le masque de l'arc (src/media/loader-arc.png, calculé pixel par pixel : tête nette au bout
+   arrondi, bords de plus en plus doux vers la queue) tourne ; dessous, la roue du kit tourne en sens inverse : ses
+   couleurs restent fixes, l'arc les dévoile. Seulement des rotations, faites par la carte graphique : fluide même
+   pendant que la page se prépare. Le cadre déborde (150 %) pour que le flou de la queue ne soit jamais coupé. */
+.loader__spin { position: absolute; inset: -25%; animation: spin 1.111s linear infinite; will-change: transform;
+  -webkit-mask: url('./media/loader-arc.png') center / 100% 100% no-repeat; mask: url('./media/loader-arc.png') center / 100% 100% no-repeat; }
+.loader__wheel { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic); animation: spin 1.111s linear infinite reverse; }
+@media (prefers-reduced-motion: reduce) { .loader__spin, .loader__wheel { animation: none; } }

@@ -7,6 +7,7 @@ import { createBackdrop } from './backdrop.js'
 import { IRIS } from './iris-config.js'
 import { startFxCss } from './fx-css.js'
 import { swapLanguage } from './lang-swap.js'
+import loaderArcUrl from './media/loader-arc.png'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -562,7 +563,10 @@ try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (
 startFxCss()   // grain des bandes de flou CSS
 sizeLoader()
 // le chargeur ne s'affiche qu'une fois à sa taille définitive (image suivante, taille appliquée), en fondu
-requestAnimationFrame(() => requestAnimationFrame(() => loaderEl?.classList.add('is-ready')))
+// … et une fois le masque de l'arc décodé (sinon le chargeur serait un instant invisible)
+{ const im = new Image(); im.src = loaderArcUrl
+  const ready = () => requestAnimationFrame(() => requestAnimationFrame(() => loaderEl?.classList.add('is-ready')))
+  ;(im.decode ? im.decode() : Promise.resolve()).then(ready, ready) }
 // fond : formes colorées derrière une plaque dépolie, qui défilent avec la page et réagissent au curseur
 let backdrop = null
 try { backdrop = createBackdrop(document.querySelector('.bg-canvas'), { reduced }) } catch (err) { console.warn(err) }
