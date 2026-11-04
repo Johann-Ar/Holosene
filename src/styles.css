@@ -578,3 +578,24 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   transition: background-size 0.2s cubic-bezier(0.75, 0, 0, 1), color 0.2s cubic-bezier(0.75, 0, 0, 1) !important; }
 .theme-toggle:hover, .theme-toggle:active, .theme-toggle:focus-visible { background-size: 100% 100% !important; color: var(--bg) !important; outline: none; }
 .theme-toggle svg { width: 18px; height: 18px; }
+
+/* ——— survols : un seul langage, le surlignage (validé) ———
+   tous les liens et boutons texte : un aplat d'encre s'étire depuis la gauche et le texte passe en couleur du fond ;
+   plus aucun soulignement. L'aplat garde toujours le même ancrage (à gauche) : en survolant vite, il s'arrête et
+   repart d'où il en est, sans saut. */
+:root { --hl-ease: cubic-bezier(0.65, 0, 0.35, 1); --hl-dur: 0.32s; }
+.topbar__nav a:not(.lang)::after, .mail > span::after, .socials a::before, .socials a::after, .foot a::before, .foot a::after { display: none !important; }
+.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle {
+  text-decoration: none; padding: 0.12em 0.32em !important;
+  background: linear-gradient(var(--ink), var(--ink)) no-repeat left / 0% 100% !important;
+  transition: background-size var(--hl-dur) var(--hl-ease), color var(--hl-dur) var(--hl-ease) !important; }
+.topbar__nav a:not(.lang):hover, .topbar__nav a:not(.lang):focus-visible, .socials a:hover, .socials a:focus-visible, .foot a:hover, .foot a:focus-visible,
+.mail:hover, .mail:focus-visible, .fiche__close:hover, .fiche__close:focus-visible, .topbar .lang:hover, .topbar .lang:focus-visible,
+.btn--light:hover, .btn--light:focus-visible, .theme-toggle:hover, .theme-toggle:focus-visible, .theme-toggle:active {
+  background-size: 100% 100% !important; color: var(--bg) !important; outline: none; }
+.theme-toggle { padding: 0 !important; }
+.fiche__open::before { transition: transform var(--hl-dur) var(--hl-ease) !important; }
+.fiche__open { transition: color var(--hl-dur) var(--hl-ease) !important; }
+/* « Copier l'adresse » : toujours surligné (blanc) pour être bien visible ; au survol, surlignage noir et texte blanc */
+.btn--light.copy { color: #1E1E1E !important; background: linear-gradient(#1E1E1E, #1E1E1E) no-repeat left / 0% 100%, #fff !important; }
+.btn--light.copy:hover, .btn--light.copy:focus-visible, .btn--light.copy:active { color: #fff !important; background-size: 100% 100%, auto !important; }
