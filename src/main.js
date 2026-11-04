@@ -293,8 +293,9 @@ function workFrame(now = performance.now()) {
   for (const r of rails) {
     if (!r.setW) continue
     if (r.track.scrollLeft) r.track.scrollLeft = 0
-    // à l'arrêt, la piste se cale doucement sur la carte la plus proche
-    if (!r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
+    // mobile (piste finie) : à l'arrêt, la piste se cale sur la carte la plus proche (toujours centrée) ; PC : défilement
+    // libre, les vignettes restent là où le geste les a laissées
+    if (r.finite && !r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
     if (r.finite) {
       // piste finie : la cible reste entre la première et la dernière carte (dépassement au doigt : voir pointermove)
       const max = (r.n - 1) * r.step
