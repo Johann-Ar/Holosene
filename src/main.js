@@ -480,7 +480,7 @@ function scrollEffects() {
   // le nom existe en deux versions (une ligne / deux lignes sur mobile) : même avancée pour les deux
   wordsSvg.forEach((w) => {
     // le nom apparaît tôt et sur une longue course : tracé de 16 % à 79 % de la scène, remplissage dans la seconde moitié
-    const p = k(0.14, 0.7)
+    const p = k(0.12, 0.5)   // le nom est entièrement net avant que la présentation commence (0,6)
     w.style.setProperty('--draw', (1 - Math.min(1, p * 1.2)).toFixed(3))
     w.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.4) / 0.6)).toFixed(3))
   })
@@ -519,6 +519,18 @@ if (loaderO) {
     const growD = it ? Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(3 * (it.r1 - it.r0) / it.grow, 1e-3))) : 400
     loaderO.style.setProperty('--grow', growD + 'ms')
     loaderEl.classList.add('loader--closing')
+    // la tête rattrape la queue : l'arc s'arrête, un secteur net grandit depuis la tête jusqu'à la queue (rotations seules)
+    const rotOf = (sel) => loaderEl.querySelector(sel)?.getAnimations().find((a) => a.animationName === 'spin')   // la rotation (pas la transition d'opacité)
+    const spinA = rotOf('.loader__spin'), wheelA = rotOf('.loader__wheel')
+    if (spinA && !reduced) {
+      const dur = spinA.effect.getTiming().duration, rot = ((spinA.currentTime % dur) / dur) * 360
+      spinA.pause(); wheelA?.pause()
+      const ARC = 306, OVER = 8, GAP = 360 - ARC + OVER * 2   // tête de l'arc à 306° de la queue ; léger recouvrement aux deux bouts
+      const phi = rot + ARC - OVER, ease = 'cubic-bezier(0.45, 0, 0.25, 1)', opt = { duration: 640, easing: ease, fill: 'forwards' }
+      loaderEl.querySelector('.loader__fill').style.transform = `rotate(${phi}deg)`
+      loaderEl.querySelector('.loader__rot').animate([{ transform: 'rotate(-180deg)' }, { transform: `rotate(${-180 + GAP}deg)` }], opt)
+      loaderEl.querySelector('.loader__fillring').animate([{ transform: `rotate(${-(phi - 180)}deg)` }, { transform: `rotate(${-(phi - 180 + GAP)}deg)` }], opt)
+    }
     setTimeout(() => { FLOW.t0 = performance.now(); done() }, reduced ? 0 : 1300)
   }
 }
@@ -668,3 +680,8 @@ addEventListener('popstate', () => { if (location.pathname !== shownPath) locati
     t = setTimeout(() => root.classList.remove('cta-idle-off'), 2600)
   }, { passive: true }) }
 
+
+/* Touche F maintenue : en haut, la même bande que celle du bas, à la place du voile clair (styles.css, .f-band) */
+addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('f-band') })
+addEventListener('keyup', (e) => { if (e.code === 'KeyF') root.classList.remove('f-band') })
+addEventListener('blur', () => root.classList.remove('f-band'))

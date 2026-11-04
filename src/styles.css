@@ -73,14 +73,17 @@ a { color: inherit; }
 .loader__full { opacity: 0; }
 /* fermeture : l'anneau complet (mêmes couleurs aux mêmes endroits que l'arc) vient remplir le vide de l'arc, net ; le
    halo de la queue s'éteint juste après ; puis l'anneau grandit jusqu'au relais avec le logo */
-.loader--closing .loader__full { opacity: 1; transition: opacity 0.4s cubic-bezier(0.33, 0, 0.2, 1) 0.22s; }
-/* l'anneau arrive d'abord flou (copie floutée, flou fixe), puis le net le remplace : seule l'opacité varie, animée par la
-   carte graphique (un flou animé serait recalculé par la page, occupée à la fin du chargement : saccades) */
-.loader__soft { position: absolute; inset: -25%; opacity: 0; filter: blur(calc(var(--r1) * 0.09)); pointer-events: none; }
-.loader__soft > .loader__ring { inset: 16.6667%; }
-.loader--closing .loader__soft { animation: loader-soft 0.75s cubic-bezier(0.33, 0, 0.2, 1) forwards; }
-@keyframes loader-soft { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 0; } }
-.loader--closing .loader__spin { opacity: 0; transition: opacity 0.4s cubic-bezier(0.33, 0, 0.2, 1) 0.2s; }
+.loader--closing .loader__full { opacity: 1; transition: opacity 0.25s cubic-bezier(0.33, 0, 0.2, 1) 0.68s; }   /* après le remplissage par la tête */
+/* fermeture : l'arc s'arrête et c'est la tête qui avance jusqu'à la queue (secteur net qui grandit depuis la tête, sens
+   horaire : une moitié qui tourne dans une moitié découpée ; la roue reste fixe par contre-rotation) ; animations de
+   rotation seulement (main.js), faites par la carte graphique */
+.loader__fill { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.loader--closing .loader__fill { opacity: 1; }
+.loader__half { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; overflow: hidden; }
+.loader__rot { position: absolute; left: -100%; top: 0; width: 200%; height: 100%; transform: rotate(-180deg); }
+.loader__halfin { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; overflow: hidden; }
+.loader__fillring { left: -100% !important; width: 200%; right: auto !important; }
+.loader--closing .loader__spin { opacity: 0; transition: opacity 0.3s cubic-bezier(0.33, 0, 0.2, 1) 0.72s; }
 .loader--closing .loader__o { transform: scale(1); transition: transform var(--grow, 400ms) cubic-bezier(0.333, 0, 0.667, 0.333) calc(1300ms - var(--grow, 400ms)); }
 /* l'anneau n'apparaît qu'une fois à sa vraie taille (is-ready, main.js), en fondu : aucun saut de taille */
 .loader.is-ready .loader__o { opacity: 1; filter: none; }   /* apparition : fondu et flou, comme les autres éléments */
@@ -676,13 +679,27 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
    arrondi, bords de plus en plus doux vers la queue) tourne ; dessous, la roue du kit tourne en sens inverse : ses
    couleurs restent fixes, l'arc les dévoile. Seulement des rotations, faites par la carte graphique : fluide même
    pendant que la page se prépare. Le cadre déborde (150 %) pour que le flou de la queue ne soit jamais coupé. */
-.loader__spin { position: absolute; inset: -25%; animation: spin 1.111s linear infinite; will-change: transform;
+.loader__spin { position: absolute; inset: -25%; animation: spin 1.35s linear infinite; will-change: transform;
   -webkit-mask: url('./media/loader-arc.png') center / 100% 100% no-repeat; mask: url('./media/loader-arc.png') center / 100% 100% no-repeat; }
-.loader__wheel { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic); animation: spin 1.111s linear infinite reverse; }
+.loader__wheel { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic); animation: spin 1.35s linear infinite reverse; }   /* un peu plus lent */
 @media (prefers-reduced-motion: reduce) { .loader__spin, .loader__wheel { animation: none; } }
 
 /* FR/EN : la langue affichée à l'encre, la barre et l'autre langue en gris (comme les mentions légales) ; le gris suit
    la langue de la page (même balisage dans les deux langues : changement de langue sans rechargement) */
 .topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 48%, var(--bg)); transition: color var(--hl-dur) var(--hl-ease); }
-.topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: inherit !important; }   /* au survol : FR, / et EN en couleur du fond */
+/* au survol : la langue vers laquelle on bascule en blanc plein ; la langue actuelle et la barre en gris */
+.topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: color-mix(in srgb, var(--bg) 52%, var(--ink)) !important; }
+:root[lang="fr"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__en, :root[lang="en"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__fr { color: var(--bg) !important; }
 
+
+/* « JOHANN ARATA » : texte en capitales, Futura Bold ; apparaît en fondu, du flou au net, piloté par la scène de l'accueil
+   (--draw, main.js), entièrement net avant que la présentation commence */
+.hero__name { display: block; font: 700 min(8.6vw, 104px)/1 var(--font-display); text-transform: uppercase; letter-spacing: -0.005em; color: var(--ink); white-space: nowrap;
+  opacity: calc(1 - var(--draw, 0)); filter: blur(calc(var(--draw, 0) * 10px)); }
+.hero .studio__word.hero__name { width: auto; height: auto; filter: blur(calc(var(--draw, 0) * 10px)); }
+@media (max-width: 760px) { .hero__name { font-size: 16vw; white-space: normal; } .hero__name > span { display: block; } }
+/* touche F maintenue (main.js) : en haut, exactement la bande du bas (hauteur, flou, fondu), à la place du voile clair */
+.f-band .topbar__glass { display: none !important; }
+.f-band body > .edge--top { visibility: visible; height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+  -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
+:root[data-theme="light"].f-band body > .edge--top { opacity: 1; background: none; }
