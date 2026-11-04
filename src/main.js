@@ -303,6 +303,12 @@ function workFrame(now = performance.now()) {
     // mobile (piste finie) : à l'arrêt, la piste se cale sur la carte la plus proche (toujours centrée) ; PC : défilement
     // libre, les vignettes restent là où le geste les a laissées
     if (r.finite && !r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
+    // PC (défilement libre) : quand la piste est entièrement hors de l'écran, elle se recale d'un coup sur la carte la plus
+    // proche (personne ne le voit) ; en y revenant, les vignettes sont en place dans la grille
+    if (!r.finite && !r.isDown()) {
+      const pr = r.pin.getBoundingClientRect()
+      if (pr.bottom < 0 || pr.top > innerHeight) { const snap = Math.round(r.target / r.step) * r.step; if (snap !== r.x || snap !== r.target) { r.target = r.x = snap; r.vel = 0 } }
+    }
     if (r.finite) {
       // piste finie : la cible reste entre la première et la dernière carte (dépassement au doigt : voir pointermove)
       const max = (r.n - 1) * r.step
