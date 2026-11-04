@@ -538,7 +538,7 @@ export function createGL(canvas, { reduced }) {
         // rotation passive de la roue du « o » : démarre en douceur une fois le logo posé (fin de l'arrivée)
         const ms = reduced ? 0 : now - v.seen - (IRIS.intro.grow + IRIS.intro.shift)
         const e = Math.max(0, ms), ramp = Math.min(1, e / IRIS.o.rampMs), ramp3 = ramp * ramp * (3 - 2 * ramp)
-        gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 2 * Math.PI * (e / (IRIS.o.turnSeconds * 1000)) * ramp3)
+        gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], IRIS.o.freeze ? 0 : 2 * Math.PI * (e / (IRIS.o.turnSeconds * 1000)) * ramp3)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
       }
       gl.drawArrays(gl.TRIANGLES, 0, 3)

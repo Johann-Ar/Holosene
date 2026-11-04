@@ -27,6 +27,9 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
   location.replace('en/' + location.hash)
 }
 
+/* Réglages Iris en direct (?debug=iris) : en développement seulement, absent du site publié */
+if (import.meta.env.DEV && new URLSearchParams(location.search).get('debug') === 'iris') import('./iris-debug.js').then((m) => m.mountIrisDebug())
+
 /* Petit logo de la barre du haut : visible seulement quand le gros logo de l'accueil n'est plus à l'écran */
 const heroSlot = document.querySelector('.hero__slot')
 if (!heroSlot) root.classList.add('brand-on')

@@ -7,6 +7,7 @@ export const IRIS = {
   o: {
     turnSeconds: 32,   // rotation passive de la roue du « o » : un tour en N secondes (24 à 40)
     rampMs: 4000,      // démarrage progressif de la rotation après l'arrivée du logo (2000 à 6000 ms)
+    freeze: false,     // true : roue figée à t = 0, orientation du kit (panneau ?debug=iris)
   },
   intro: {
     grow: 850,         // croissance du « o » après le relais du chargeur (600 à 1200 ms)
