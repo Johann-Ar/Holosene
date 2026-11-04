@@ -92,7 +92,9 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float sdS = dc.r * 32.0 - 4.0, sdO = dc.g * 32.0 - 4.0;
     bool isO = sdO > sdS;
     float sd = max(sdS, sdO);
-    float cov = clamp(sd * upx * uDpr + 0.5, 0.0, 1.0);
+    // le champ de distance s'arrête à −4 unités : au-delà (valeur plafonnée), on est franchement dehors, même quand le
+    // logo est si petit que 4 unités font moins d'un demi-pixel (sinon tout son rectangle se teinterait)
+    float cov = clamp(sd * upx * uDpr + 0.5, 0.0, 1.0) * step(-3.9, sd);
     if (cov < 0.001) return vec4(0.0);
     // aplat exact du kit (comme design/logo-kit/ref) : S à l'encre du thème, « o » : roue du kit ; bords nets, sans halo
     // roue du « o » : animation « flux » du kit (les couleurs respirent, rien ne tourne ; au repos : la roue finale)
