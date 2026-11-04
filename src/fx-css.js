@@ -7,8 +7,6 @@
 export function startFxCss() {
   const pins = [...document.querySelectorAll('.work__pin')]
   for (const pin of pins) for (const side of ['l', 'r']) { const s = document.createElement('div'); s.className = `side side--${side}`; s.setAttribute('aria-hidden', 'true'); pin.append(s) }
-  // la barre du haut (barre du menu, fondu du haut) garde son fondu d'origine, sans grain
-  for (const h of document.querySelectorAll('.edge--bottom, .side')) { const f = document.createElement('span'); f.className = 'fx'; f.setAttribute('aria-hidden', 'true'); h.append(f) }
   function tick() {
     requestAnimationFrame(tick)
     for (const pin of pins) {
