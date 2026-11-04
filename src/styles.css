@@ -92,12 +92,12 @@ a { color: inherit; }
 /* mode clair : verre dépoli de la barre en flou progressif (5 couches empilées, flou doublé à chaque couche de 1 à 16 px, chacune
    visible sur une bande ; le flou croît vers le haut, sans palier) ; il descend sous les liens pour que le dégradé
    finisse en dessous d'eux ; voile léger dégradé par-dessus */
-.topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc((100% + 48px) / 1.5); z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, white 72%, transparent), color-mix(in srgb, white 34%, transparent) 55%, transparent); }   /* voile blanc : boutons et liens mieux contrastés */
+.topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc((100% + 48px) / 1.5); z-index: -1; pointer-events: none; }   /* flou progressif seul, sans voile blanc */   /* voile blanc : boutons et liens mieux contrastés */
 .topbar__glass i { position: absolute; inset: 0; }
-/* voile et flou de la barre : seulement quand le contenu passe dessous (après la scène de l'accueil), en fondu ; sur
-   l'accueil (et pendant le chargement), la barre n'a que ses liens */
-.topbar__glass { transition: opacity 0.8s var(--ease-flow); }
-.js:not(.hero-done) .topbar .topbar__glass { opacity: 0; }
+/* flou de la barre : seulement quand le contenu passe dessous (après la scène de l'accueil) ; sur l'accueil et pendant
+   le chargement, la barre n'a que ses liens. Sans fondu d'opacité : pendant un fondu, le navigateur coupe le flou des
+   calques puis le rétablit d'un coup (à-coup visible) */
+.js:not(.hero-done) .topbar .topbar__glass { visibility: hidden; }
 .topbar__glass i:nth-child(1) { -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px); -webkit-mask: linear-gradient(to top, transparent 0%, #000 20%, #000 40%, transparent 60%); mask: linear-gradient(to top, transparent 0%, #000 20%, #000 40%, transparent 60%); }
 .topbar__glass i:nth-child(2) { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); -webkit-mask: linear-gradient(to top, transparent 20%, #000 40%, #000 60%, transparent 80%); mask: linear-gradient(to top, transparent 20%, #000 40%, #000 60%, transparent 80%); }
 .topbar__glass i:nth-child(3) { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); -webkit-mask: linear-gradient(to top, transparent 40%, #000 60%, #000 80%, transparent 100%); mask: linear-gradient(to top, transparent 40%, #000 60%, #000 80%, transparent 100%); }
@@ -135,11 +135,11 @@ a { color: inherit; }
 @keyframes chroma { from { text-shadow: -0.04em 0 0.1em color-mix(in srgb, var(--iris-magenta) 45%, transparent), 0.04em 0 0.1em color-mix(in srgb, var(--iris-vert) 45%, transparent); } to { text-shadow: 0 0 0 transparent, 0 0 0 transparent; } }
 
 /* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
-.edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
+.edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; }   /* sans fondu d'opacité (il couperait le flou : à-coup) */
 .edge--top { top: 0; height: 80px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%); }
 @media (min-width: 769px) { .edge--top { height: 64px; } }   /* PC : fondu du haut plus court */
 .edge--bottom { bottom: 0; height: 120px; background: linear-gradient(0deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%); }
-.edge-bottom-off .edge--bottom { opacity: 0 !important; }
+.edge-bottom-off .edge--bottom { visibility: hidden !important; }
 /* mode clair : un voile clair en fondu blanchit le contenu ; à la place, flou progressif (backdrop-filter masqué en dégradé,
    comme les barres des interfaces claires) et voile bien plus léger ; sur les côtés de la piste, flou seul (voir .work__pin) */
 :root { --edge-floor: 0.12; }
@@ -250,7 +250,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 64px; height: 64px; color: var(--ink); }   /* un seul chevron arrondi, centré (zone cliquable confortable) */
 .hero__cta svg { width: 40px; height: 40px; animation: nudge 1.8s var(--ease-in-out) infinite; }   /* plus petite en haut de son mouvement */
 /* accueil : rien d'autre que le fond, le gros logo et la présentation tant que l'écran ne descend pas */
-.js:not(.hero-done) body > .edge { opacity: 0; visibility: hidden; }
+.js:not(.hero-done) body > .edge { visibility: hidden; }
 .js:not(.intro-done) .topbar { opacity: 0; visibility: hidden; }   /* barre du haut : dès la fin de l'animation d'apparition du logo */
 .js:not(.intro-done) .topbar * { visibility: hidden !important; }   /* aucun élément de la barre (petit logo compris) pendant l'intro */
 /* flèche : un court instant après la fin de l'arrivée du logo (intro-done, main.js) */
