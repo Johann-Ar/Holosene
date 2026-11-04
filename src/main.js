@@ -45,7 +45,7 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('.theme-toggle')
   if (!b) return
   const next = themeOf(b) === 'light' ? 'dark' : 'light'
-  root.dataset.theme = next; root.classList.add('theme-chosen'); store.set('theme', next)
+  root.dataset.theme = next; root.classList.add('theme-chosen'); store.set('site-theme', next)
   labelThemes(); applyThemeColor()
 })
 labelThemes(); applyThemeColor()

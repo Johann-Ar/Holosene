@@ -12,13 +12,6 @@
   --bg: var(--bg-light);
   --ink: var(--bg-dark);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --bg: var(--bg-dark);
-    --ink: white;
-  }
-}
 :root[data-theme="light"] { color-scheme: light; --bg: var(--bg-light); --ink: var(--bg-dark); }
 :root[data-theme="dark"] { color-scheme: dark; --bg: var(--bg-dark); --ink: white; }
 
@@ -50,9 +43,5 @@
 
 /* éléments propres à un mode (logos du kit : version dark / light) */
 .only-dark { display: none !important; }
-@media (prefers-color-scheme: dark) {
-  .only-light { display: none !important; }
-  .only-dark { display: revert !important; }
-}
 :root[data-theme="light"] .only-dark, :root[data-theme="dark"] .only-light { display: none !important; }
 :root[data-theme="light"] .only-light, :root[data-theme="dark"] .only-dark { display: revert !important; }

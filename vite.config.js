@@ -75,7 +75,7 @@ function themeHead() {
       // site en clair (les fiches projet, en sombre, sont des calques dans la page)
       const meta = `<meta name="theme-color" content="${colors.bgLight}" />`
       // par défaut en clair (data-theme="light" dans le HTML) ; le mode choisi au bouton, mémorisé, vaut pour tout le site
-      const boot = `<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;document.documentElement.classList.add('theme-chosen')}}catch(e){}try{history.scrollRestoration='manual';var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(location.hash&&(!/^#p-/.test(location.hash)||(n&&n.type==='reload')))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours l'accueil, en haut (ni position mémorisée, ni ancre, ni fiche ouverte) ; un lien direct vers une fiche #p-… l'ouvre toujours
+      const boot = `<script>try{localStorage.removeItem('theme');var t=localStorage.getItem('site-theme');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;document.documentElement.classList.add('theme-chosen')}}catch(e){}try{history.scrollRestoration='manual';var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(location.hash&&(!/^#p-/.test(location.hash)||(n&&n.type==='reload')))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours l'accueil, en haut (ni position mémorisée, ni ancre, ni fiche ouverte) ; un lien direct vers une fiche #p-… l'ouvre toujours
       return html.replace('</head>', `  ${meta}\n  ${boot}\n</head>`)
     },
   }
