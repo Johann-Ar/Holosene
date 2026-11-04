@@ -23,6 +23,7 @@ export const FLOW = {
   mix: FLOW_HOME_MIX, // 0 : réglages idle, 1 : loading ; logo de l'accueil
   glNeeds: true,    // logo de l'accueil ou lentille à l'écran (fixé par gl.js)
   loaderNeeds: false, // (chargeur en CSS : n'utilise plus la texture)
+  hoverTarget: 0,   // 1 quand le curseur survole le « o » du logo (gl.js)
   frozen: false,    // panneau ?debug=iris : roue finale (amount = 0)
   cpuMs: 0,         // temps de calcul de la dernière texture (mesure)
   t0,               // début de la montée du flux (fixé au relais du chargeur)
@@ -36,15 +37,21 @@ const amountAt = (now) => {
   return 1 - Math.pow(1 - x, 3)
 }
 
-let lastAmount = -1
+// survol du « o » du logo (FLOW.hoverTarget, fixé par gl.js) : le flux passe en douceur aux réglages « loading » complets
+// et s'accélère (horloge propre, intégrée : jamais de saut quand la vitesse change)
+const HOVER_SPEED = 1.8
+let lastAmount = -1, clock = 0, lastNow = null, hover = 0
 export function updateFlow(now) {
+  const dt = lastNow === null ? 0 : Math.min(0.1, (now - lastNow) / 1000); lastNow = now
+  hover += (FLOW.hoverTarget - hover) * (1 - Math.exp(-dt / 0.35))
+  clock += dt * (1 + (HOVER_SPEED - 1) * hover)
   const amount = amountAt(now)
   // pause : rien de visible, ou roue figée déjà calculée
   if (!(FLOW.glNeeds || FLOW.loaderNeeds) || (amount === 0 && lastAmount === 0)) return
   const s = performance.now()
-  const cfg = irisFlowMix(FLOW.mix)
+  const cfg = irisFlowMix(FLOW.mix + (1 - FLOW.mix) * hover)
   cfg.amount = amount
-  irisFlowLUT(now / 1000, cfg, FLOW.size, FLOW.lut)
+  irisFlowLUT(clock, cfg, FLOW.size, FLOW.lut)
   FLOW.cpuMs = performance.now() - s
   FLOW.version++
   lastAmount = amount
