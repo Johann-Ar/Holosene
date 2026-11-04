@@ -2,14 +2,16 @@
  * Fond de page : des formes colorées (couleurs de la roue du logo-kit) derrière une plaque de plastique dépoli.
  * - Les formes sont placées dans la page entière (sur toute la hauteur du document) : en faisant défiler, on se déplace
  *   dans le fond. Elles dérivent lentement (animation passive).
- * - Sous le curseur, elles se rapprochent de la plaque : plus nettes, plus intenses, moins soumises au grain.
- * - Grain de la plaque : bruit de valeur lissé, fixé à l'écran, à l'échelle du pixel CSS (aspect mat, pas de pixels
- *   qui scintillent), plus un tramage de ±0,5/255 contre les bandes de dégradé.
+ * - Sous le curseur, elles se rapprochent de la plaque : plus nettes et plus intenses.
+ * - Pas de texture : seulement un tramage invisible de ±0,5/255 contre les bandes de dégradé.
  * Toile WebGL propre (.bg-canvas), sous tout le contenu ; sans WebGL, le fond uni (--bg) reste.
  */
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 
 const N = 12   // nombre de formes réparties dans la page
+// couleurs des formes (positions sur la roue du kit), alternées pour que deux voisines ne se ressemblent pas ; les roses
+// et violets (0,37 à 0,75 sur la roue) sont limités à deux formes sur douze
+const HUES = [0.04, 0.84, 0.13, 0.95, 0.5, 0.0, 0.25, 0.88, 0.08, 0.62, 0.17, 0.91]   // + 0,5 : irisAt compte depuis le haut
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 const FRAG = `precision highp float;
@@ -23,29 +25,22 @@ uniform vec4 uB[${N}];  // formes : centre (px CSS, dans la page), rayon (px), p
 ${KIT_IRIS}
 vec3 irisAt(float t) { float a = t * 6.2831853; return irisColor(vec2(sin(a), -cos(a))); }
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float vnoise(vec2 x) {
-  vec2 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
-}
 void main() {
   vec2 s = vec2(gl_FragCoord.x, uRes.y * uDpr - gl_FragCoord.y) / uDpr;   // px CSS, y vers le bas
   vec2 w = s + vec2(0.0, uScroll);                                        // position dans la page
   // proximité du curseur : les formes se rapprochent de la plaque
-  float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * 220.0 * 220.0));
+  float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * 260.0 * 260.0));
   // chaque forme n'agit que sur sa zone (somme de taches, sans moyenne) : entre elles, le fond reste celui du thème
-  vec3 base = uPage * mix(0.9, 1.0, uLight);       // sombre : gris un peu moins clair
-  float amp = mix(0.16, 0.2, uLight) * (1.0 + 1.5 * P);   // renforcée sous le curseur
+  vec3 base = uPage * mix(0.8, 1.0, uLight);       // sombre : fond assombri
+  float amp = mix(0.16, 0.2, uLight) * (1.0 + 2.6 * P);   // nettement renforcée sous le curseur
   vec3 col = base;
   for (int i = 0; i < ${N}; i++) {
     vec4 b = uB[i];
     vec2 d = (w - b.xy) / b.z;
     float k = exp(-dot(d, d) * mix(1.0, 1.9, P));   // plus près de la plaque : bord plus net
-    col = mix(col, irisAt(b.w), clamp(k * amp, 0.0, 0.55));
+    col = mix(col, irisAt(b.w), clamp(k * amp, 0.0, 0.7));
   }
-  // plaque dépolie : grain lissé (deux échelles proches du pixel CSS), atténué sous le curseur
-  float g = vnoise(s / 1.15) * 0.6 + vnoise(s / 2.7 + 17.0) * 0.4 - 0.5;
-  col += g * mix(0.022, 0.03, uLight) * (1.0 - 0.6 * P);
-  col += (hash(gl_FragCoord.xy) - 0.5) / 255.0;   // tramage : pas de bandes dans les dégradés
+  col += (hash(gl_FragCoord.xy) - 0.5) / 255.0;   // tramage invisible (±0,5/255) : pas de bandes dans les dégradés
   gl_FragColor = vec4(col, 1.0);
 }`
 
@@ -79,7 +74,7 @@ export function createBackdrop(canvas, { reduced }) {
   // formes : réparties sur la hauteur du document, positions et couleurs tirées une fois (graine fixe : même fond à
   // chaque visite), couleurs espacées sur la roue
   let rnd = 7; const R = () => ((rnd = (rnd * 16807) % 2147483647) - 1) / 2147483646
-  const shapes = Array.from({ length: N }, (_, i) => ({ fx: (i % 2 ? 0.62 : 0.08) + R() * 0.3, fy: (i + 0.25 + R() * 0.5) / N, r: 0.8 + R() * 0.5, t: (i * 0.382 + R() * 0.1) % 1, ph: R() * 6.28, sp: 0.6 + R() * 0.8 }))
+  const shapes = Array.from({ length: N }, (_, i) => ({ fx: (i % 2 ? 0.62 : 0.08) + R() * 0.3, fy: (i + 0.25 + R() * 0.5) / N, r: 0.8 + R() * 0.5, t: (HUES[i % HUES.length] + 0.5) % 1, ph: R() * 6.28, sp: 0.6 + R() * 0.8 }))
   const B = new Float32Array(N * 4)
 
   // curseur : suivi amorti ; présence qui s'efface quand la souris ne bouge plus (jamais au doigt)

@@ -26,6 +26,11 @@ if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') 
   location.replace('en/' + location.hash)
 }
 
+/* Petit logo de la barre du haut : visible seulement quand le gros logo de l'accueil n'est plus à l'écran */
+const heroSlot = document.querySelector('.hero__slot')
+if (!heroSlot) root.classList.add('brand-on')
+else new IntersectionObserver(([e]) => root.classList.toggle('brand-on', !e.isIntersecting)).observe(heroSlot)
+
 /* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut). Le bouton force l'autre mode (data-theme sur
    <html>, mémorisé ; le script inline de <head> l'applique avant le premier rendu). La barre du navigateur suit. */
 const themeBtn = document.querySelector('.theme-toggle'), darkMq = matchMedia('(prefers-color-scheme: dark)')
@@ -66,10 +71,13 @@ document.querySelectorAll('.copy').forEach((b) => {
    défilement et le WebGL, pour que la trame reste collée au texte. */
 const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both' })   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
 // clavier : Espace (Maj+Espace pour remonter), Page suivante / précédente font défiler en douceur de 80 % d'écran, au
-// lieu du saut instantané du navigateur (Lenis ne lisse que la molette et le pavé tactile)
+// lieu du saut instantané du navigateur (Lenis ne lisse que la molette et le pavé tactile) ; flèches gauche / droite :
+// taille des points de la trame
 addEventListener('keydown', (e) => {
   if (!lenis || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || root.classList.contains('fiche-open')) return
   if (e.target.closest?.('input, textarea, select, button, a, [contenteditable], .work__track')) return   // Espace y garde son rôle
+  // flèches gauche / droite : points de la trame des vignettes plus petits / plus gros
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); gl?.setCellScale(e.key === 'ArrowRight' ? 1.15 : 1 / 1.15); return }
   const dir = e.key === ' ' ? (e.shiftKey ? -1 : 1) : e.key === 'PageDown' ? 1 : e.key === 'PageUp' ? -1 : 0
   if (!dir) return
   e.preventDefault()

@@ -124,15 +124,18 @@ export function render(lang) {
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">
+  <div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(8)}</div>
+  <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
+    <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
+  </nav>
   <a href="#top" class="brand" aria-label="Holosene">
     <img class="brand__mark only-dark" draggable="false" src="${root}media/monogram-mono-white.svg" alt="Holosene" width="470" height="576">
     <img class="brand__mark only-light" draggable="false" src="${root}media/monogram-mono-black.svg" alt="Holosene" width="470" height="576">
   </a>
-  <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
-    <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
+  <div class="topbar__tools">
     <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button>
     <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" lang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}">${lang === 'fr' ? 'EN' : 'FR'}</a>
-  </nav>
+  </div>
 </header>
 
 <main id="top">
@@ -145,7 +148,7 @@ export function render(lang) {
         <div class="hero__slot" aria-hidden="true"><img class="hero__mark only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576"><img class="hero__mark only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576"></div>
         <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}${nameStacked}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
-        <a class="hero__cta" href="#projets"><span aria-hidden="true">↓</span>${lang === 'fr' ? 'Voir les projets' : 'See the work'}<span aria-hidden="true">↓</span></a>
+        <a class="hero__cta" href="#projets" aria-label="${lang === 'fr' ? 'Voir les projets' : 'See the work'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       </div>
     </div>
   </section>

@@ -426,7 +426,7 @@ export function createGL(canvas, { reduced }) {
     v.textKey = key
   }
 
-  let W = 0, H = 0, dpr = 1
+  let W = 0, H = 0, dpr = 1, cellScale = 1
   function resize() {
     W = innerWidth; H = innerHeight
     dpr = Math.min(devicePixelRatio || 1, W < 760 ? 1.75 : 2)
@@ -484,7 +484,7 @@ export function createGL(canvas, { reduced }) {
       // apparition : les points poussent, puis rétrécissent quand la vue sort de l'écran
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
-      const reveal = (1 - Math.pow(1 - intro, 3)) * vis
+      const reveal = 1   // vignettes : trame toujours complète (plus d'apparition ni de disparition en noir)
       if (v.mark) { maskFor(v); if (!v.maskB) continue }
       const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
@@ -511,7 +511,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
       gl.uniform1f(U.uEdgeFloor, theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5 ? 1 : 0.12)   // clair : pas d'effacement (flou CSS aux bords)
-      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : w < 760 ? Math.max(5, v.cell - 1) : v.cell)
+      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : (w < 760 ? Math.max(5, v.cell - 1) : v.cell) * cellScale)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       // texte de la vignette (unité 3) ; sans texte, l'unité est vidée : elle ne doit jamais désigner la texture dans
@@ -545,7 +545,8 @@ export function createGL(canvas, { reduced }) {
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
         // irisé du verre : une seule intensité (pas de changement au survol) ; plus présent sur fond clair
         const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
-        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, light ? 0.95 : 0.6); gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
+        gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, v.glass * (light ? 0.95 : 0.6));   // bord neutre au repos, irisé au survol
+        gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
@@ -560,5 +561,7 @@ export function createGL(canvas, { reduced }) {
   const ready = Promise.all(views.filter((v) => v.mark).map(maskFor))
   // pour le chargeur : rayon du « o » au relais, rayon visé par la croissance, durée de la croissance
   const intro = () => ({ r0: handoffR(innerWidth, innerHeight), r1: bigOf(innerWidth, innerHeight) * O_R, grow: GROW })
-  return { frame, ready, intro }
+  // taille des points de la trame des vignettes (flèches gauche / droite du clavier)
+  const setCellScale = (f) => { cellScale = Math.min(2.5, Math.max(0.5, cellScale * f)) }
+  return { frame, ready, intro, setCellScale }
 }
