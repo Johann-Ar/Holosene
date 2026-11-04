@@ -12,14 +12,13 @@ export const FX = {
   grain: 0.05,          // grain argentique (0 : aucun) ; thème sombre : × 0,7
   grainChroma: 0.35,    // part colorée du grain
   halation: 0.1,        // irrégularité de l'aspiration aux bords (± 10 %), pour que le sombre « bave » (0 : aucune)
-  // teintes : ta roue (kit v2), désaturées d'environ 50 % et assombries, placées par angle autour du centre de l'écran
-  // (0° : droite, 90° : bas, sens horaire) ; entre deux, transition douce
-  pal: [
-    { hex: '#376C6B', deg: 0 },     // bleu-vert (cyan #2ACCC7) : droite
-    { hex: '#672849', deg: 90 },    // bordeaux (rose #FE46A8) : bas
-    { hex: '#603B29', deg: 160 },   // brun (corail #FF7B3E) : bas-gauche, gauche
-    { hex: '#683385', deg: 225 },   // violet (#C357FE) : haut-gauche
-  ],
+  // teintes : 4 positions sur la roue du kit, tirées au hasard à chaque chargement et qui dérivent lentement (comme les
+  // couleurs du fond), rendues sourdes : désaturées (palDesat) puis assombries (palDark). Elles se répartissent par
+  // angle autour du centre de l'écran (0° : droite, 90° : bas, sens horaire), avec des transitions douces.
+  pal: [{ deg: 0 }, { deg: 90 }, { deg: 180 }, { deg: 270 }],
+  palDesat: 0.5,        // 0 : couleurs de la roue telles quelles, 1 : gris
+  palDark: 0.55,        // luminosité gardée (sombre, jamais néon)
+  palDrift: 0.005,      // tours par seconde (un tour complet en un peu plus de 3 min)
   version: 0,           // incrémenté quand un réglage change (panneau ?debug=iris) : gl.js renvoie les valeurs au GPU
 }
 

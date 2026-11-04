@@ -198,7 +198,7 @@ void main() {
 
   // verre liquide : près des bords de l'écran (haut, bas) et de la piste (gauche, droite), l'image est aspirée vers
   // l'intérieur (on lit l'image plus loin du bord). Aux bords gauche et droit, la vignette perd aussi de la hauteur (passe verre).
-  float EDGE = uScr.z < 769.0 ? 90.0 : 120.0;   // haut et bas de l'écran (mobile : × 0,75, comme les autres largeurs d'effet)
+  float EDGE = uScr.z < 769.0 ? 90.0 : 80.0;   // PC : marge d'aspiration réduite   // haut et bas de l'écran (mobile : × 0,75, comme les autres largeurs d'effet)
   vec2 sc = uScr.xy + p;
   float wT = 1.0 - smoothstep(0.0, EDGE, sc.y), wB = 1.0 - smoothstep(0.0, EDGE, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
@@ -246,7 +246,8 @@ uniform vec2 uScrX;   // gauche de la vignette à l'écran, largeur de l'écran 
 uniform vec4 uFx;
 uniform vec2 uFxZone;
 uniform float uSeed;
-uniform vec3 uPal[4];
+uniform vec4 uPalHue;   // 4 positions sur la roue du kit (tirées au hasard au chargement, dérivent lentement)
+uniform vec2 uPalTone;  // désaturation, luminosité des teintes (sourdes, sombres)
 uniform vec4 uPalDeg;   // angle de chaque teinte (degrés, 0 : droite, sens horaire)
 ${IRIS_GLSL}
 const float PI2 = 6.2831853;
@@ -256,14 +257,17 @@ const float DARK_TINT_GAIN = 2.4;  // thème sombre : les clairs prennent la tei
 // bruit de tramage « interleaved gradient noise » (Jimenez) : réparti comme un bruit bleu, sans texture, au pixel physique
 float ign(vec2 q) { return fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00583715)))); }
 // teinte selon l'angle autour du centre de l'écran (corrigé du format), interpolation douce et cyclique
+// teinte sourde à partir d'une position sur la roue du kit : désaturée puis assombrie
+vec3 tintOf(float h) { vec3 c = irisAt(h); return mix(c, vec3(dot(c, LUMA)), uPalTone.x) * uPalTone.y; }
 vec3 palAt(vec2 sp) {
   vec2 d = (sp - vec2(uScrX.y, uScrY.y) * 0.5) / vec2(uScrX.y, uScrY.y);
   float a = mod(degrees(atan(d.y, d.x)), 360.0);
   vec4 g = uPalDeg;
-  if (a < g.y) return mix(uPal[0], uPal[1], smoothstep(g.x, g.y, a));
-  if (a < g.z) return mix(uPal[1], uPal[2], smoothstep(g.y, g.z, a));
-  if (a < g.w) return mix(uPal[2], uPal[3], smoothstep(g.z, g.w, a));
-  return mix(uPal[3], uPal[0], smoothstep(g.w, 360.0 + g.x, a));
+  vec3 c0 = tintOf(uPalHue.x), c1 = tintOf(uPalHue.y), c2 = tintOf(uPalHue.z), c3 = tintOf(uPalHue.w);
+  if (a < g.y) return mix(c0, c1, smoothstep(g.x, g.y, a));
+  if (a < g.z) return mix(c1, c2, smoothstep(g.y, g.z, a));
+  if (a < g.w) return mix(c2, c3, smoothstep(g.z, g.w, a));
+  return mix(c3, c0, smoothstep(g.w, 360.0 + g.x, a));
 }
 float sdCard(vec2 p) {
   vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
@@ -294,7 +298,7 @@ void main() {
   float scrY = uScrY.x + p.y;   // position du point à l'écran (px CSS, depuis le haut)
   if (uClip.z > 0.0) {
     float trackW = uClip.y - uClip.x;
-    float zone = trackW < 769.0 ? 0.075 * trackW : min(110.0, 0.2 * trackW);   // portée : PC 110 px au plus ; mobile, zone étroite
+    float zone = trackW < 769.0 ? 0.075 * trackW : min(75.0, 0.14 * trackW);   // portée : PC 110 px au plus ; mobile, zone étroite
     float k = trackW < 769.0 ? 0.12 : 0.08;
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));             // distance au bord le plus proche de la piste
     sqz = 1.0 - k * exp(-d / (0.28 * zone));
@@ -416,22 +420,26 @@ export function createGL(canvas, { reduced }) {
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPal', 'uPalDeg']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg']) GU[n] = gl.getUniformLocation(gProg, n)
   // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
   // défilement pour la graine du grain), aucune allocation par image
-  const PAL = new Float32Array(12), hex3 = (h, o) => { for (let i = 0; i < 3; i++) PAL[o + i] = parseInt(h.slice(1 + i * 2, 3 + i * 2), 16) / 255 }
+  // teintes : 4 positions sur la roue, tirées au hasard à chaque chargement (un quart de tour d'écart environ, pour rester
+  // variées), qui dérivent lentement ensemble ; plus de couleurs fixes d'un endroit de l'écran
+  const palBase = Math.random()
+  const PAL_HUE = [0, 1, 2, 3].map((i) => palBase + i * 0.25 + (Math.random() - 0.5) * 0.12)
   const SEED_STEP = 48   // px de défilement entre deux tirages du grain (grain fixe à l'arrêt)
   let fxSent = -1, fxW = -1, fxSeed = -1
   const sendFx = () => {
     const small = W < 769
     if (fxSent !== FX.version || fxW !== small) {
       fxSent = FX.version; fxW = small
-      FX.pal.forEach((c, i) => hex3(c.hex, i * 3))
-      gl.uniform3fv(GU.uPal, PAL); gl.uniform4f(GU.uPalDeg, ...FX.pal.map((c) => c.deg))
+      gl.uniform2f(GU.uPalTone, FX.palDesat, FX.palDark); gl.uniform4f(GU.uPalDeg, ...FX.pal.map((c) => c.deg))
       // franges : jamais sur mobile ni avec animations réduites ; zones : largeurs des flous CSS (côtés, haut et bas)
       gl.uniform4f(GU.uFx, FX.colorStrength, small || reduced ? 0 : FX.aberration, FX.grain, FX.grainChroma)
       gl.uniform2f(GU.uFxZone, small ? 21 : 120, small ? 90 : 120)
     }
+    const drift = reduced ? 0 : time * FX.palDrift   // dérive lente des teintes (tours)
+    gl.uniform4f(GU.uPalHue, PAL_HUE[0] + drift, PAL_HUE[1] + drift, PAL_HUE[2] + drift, PAL_HUE[3] + drift)
     const seed = reduced ? 0 : Math.floor(scrollY / SEED_STEP) % 97
     if (seed !== fxSeed) { fxSeed = seed; gl.uniform1f(GU.uSeed, seed) }
   }
@@ -689,7 +697,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uColor, v.color ? 1 : v.glass)   // au survol : la trame passe en couleur (fondu)
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
-      if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 120, 0)
+      if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 80, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
@@ -732,7 +740,7 @@ export function createGL(canvas, { reduced }) {
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
         gl.uniform2f(GU.uScrY, b.top, H); gl.uniform2f(GU.uScrX, b.left, W)
         sendFx()
-        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 120, 0)
+        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 80, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
       }
