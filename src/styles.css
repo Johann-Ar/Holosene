@@ -185,8 +185,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__word { margin: 0; line-height: 0; }
 .hero__word .studio__word { width: min(64vw, 820px); height: auto; }
 .hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: var(--fs-text); line-height: 1.55; color: var(--ink-86); text-wrap: balance; }
-.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 48px; height: 48px; color: var(--ink); }   /* un seul chevron arrondi, centré */
-.hero__cta svg { width: 30px; height: 30px; animation: nudge 1.8s var(--ease-in-out) infinite; }
+.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 40px; height: 40px; color: var(--ink); }   /* un seul chevron arrondi, centré (zone cliquable confortable) */
+.hero__cta svg { width: 16px; height: 16px; animation: nudge 1.8s var(--ease-in-out) infinite; }   /* petit, comme les anciennes flèches */
 /* accueil : rien d'autre que le fond, le gros logo et la présentation tant que l'écran ne descend pas */
 .js:not(.hero-done) .topbar, .js:not(.hero-done) .hero__cta, .js:not(.hero-done) .edge { opacity: 0; visibility: hidden; }
 .topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
