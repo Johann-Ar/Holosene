@@ -148,16 +148,11 @@ a { color: inherit; }
 .work__pin { position: relative; }
 /* mode clair : aux bords gauche et droit de la piste, les vignettes ne s'effacent pas vers le blanc ; elles passent sous
    un flou progressif (backdrop-filter masqué en dégradé) */
-.work__pin::before, .work__pin::after { content: none; position: absolute; top: 0; bottom: 0; width: 120px; z-index: 2; pointer-events: none; -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
-.work__pin::before { left: 0; -webkit-mask: linear-gradient(90deg, #000, transparent); mask: linear-gradient(90deg, #000, transparent); }
-.work__pin::after { right: 0; -webkit-mask: linear-gradient(270deg, #000, transparent); mask: linear-gradient(270deg, #000, transparent); }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .work__pin::before, :root:not([data-theme="dark"]) .work__pin::after { content: ''; } }
-:root[data-theme="light"] .work__pin::before, :root[data-theme="light"] .work__pin::after { content: ''; }
 
 /* mobile : fondus latéraux de la piste étroits (le titre de la vignette visible reste net) */
 @media (max-width: 768px) {
   .work__track { --fade: 21px; }
-  .work__pin::before, .work__pin::after { width: 21px; }
+  .side { width: 21px; }
   /* le texte défile juste sous les liens du haut : fondu du haut plus couvrant */
   .edge--top { height: 104px; background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, transparent) 45%, color-mix(in srgb, var(--bg) 40%, transparent) 75%, color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
 }
@@ -200,8 +195,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .has-gl [data-gl] > img, .has-gl [data-gl] > video { opacity: 0; }
 
 /* apparitions au défilement (seulement si le script tourne), avec la lueur irisée */
-.js [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity var(--dur-scene) var(--ease-flow), transform var(--dur-scene) var(--ease-flow); transition-delay: var(--d, 0ms); }
-.js [data-reveal].in { opacity: 1; transform: none; animation: chroma 1.6s var(--ease-flow) backwards; animation-delay: var(--d, 0ms); }
+.js [data-reveal] { opacity: 0; filter: blur(8px); transform: translateY(26px); transition: opacity var(--dur-scene) var(--ease-flow), transform var(--dur-scene) var(--ease-flow), filter var(--dur-scene) var(--ease-flow); transition-delay: var(--d, 0ms); }
+.js [data-reveal].in { opacity: 1; filter: none; transform: none; animation: chroma 1.6s var(--ease-flow) backwards; animation-delay: var(--d, 0ms); }
 .line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
 .line > span { display: block; }
 .js [data-reveal="line"] { opacity: 1; transform: none; animation: none; }
@@ -209,15 +204,16 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .js [data-reveal="line"].in > span { transform: none; animation: chroma 1.8s var(--ease-flow) backwards; }
 .js [data-reveal="clip"] { opacity: 1; transform: none; animation: none; clip-path: inset(14% 10% 14% 10% round var(--radius-l)); transition: clip-path 1.4s var(--ease-flow); }
 .js [data-reveal="clip"].in { clip-path: inset(0 round var(--radius-l)); }
-.js [data-words] .w { opacity: 0.16; }   /* pas de transition : l'état suit exactement le défilement */
-.js [data-words] .w.on { opacity: 1; }
+.js [data-words] .w { opacity: 0.16; filter: blur(2.5px); }   /* pas de transition : l'état suit exactement le défilement */
+.js [data-words] .w.on, .js [data-words] .w.lead { opacity: 1; filter: none; }
 /* mot en cours d'apparition : encre derrière le front, front irisé (roue du kit), encore éteint devant */
 .js [data-words] .w.lead { opacity: 1; color: transparent; -webkit-background-clip: text; background-clip: text;
   background-image: linear-gradient(90deg, var(--ink) calc(var(--f, 0) * 116% - 16%), var(--iris-rose) calc(var(--f, 0) * 116% - 10%), var(--iris-bleu) calc(var(--f, 0) * 116% - 5%), var(--iris-vert) calc(var(--f, 0) * 116% - 1%), color-mix(in srgb, var(--ink) 16%, transparent) calc(var(--f, 0) * 116% + 2%)); }
 @media (prefers-reduced-motion: reduce) {
   .js [data-reveal], .js [data-reveal="line"] > span { transform: none !important; transition: opacity var(--dur-base); animation: none !important; }
   .js [data-reveal="clip"] { clip-path: none; }
-  .js [data-words] .w { opacity: 1; animation: none !important; }
+  .js [data-words] .w { opacity: 1; filter: none; animation: none !important; }
+  .js [data-reveal], .js .hero__line .w, .hero .studio__word { filter: none !important; }
 }
 
 /* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
@@ -254,12 +250,13 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .js:not(.intro-done) .topbar { opacity: 0; visibility: hidden; }   /* barre du haut : dès la fin de l'animation d'apparition du logo */
 .js:not(.intro-done) .topbar * { visibility: hidden !important; }   /* aucun élément de la barre (petit logo compris) pendant l'intro */
 /* flèche : un court instant après la fin de l'arrivée du logo (intro-done, main.js) */
-.js:not(.intro-done) .hero__cta { opacity: 0; visibility: hidden; }
+.js:not(.intro-done) .hero__cta { opacity: 0; filter: blur(6px); visibility: hidden; }
 .intro-done .hero__cta { transition-delay: 0.1s; }
 /* pendant le chargeur et l'arrivée du logo : aucun défilement possible (molette, doigt, barre) */
 .intro-lock, .intro-lock body { overflow: hidden; overscroll-behavior: none; }
 .intro-lock body { touch-action: none; }
-.topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
+.topbar { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }
+.hero__cta { transition: opacity 0.8s var(--ease-flow), filter 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
 @keyframes nudge { 0%, 100% { transform: scale(0.82); } 50% { transform: translateY(4px) scale(1); } }   /* plus petite en haut, taille normale en bas */
 @media (prefers-reduced-motion: reduce) { .hero__cta svg { animation: none; } }
 .hero__word .studio__word--stack { display: none; }
@@ -271,8 +268,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .hero__word .studio__word--stack { display: block; width: min(68vw, 340px); }
   .hero__line { max-width: 30ch; }
 }
-.js .hero__line .w { opacity: 0; transition: opacity 0.4s var(--ease-flow); }
-.js .hero__line .w.on { opacity: 1; }
+.js .hero__line .w { opacity: 0; filter: blur(6px); transition: opacity 0.4s var(--ease-flow), filter 0.5s var(--ease-flow); }   /* fondu d'opacité accompagné d'un flou */
+.js .hero__line .w.on { opacity: 1; filter: none; }
 .about { padding-block: var(--sp-7) var(--sp-4); display: grid; justify-items: center; gap: 18px; }
 /* À propos : un écran entier à lui seul, contenu centré sous la barre du haut : en y arrivant (menu ou défilement), on
    ne voit plus la fin des Travaux de recherche au-dessus */
@@ -281,6 +278,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .about p { max-width: 60ch; font-size: var(--fs-text); line-height: 1.55; }
 .about strong { color: var(--ink); font-weight: 700; }
 .studio__word { width: 100%; height: auto; overflow: visible; color: var(--ink); }
+.hero .studio__word { filter: blur(calc((1 - var(--fill, 1)) * 5px)); }   /* le nom se défloute en se remplissant */
 /* --fill de 0 à 1 : d'abord le blanc plein (w-white), puis il s'efface sur le blanc aux bords irisés (w-edge + w-core) */
 .studio__word .w-white { opacity: calc(min(var(--fill, 1) * 2, 1) - max(var(--fill, 1) * 2 - 1, 0)); }
 .studio__word .w-edge, .studio__word .w-core { opacity: clamp(0, (var(--fill, 1) - 0.5) * 100, 1); }
@@ -414,8 +412,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche:target .fiche__infos { animation-delay: 0.8s; }
 .fiche:target .fiche__open { animation-delay: 0.9s; }
 .fiche:target .fiche__media, .fiche:target .fiche__next { animation: gallery-in 1s var(--ease-case) 0.55s both; }
-@keyframes rise-y { from { opacity: 0; transform: translateY(0.5rem); } }
-@keyframes gallery-in { from { opacity: 0; transform: translateX(100px); } }
+@keyframes rise-y { from { opacity: 0; filter: blur(6px); transform: translateY(0.5rem); } }
+@keyframes gallery-in { from { opacity: 0; filter: blur(8px); transform: translateX(100px); } }
 .fiche.is-under { z-index: 49; pointer-events: none; }
 .fiche.is-under .fiche__head, .fiche.is-under .fiche__row { animation: slide-away 0.6s var(--ease-in-out) forwards; }
 /* fermeture : la fiche glisse vers la droite et dévoile l'accueil ; contre son bord gauche, un voile en dégradé
@@ -520,3 +518,35 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* sélection de texte (clic maintenu) : bleu #3300FF, texte blanc */
 ::selection { background: #3300FF; color: #fff; }
+
+/* ——— bandes de flou (PC) : haut et bas de l'écran, barre du haut, côtés des pistes ———
+   même épaisseur partout (--band), même flou, fondus complémentaires dans les coins (un seul flou continu) ; chacune
+   porte le calque .fx (grain et colorisation vivante, fx-css.js) */
+:root { --band: 96px; }
+.side { display: none; position: absolute; top: 0; bottom: 0; width: var(--band); z-index: 2; pointer-events: none;
+  -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+  --vmask: linear-gradient(to bottom, transparent calc(0px - var(--pt, 0px)), #000 calc(var(--band) - var(--pt, 0px)), #000 calc(var(--vh, 100vh) - var(--band) - var(--pt, 0px)), transparent calc(var(--vh, 100vh) - var(--pt, 0px)));
+  --emask: linear-gradient(to bottom, transparent, #000 80px, #000 calc(100% - 80px), transparent);   /* extrémités de la piste : fondu, jamais de marche */
+  -webkit-mask: var(--hmask), var(--vmask), var(--emask); -webkit-mask-composite: source-in, source-in; mask: var(--hmask), var(--vmask), var(--emask); mask-composite: intersect, intersect; }
+.side--l { left: 0; --hmask: linear-gradient(90deg, #000, transparent); }
+.side--r { right: 0; --hmask: linear-gradient(270deg, #000, transparent); }
+:root[data-theme="dark"] .side--l { background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 88%, transparent), transparent); }
+:root[data-theme="dark"] .side--r { background: linear-gradient(270deg, color-mix(in srgb, var(--bg) 88%, transparent), transparent); }
+:root[data-theme="light"] .side { display: block; }   /* mobile : côtés en clair seulement (comme avant) */
+@media (min-width: 769px) {
+  .side { display: block; }
+  .edge--top, .edge--bottom { height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
+  .edge--top { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
+  .edge--bottom { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
+  :root[data-theme="light"] .edge { opacity: 1; background: none; }
+  .topbar__glass { height: var(--band); }
+  .work__track { --fade: var(--band); }
+}
+/* calque de grain et de couleur : dégradé conique fixé sur l'écran (0° à droite), même répartition que le WebGL */
+.fx { position: absolute; inset: 0; pointer-events: none; opacity: var(--fx-a, 0); mix-blend-mode: screen;
+  background: conic-gradient(from 90deg at 50vw 50vh, var(--fxl0) 0deg, var(--fxl1) 90deg, var(--fxl2) 180deg, var(--fxl3) 270deg, var(--fxl0) 360deg) fixed; }
+:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { mix-blend-mode: multiply;
+  background: conic-gradient(from 90deg at 50vw 50vh, var(--fxd0) 0deg, var(--fxd1) 90deg, var(--fxd2) 180deg, var(--fxd3) 270deg, var(--fxd0) 360deg) fixed; }
+.fx::after { content: ''; position: absolute; inset: 0; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.7; }
+.edge--top .fx, .topbar__glass .fx { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
+.edge--bottom .fx { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }

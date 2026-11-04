@@ -18,10 +18,18 @@ export const FX = {
   pal: [{ deg: 0 }, { deg: 90 }, { deg: 180 }, { deg: 270 }],
   palDesat: 0.5,        // 0 : couleurs de la roue telles quelles, 1 : gris
   palDark: 0.55,        // luminosité gardée (sombre, jamais néon)
-  palDrift: 0.005,      // tours par seconde (un tour complet en un peu plus de 3 min)
+  palDrift: 0.008,      // tours par seconde (un tour complet en un peu plus de 2 min)
+  palWobble: 0.04,      // en plus, chaque teinte ondule doucement autour de sa place (tours)
+  bandStrength: 0.5,    // colorisation des bandes de flou CSS (haut, bas, côtés, barre du haut)
   version: 0,           // incrémenté quand un réglage change (panneau ?debug=iris) : gl.js renvoie les valeurs au GPU
 }
 
 if (typeof location !== 'undefined' && new URLSearchParams(location.search).get('fx') === '0') {
   Object.assign(FX, { colorStrength: 0, aberration: 0, grain: 0, halation: 0 })
 }
+
+// teintes vivantes, partagées par le WebGL (vignettes) et les bandes de flou CSS : tirées au hasard au chargement, à un
+// quart de tour environ les unes des autres, puis dérive lente et ondulation propre à chacune (temps en secondes)
+const hueBase = Math.random()
+const hueJitter = [0, 1, 2, 3].map(() => (Math.random() - 0.5) * 0.12)
+export const hueAt = (i, t) => hueBase + i * 0.25 + hueJitter[i] + t * FX.palDrift + FX.palWobble * Math.sin(t * 0.11 + i * 1.7)

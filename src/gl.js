@@ -9,7 +9,7 @@ import { GLASS_GLSL } from './glass.js'
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 import KIT from '../design/logo-kit/tokens/iris.json'
 import { IRIS } from './iris-config.js'
-import { FX } from './fx-config.js'
+import { FX, hueAt } from './fx-config.js'
 import { FLOW } from './flow.js'
 
 // roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
@@ -240,6 +240,7 @@ uniform float uVivid;   // 0 : couleurs telles quelles (sombre), 1 : plus franch
 uniform float uEdgeFloor;
 uniform vec4 uClip;
 uniform vec2 uScrY;   // haut de la vignette à l'écran, hauteur de l'écran (px CSS)
+uniform float uInv;   // 0 : aspiration ; 1 : aspiration inversée (touche Espace maintenue)
 uniform vec2 uScrX;   // gauche de la vignette à l'écran, largeur de l'écran (px CSS)
 // zones floues (fx-config.js) : force de la couleur, aberration, grain, part colorée du grain ; largeur des zones
 // (côtés de la piste, haut et bas de l'écran : celles des flous CSS) ; graine du grain (ne change qu'au défilement)
@@ -301,6 +302,7 @@ void main() {
     float zone = trackW < 769.0 ? 0.075 * trackW : min(75.0, 0.14 * trackW);   // portée : PC 110 px au plus ; mobile, zone étroite
     float k = trackW < 769.0 ? 0.12 : 0.08;
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));             // distance au bord le plus proche de la piste
+    k *= 1.0 - 2.0 * uInv;   // Espace maintenu : aspiration inversée (la vignette gonfle vers le bord)
     sqz = 1.0 - k * exp(-d / (0.28 * zone));
     float dy = max(0.0, min(scrY, uScrY.y - scrY));                     // distance au haut ou au bas de l'écran
     sqx = 1.0 - (k / 1.5) * exp(-dy / (0.28 * zone));   // haut et bas : force ÷ 1,5
@@ -420,13 +422,11 @@ export function createGL(canvas, { reduced }) {
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg', 'uInv']) GU[n] = gl.getUniformLocation(gProg, n)
   // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
   // défilement pour la graine du grain), aucune allocation par image
   // teintes : 4 positions sur la roue, tirées au hasard à chaque chargement (un quart de tour d'écart environ, pour rester
   // variées), qui dérivent lentement ensemble ; plus de couleurs fixes d'un endroit de l'écran
-  const palBase = Math.random()
-  const PAL_HUE = [0, 1, 2, 3].map((i) => palBase + i * 0.25 + (Math.random() - 0.5) * 0.12)
   const SEED_STEP = 48   // px de défilement entre deux tirages du grain (grain fixe à l'arrêt)
   let fxSent = -1, fxW = -1, fxSeed = -1
   const sendFx = () => {
@@ -436,10 +436,10 @@ export function createGL(canvas, { reduced }) {
       gl.uniform2f(GU.uPalTone, FX.palDesat, FX.palDark); gl.uniform4f(GU.uPalDeg, ...FX.pal.map((c) => c.deg))
       // franges : jamais sur mobile ni avec animations réduites ; zones : largeurs des flous CSS (côtés, haut et bas)
       gl.uniform4f(GU.uFx, FX.colorStrength, small || reduced ? 0 : FX.aberration, FX.grain, FX.grainChroma)
-      gl.uniform2f(GU.uFxZone, small ? 21 : 120, small ? 90 : 120)
+      gl.uniform2f(GU.uFxZone, small ? 21 : 96, small ? 90 : 96)   // PC : mêmes 96 px que les bandes de flou CSS
     }
-    const drift = reduced ? 0 : time * FX.palDrift   // dérive lente des teintes (tours)
-    gl.uniform4f(GU.uPalHue, PAL_HUE[0] + drift, PAL_HUE[1] + drift, PAL_HUE[2] + drift, PAL_HUE[3] + drift)
+    const ht = reduced ? 0 : performance.now() / 1000   // teintes vivantes (fx-config.js), même horloge que les bandes CSS
+    gl.uniform4f(GU.uPalHue, hueAt(0, ht), hueAt(1, ht), hueAt(2, ht), hueAt(3, ht))
     const seed = reduced ? 0 : Math.floor(scrollY / SEED_STEP) % 97
     if (seed !== fxSeed) { fxSeed = seed; gl.uniform1f(GU.uSeed, seed) }
   }
@@ -597,9 +597,15 @@ export function createGL(canvas, { reduced }) {
     }
   }
   let halSent = -1
+  // touche Espace maintenue : l'aspiration des bords s'inverse (en douceur, à l'appui comme au relâchement)
+  let inv = 0, invTarget = 0
+  addEventListener('keydown', (e) => { if (e.key === ' ' && !e.target.closest?.('input, textarea, [contenteditable]')) invTarget = 1 })
+  addEventListener('keyup', (e) => { if (e.key === ' ') invTarget = 0 })
+  addEventListener('blur', () => { invTarget = 0 })
   function draw(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
+    inv = reduced ? invTarget : inv + (invTarget - inv) * (1 - Math.exp(-dt / 0.18))
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
@@ -727,7 +733,10 @@ export function createGL(canvas, { reduced }) {
       if (glassy) {
         // passe 2 : le bord de verre, qui réfracte ce contenu, sur la toile
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-        gl.viewport(sx, sy, pw, ph); gl.scissor(Math.max(0, sx), Math.max(0, sy), pw, ph)
+        // aspiration inversée : la vignette peut déborder de son cadre ; on dessine sur une marge autour (sinon coupée)
+        const mx = inv > 0.001 && !own ? Math.ceil(pw * 0.08) : 0, my = inv > 0.001 && !own ? Math.ceil(ph * 0.1) : 0
+        gl.viewport(sx - mx, sy - my, pw + 2 * mx, ph + 2 * my); gl.scissor(Math.max(0, sx - mx), Math.max(0, sy - my), pw + 2 * mx, ph + 2 * my)
+        gl.uniform1f(GU.uInv, own ? 0 : inv)
         gl.useProgram(gProg)
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
