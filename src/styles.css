@@ -654,3 +654,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* grille : le texte des liens et boutons surlignés tombe exactement sur la marge (le rembourrage du surlignage est
    compensé ; seul l'aplat déborde, au survol) */
 .topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle { margin-inline: -0.32em !important; }
+
+/* barre du haut : même écart entre Sombre et EN qu'entre les liens du menu */
+@media (min-width: 641px) { .topbar__tools { gap: clamp(16px, 2.4vw, 34px); } }
