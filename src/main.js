@@ -334,7 +334,7 @@ function scrollEffects() {
   const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
-    const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,3 à 0,58)
+    const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,12 à 0,58)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
     // la barre du haut et le reste du site n'apparaissent qu'une fois la scène de l'accueil finie, quand l'écran
     // commence à descendre (jusque-là : le fond, le gros logo et la présentation seulement)
@@ -342,9 +342,10 @@ function scrollEffects() {
   }
   // le nom existe en deux versions (une ligne / deux lignes sur mobile) : même avancée pour les deux
   wordsSvg.forEach((w) => {
-    const p = k(0.3, 0.58)
-    w.style.setProperty('--draw', (1 - Math.min(1, p * 1.5)).toFixed(3))
-    w.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.5) / 0.5)).toFixed(3))
+    // le nom apparaît tôt et sur une longue course : tracé de 12 % à 58 % de la scène, remplissage dans la seconde moitié
+    const p = k(0.12, 0.58)
+    w.style.setProperty('--draw', (1 - Math.min(1, p * 1.2)).toFixed(3))
+    w.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.4) / 0.6)).toFixed(3))
   })
   for (const b of wordBlocks) {
     const r = b.el.getBoundingClientRect()
