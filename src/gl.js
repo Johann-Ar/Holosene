@@ -533,7 +533,8 @@ export function createGL(canvas, { reduced }) {
         const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
         const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
-        const xf = markXf(w, h, p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top])
+        // animations réduites : pas de scène de défilement, le logo est d'emblée à sa place (au-dessus du nom)
+        const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top])
         gl.uniform3f(U.uInk, ...theme.ink)
         // rotation passive de la roue du « o » : démarre en douceur une fois le logo posé (fin de l'arrivée)
         const ms = reduced ? 0 : now - v.seen - (IRIS.intro.grow + IRIS.intro.shift)
