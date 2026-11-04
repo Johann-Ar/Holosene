@@ -176,17 +176,33 @@ function syncFiche() {
     fiches.find((x) => x.f === open)?.reset()
     open.focus({ preventScroll: true })
   } else {
-    if (!root.classList.contains('intro-lock')) lenis?.start()   // pendant l'intro, la page reste figée (endIntro relance)
+    // le défilement doux repart de la position réelle (sinon il rejoindrait une ancienne cible : la page glisse sous la fiche)
+    if (!root.classList.contains('intro-lock')) { lenis?.scrollTo(scrollY, { immediate: true, force: true }); lenis?.start() }
     const back = /^#(projet|recherche)-/.test(location.hash) && document.querySelector(location.hash)
     if (back) {
-      showCard(back)
-      const y = back.parentElement.getBoundingClientRect().top + scrollY - innerHeight * 0.12
-      lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y)
+      // la page (immobile sous la fiche) n'est recalée que si la vignette d'origine n'est plus à l'écran : sinon rien ne
+      // bouge pendant que la fiche glisse et dévoile l'accueil (plus de saut)
+      const cr = back.getBoundingClientRect()
+      if (cr.right < 0 || cr.left > innerWidth) showCard(back)
+      const pr = back.parentElement.getBoundingClientRect()
+      if (pr.bottom < innerHeight * 0.15 || pr.top > innerHeight * 0.85) {
+        const y = pr.top + scrollY - innerHeight * 0.12
+        lenis ? lenis.scrollTo(y, { immediate: true }) : scrollTo(0, y)
+      }
     }
     if (lastFocus) { lastFocus.focus?.({ preventScroll: true }); lastFocus = null }
   }
 }
 addEventListener('hashchange', syncFiche)
+// Fermer : l'adresse prend l'ancre de la vignette sans que le navigateur fasse défiler la page jusqu'à elle (la page,
+// immobile sous la fiche, ne saute plus pendant que la fiche glisse) ; la fiche se ferme comme sur un changement d'ancre
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('.fiche__close')
+  if (!a || e.metaKey || e.ctrlKey) return
+  e.preventDefault()
+  history.pushState(null, '', a.getAttribute('href'))
+  syncFiche()
+})
 
 /* Fiches, grand écran : la rangée est déplacée par le script, avec une seule douceur pour toutes les entrées
    (pavé tactile, molette, glisser à la souris ou au doigt, clavier). */
@@ -245,7 +261,7 @@ function ficheFrame(now) {
 addEventListener('keydown', (e) => {
   const open = ficheOf()
   if (!open) return
-  if (e.key === 'Escape') { e.preventDefault(); location.hash = open.querySelector('.fiche__close').getAttribute('href') }
+  if (e.key === 'Escape') { e.preventDefault(); open.querySelector('.fiche__close').click() }   // même fermeture que le bouton (sans saut)
   if (e.key === 'Tab') {
     const f = [...open.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])')]
     if (!f.length) return
