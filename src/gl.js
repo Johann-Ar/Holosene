@@ -195,7 +195,7 @@ void main() {
   float aa = 0.9 / uDpr;
 
   // verre liquide : près des bords de l'écran (haut, bas) et de la piste (gauche, droite), l'image est aspirée vers
-  // l'intérieur (on lit l'image plus loin du bord). La forme de la vignette ne bouge pas : rien ne sort du cadre.
+  // l'intérieur (on lit l'image plus loin du bord). Aux bords gauche et droit, la vignette perd aussi de la hauteur (passe verre).
   const float EDGE = 120.0;   // même largeur que les fondus CSS (bord haut en référence)
   vec2 sc = uScr.xy + p;
   float wT = 1.0 - smoothstep(0.0, EDGE, sc.y), wB = 1.0 - smoothstep(0.0, EDGE, uScr.w - sc.y);
@@ -253,7 +253,17 @@ vec3 at(vec2 q) {
 void main() {
   vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
   p.y = uRes.y - p.y;
-  float aa = 0.9 / uDpr;
+  // aspiration verticale aux bords gauche et droit de la piste : même principe que l'aspiration horizontale, la vignette
+  // perd de la hauteur en approchant du bord (jusqu'à 22 % au ras du bord), contour de verre compris, et son contenu est
+  // comprimé dans cette hauteur (on lit plus loin de l'axe médian) ; zone : 30 % de la piste, 160 px au plus
+  float sqz = 1.0;
+  if (uClip.z > 0.0) {
+    float zone = min(160.0, 0.3 * (uClip.y - uClip.x));
+    float w = max(1.0 - smoothstep(uClip.x, uClip.x + zone, p.x), smoothstep(uClip.y - zone, uClip.y, p.x));
+    sqz = 1.0 - 0.22 * w * w * (3.0 - 2.0 * w);
+    p.y = uRes.y * 0.5 + (p.y - uRes.y * 0.5) / sqz;
+  }
+  float aa = 0.9 / (uDpr * sqz);
   float sd = sdCard(p);
   vec3 col = at(p);
   float W = 34.0;

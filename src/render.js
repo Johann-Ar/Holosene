@@ -152,7 +152,7 @@ export function render(lang) {
         <div class="hero__slot" aria-hidden="true"><img class="hero__mark only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576"><img class="hero__mark only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576"></div>
         <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}${nameStacked}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
-        <a class="hero__cta" href="#projets" aria-label="${lang === 'fr' ? 'Voir les projets' : 'See the work'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.4 9.3C8.5 10.3 10.7 12.5 12 15.4C13.3 12.5 15.5 10.3 18.6 9.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="hero__cta" href="#projets" aria-label="${lang === 'fr' ? 'Voir les projets' : 'See the work'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.4 9.3C8.5 10.3 10.4 12.3 11.25 14.3Q12 15.9 12.75 14.3C13.6 12.3 15.5 10.3 18.6 9.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       </div>
     </div>
   </section>
