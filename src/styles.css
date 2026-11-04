@@ -221,7 +221,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 }
 
 /* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
-.hero { position: relative; height: 232svh; }   /* scène épinglée (132 svh de défilement, sans temps mort) : le monogramme, le nom, la présentation, puis le départ du logo */
+.hero { position: relative; height: 250svh; }   /* scène épinglée (132 svh de défilement, sans temps mort) : le monogramme, le nom, la présentation, puis le départ du logo */
 .hero__pin { position: sticky; top: 0; height: 100svh; min-height: 560px; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .hero { height: 100svh; } }
 .hero__view { position: absolute; inset: 0; }

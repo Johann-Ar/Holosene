@@ -387,9 +387,9 @@ function scrollEffects() {
   const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
-    // scène sans temps mort : le logo se place (0 à 0,61), le nom se trace (0,16 à 0,79), la présentation s'allume
-    // (0,68 à 0,98) ; juste après, le logo part vers la barre
-    const on = Math.round(k(0.68, 0.98) * heroWords.length)
+    // le logo se place (0 à 0,54), le nom se trace (0,14 à 0,70), la présentation s'allume (0,60 à 0,86) ; puis un court
+    // temps calme (0,86 à 1) avant que le logo parte vers la barre
+    const on = Math.round(k(0.6, 0.86) * heroWords.length)
     if (on !== heroOn) { heroWords.forEach((w, i) => w.classList.toggle('on', i < on)); heroOn = on }
     // la barre du haut et le reste du site n'apparaissent qu'une fois la scène de l'accueil finie, quand l'écran
     // commence à descendre (jusque-là : le fond, le gros logo et la présentation seulement)
@@ -398,7 +398,7 @@ function scrollEffects() {
   // le nom existe en deux versions (une ligne / deux lignes sur mobile) : même avancée pour les deux
   wordsSvg.forEach((w) => {
     // le nom apparaît tôt et sur une longue course : tracé de 16 % à 79 % de la scène, remplissage dans la seconde moitié
-    const p = k(0.16, 0.79)
+    const p = k(0.14, 0.7)
     w.style.setProperty('--draw', (1 - Math.min(1, p * 1.2)).toFixed(3))
     w.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.4) / 0.6)).toFixed(3))
   })
