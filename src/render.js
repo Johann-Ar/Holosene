@@ -129,8 +129,8 @@ export function render(lang) {
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
   </nav>
   <a href="#top" class="brand" aria-label="Holosene">
-    <img class="brand__mark only-dark" draggable="false" src="${root}media/monogram-mono-white.svg" alt="Holosene" width="470" height="576">
-    <img class="brand__mark only-light" draggable="false" src="${root}media/monogram-mono-black.svg" alt="Holosene" width="470" height="576">
+    <img class="brand__mark only-dark" draggable="false" src="${root}media/monogram-iris-dark.svg" alt="Holosene" width="470" height="576">
+    <img class="brand__mark only-light" draggable="false" src="${root}media/monogram-iris-light.svg" alt="Holosene" width="470" height="576">
   </a>
   <div class="topbar__tools">
     <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button>

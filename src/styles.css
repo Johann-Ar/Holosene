@@ -58,11 +58,12 @@ a { color: inherit; }
    le gros logo de l'accueil sorti de l'écran (.brand-on, posée par main.js) */
 .topbar .brand { position: absolute; left: 50%; transform: translateX(-50%); opacity: 0; visibility: hidden; transition: opacity 0.5s var(--ease-flow), visibility 0.5s; }
 .brand-on .topbar .brand { opacity: 1; visibility: visible; }
+.has-gl .topbar .brand { transition: none; }   /* relais au même pixel avec le gros logo qui l'a rejoint : pas de fondu */
 .topbar__tools { display: flex; align-items: center; gap: 12px; }
 /* mode clair : verre dépoli de la barre en flou progressif (8 couches empilées, flou doublé à chaque couche, chacune
    visible sur une bande ; le flou croît vers le haut, sans palier) ; il descend sous les liens pour que le dégradé
    finisse en dessous d'eux ; voile léger dégradé par-dessus */
-.topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 48px); z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--bg) 40%, transparent), color-mix(in srgb, var(--bg) 18%, transparent) 55%, transparent); }
+.topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 48px); z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, white 72%, transparent), color-mix(in srgb, white 34%, transparent) 55%, transparent); }   /* voile blanc : boutons et liens mieux contrastés */
 .topbar__glass i { position: absolute; inset: 0; }
 .topbar__glass i:nth-child(1) { -webkit-backdrop-filter: blur(0.5px); backdrop-filter: blur(0.5px); -webkit-mask: linear-gradient(to top, transparent 0%, #000 12.5%, #000 25%, transparent 37.5%); mask: linear-gradient(to top, transparent 0%, #000 12.5%, #000 25%, transparent 37.5%); }
 .topbar__glass i:nth-child(2) { -webkit-backdrop-filter: blur(1px); backdrop-filter: blur(1px); -webkit-mask: linear-gradient(to top, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%); mask: linear-gradient(to top, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%); }

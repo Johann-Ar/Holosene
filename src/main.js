@@ -33,7 +33,8 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).get('debug') ===
 /* Petit logo de la barre du haut : visible seulement quand le gros logo de l'accueil n'est plus à l'écran */
 const heroSlot = document.querySelector('.hero__slot')
 if (!heroSlot) root.classList.add('brand-on')
-else new IntersectionObserver(([e]) => root.classList.toggle('brand-on', !e.isIntersecting)).observe(heroSlot)
+// avec WebGL, c'est gl.js qui l'affiche, quand le gros logo l'a rejoint ; sans WebGL : dès que le gros logo est sorti
+else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl')) root.classList.toggle('brand-on', !e.isIntersecting) }).observe(heroSlot)
 
 /* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut). Le bouton force l'autre mode (data-theme sur
    <html>, mémorisé ; le script inline de <head> l'applique avant le premier rendu). La barre du navigateur suit. */

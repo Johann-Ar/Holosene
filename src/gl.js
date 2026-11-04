@@ -394,16 +394,22 @@ export function createGL(canvas, { reduced }) {
   const GROW = IRIS.intro.grow, SHIFT = IRIS.intro.shift
   const bigOf = (w, h) => Math.min(h * 0.46, w * (w < 760 ? 0.5 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil
   const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * 0.62)   // rayon du « o » au relais avec le chargeur (px)
-  function markXf(w, h, p, ms, slot, oc) {
+  function markXf(w, h, p, ms, slot, oc, dock) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
+    const io = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - Math.pow(2 - 2 * x, 3) / 2)
     const small = w < 760
     const big = bigOf(w, h)
     // fin : à sa place dans la composition de l'accueil (.hero__slot, au-dessus du nom et de la présentation)
     const q = e(k(0, 0.45))
-    const size = big + (slot.h - big) * q
-    const cx = w / 2 + (slot.x - w / 2) * q, cy = h / 2 + (slot.y - h / 2) * q
+    let size = big + (slot.h - big) * q
+    let cx = w / 2 + (slot.x - w / 2) * q, cy = h / 2 + (slot.y - h / 2) * q
+    // après la scène de l'accueil : en continuant de défiler, le logo rapetisse et rejoint le petit logo de la barre
+    // (dock : sa place, dans le repère de la vue, et l'avancée m de 0 à 1)
+    if (dock && dock.m > 0) {
+      const d = io(dock.m)
+      cx += (dock.x - cx) * d; cy += (dock.y - cy) * d; size += (dock.h - size) * d
+    }
     if (ms >= GROW + SHIFT) return [cx, cy, size, 0, 1]
-    const io = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - Math.pow(2 - 2 * x, 3) / 2)
     // croissance : décélération seule (le chargeur arrive en accélérant à la même vitesse : aucun arrêt au relais)
     const gx = Math.min(1, Math.max(0, ms / GROW)), g = 1 - Math.pow(1 - gx, 3), c = io((ms - GROW) / SHIFT)
     const s0 = handoffR(w, h) / O_R, sz = s0 + (size - s0) * g
@@ -429,7 +435,8 @@ export function createGL(canvas, { reduced }) {
     v.textKey = key
   }
 
-  let W = 0, H = 0, dpr = 1, cellScale = 1
+  let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false
+  const brandMark = document.querySelector('.topbar .brand')
   function resize() {
     W = innerWidth; H = innerHeight
     dpr = Math.min(devicePixelRatio || 1, W < 760 ? 1.75 : 2)
@@ -467,7 +474,11 @@ export function createGL(canvas, { reduced }) {
     // sur un bouton ou un lien d'interface (flèches de la piste, barre du haut…) : pas de lentille, le curseur reste visible
     const onCtl = !!over && !!document.elementFromPoint(ptr.x, ptr.y)?.closest('button, .btn, .work__nav, .topbar, [role="button"]')
     if (over) lens.view = over
-    const show = !!over && !onCtl && (!ptr.touch || now - ptr.t < 1400) && !document.documentElement.classList.contains('fiche-open')
+    // pendant le défilement (et 200 ms après), pas de survol : les vignettes qui passent sous un curseur immobile ne
+    // s'allument pas l'une après l'autre (clignotement)
+    if (scrollY !== lastSY) { lastSY = scrollY; scrollT = now }
+    const still = now - scrollT > 200
+    const show = !!over && !onCtl && (still || lens.s > 0.5) && (!ptr.touch || now - ptr.t < 1400) && !document.documentElement.classList.contains('fiche-open')
     if (!lens.init || (lens.s < 0.02 && show)) { lens.x = ptr.x; lens.y = ptr.y; lens.init = true }
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
@@ -489,7 +500,7 @@ export function createGL(canvas, { reduced }) {
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
       const reveal = 1   // vignettes : trame toujours complète (plus d'apparition ni de disparition en noir)
       if (v.mark) { maskFor(v); if (!v.maskB) continue }
-      const hov = !v.mark && hoverDevice && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
+      const hov = !v.mark && hoverDevice && still && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
       const pw = Math.round(w * dpr), ph = Math.round(h * dpr)
@@ -534,7 +545,16 @@ export function createGL(canvas, { reduced }) {
         const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
         // animations réduites : pas de scène de défilement, le logo est d'emblée à sa place (au-dessus du nom)
-        const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top])
+        // place du petit logo de la barre ; le logo y arrive quand la vue a remonté de (hauteur du logo posé − barre)
+        const br = brandMark?.getBoundingClientRect()
+        let dock = null
+        if (br?.height) {
+          const by = br.top + br.height / 2, m = Math.min(1, Math.max(0, -b.top / Math.max(1, slot.y - by)))
+          dock = { x: br.left + br.width / 2 - b.left, y: by - b.top, h: br.height, m }
+          // arrivé : le petit logo de la barre (identique) prend le relais
+          if ((m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked) }
+        }
+        const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
         gl.uniform3f(U.uInk, ...theme.ink)
         // rotation passive de la roue du « o » : démarre en douceur une fois le logo posé (fin de l'arrivée)
         const ms = reduced ? 0 : now - v.seen - (IRIS.intro.grow + IRIS.intro.shift)
