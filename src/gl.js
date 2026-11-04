@@ -262,7 +262,7 @@ void main() {
   float scrY = uScrY.x + p.y;   // position du point à l'écran (px CSS, depuis le haut)
   if (uClip.z > 0.0) {
     float trackW = uClip.y - uClip.x;
-    float zone = trackW < 769.0 ? 0.075 * trackW : min(160.0, 0.3 * trackW);   // mobile : zone étroite
+    float zone = trackW < 769.0 ? 0.075 * trackW : min(110.0, 0.2 * trackW);   // portée : PC 110 px au plus ; mobile, zone étroite
     float k = trackW < 769.0 ? 0.12 : 0.08;
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));             // distance au bord le plus proche de la piste
     sqz = 1.0 - k * exp(-d / (0.28 * zone));
