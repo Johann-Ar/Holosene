@@ -37,21 +37,52 @@ const amountAt = (now) => {
   return 1 - Math.pow(1 - x, 3)
 }
 
-// survol du « o » du logo (FLOW.hoverTarget, fixé par gl.js) : le flux s'accélère seulement, en douceur (horloge
-// propre, intégrée : jamais de saut quand la vitesse change)
-const HOVER_SPEED = 2.2
-let lastAmount = -1, clock = 0, lastNow = null, hover = 0
+// survol du « o » du logo (FLOW.hoverTarget, fixé par gl.js) : la roue tourne lentement, en douceur ; sans survol, elle
+// revient en douceur à sa place (rose en haut). La vitesse de rotation suit un ressort amorti : aucun à-coup.
+const ROT_SPEED = 0.09          // tours par seconde au survol
+const SMOOTH_R = 10             // lissage des transitions de couleur (échantillons, sur 512) : pas de segments visibles
+const N = 512, tmp = new Float32Array(N * 3), acc = new Float32Array(N * 3)
+let lastAmount = -1, clock = 0, lastNow = null, hover = 0, rot = 0, rotV = 0
+// flou circulaire (deux passes de moyenne glissante ≈ gaussien) : transitions de couleur fondues
+function smoothRing(src) {
+  for (let i = 0; i < N; i++) for (let c = 0; c < 3; c++) tmp[i * 3 + c] = src[i * 4 + c]
+  for (let pass = 0; pass < 2; pass++) {
+    const r = SMOOTH_R, w = 2 * r + 1
+    for (let c = 0; c < 3; c++) {
+      let sum = 0
+      for (let k = -r; k <= r; k++) sum += tmp[((k % N) + N) % N * 3 + c]
+      for (let i = 0; i < N; i++) {
+        acc[i * 3 + c] = sum / w
+        sum += tmp[((i + r + 1) % N) * 3 + c] - tmp[((i - r) % N + N) % N * 3 + c]
+      }
+    }
+    tmp.set(acc)
+  }
+}
 export function updateFlow(now) {
   const dt = lastNow === null ? 0 : Math.min(0.1, (now - lastNow) / 1000); lastNow = now
   hover += (FLOW.hoverTarget - hover) * (1 - Math.exp(-dt / 0.35))
-  clock += dt * (1 + (HOVER_SPEED - 1) * hover)
+  clock += dt
+  // rotation : au survol, vitesse ROT_SPEED ; sinon ressort vers le tour entier le plus proche (retour à la place)
+  const target = hover > 0.5 ? null : Math.round(rot)
+  const want = target === null ? ROT_SPEED * hover : (target - rot) * 1.6
+  rotV += (want - rotV) * (1 - Math.exp(-dt / 0.45))
+  rot += rotV * dt
   const amount = amountAt(now)
   // pause : rien de visible, ou roue figée déjà calculée
-  if (!(FLOW.glNeeds || FLOW.loaderNeeds) || (amount === 0 && lastAmount === 0)) return
+  const moving = Math.abs(rotV) > 1e-4 || Math.abs(rot - Math.round(rot)) > 1e-4
+  if (!(FLOW.glNeeds || FLOW.loaderNeeds) || (amount === 0 && lastAmount === 0 && !moving)) return
   const s = performance.now()
-  const cfg = irisFlowMix(FLOW.mix)   // survol : mêmes réglages, seule la vitesse change
+  const cfg = irisFlowMix(FLOW.mix)
   cfg.amount = amount
-  irisFlowLUT(clock, cfg, FLOW.size, FLOW.lut)
+  irisFlowLUT(clock, cfg, N, FLOW.lut)
+  smoothRing(FLOW.lut)
+  // rotation de la roue (interpolation linéaire entre échantillons voisins : rotation continue, sans saut)
+  const off = (((rot % 1) + 1) % 1) * N
+  for (let i = 0; i < N; i++) {
+    const x = i - off, i0 = Math.floor(x), f = x - i0, a = ((i0 % N) + N) % N, b2 = (a + 1) % N
+    for (let c = 0; c < 3; c++) FLOW.lut[i * 4 + c] = Math.round(tmp[a * 3 + c] + (tmp[b2 * 3 + c] - tmp[a * 3 + c]) * f)
+  }
   FLOW.cpuMs = performance.now() - s
   FLOW.version++
   lastAmount = amount
