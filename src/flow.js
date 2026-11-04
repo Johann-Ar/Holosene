@@ -20,17 +20,19 @@ export const FLOW = {
   size: 512,
   lut: new Uint8Array(512 * 4),
   version: 0,       // incrémenté à chaque nouvelle texture (gl.js la ré-envoie au GPU)
-  mix: 0.35,        // 0 : réglages idle, 1 : loading (chargeur) ; logo de l'accueil : FLOW_HOME_MIX ; fixé par le chargeur
+  mix: 0.35,        // 0 : réglages idle, 1 : loading ; logo de l'accueil : FLOW_HOME_MIX
   glNeeds: true,    // logo de l'accueil ou lentille à l'écran (fixé par gl.js)
-  loaderNeeds: true, // chargeur affiché (fixé par main.js)
+  loaderNeeds: false, // (chargeur en CSS : n'utilise plus la texture)
   frozen: false,    // panneau ?debug=iris : roue finale (amount = 0)
   cpuMs: 0,         // temps de calcul de la dernière texture (mesure)
+  t0,               // début de la montée du flux (fixé au relais du chargeur)
 }
 
-// au chargement de la page, l'intensité monte de 0 à 1 en 1,2 s (ease-out) ; animations réduites : 0 (roue finale)
+// l'intensité monte de 0 à 1 en 1,2 s (ease-out) à partir de FLOW.t0 : le relais du chargeur (main.js), dont la roue
+// est la roue fixe du kit (amount 0) : aucun saut de couleur ; animations réduites : 0 (roue finale)
 const amountAt = (now) => {
   if (reduced || FLOW.frozen) return 0
-  const x = Math.min(1, (now - t0) / 1200)
+  const x = Math.min(1, Math.max(0, (now - FLOW.t0) / 1200))
   return 1 - Math.pow(1 - x, 3)
 }
 

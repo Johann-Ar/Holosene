@@ -35,13 +35,29 @@ a { color: inherit; }
 .is-dev .todo { display: revert !important; color: #ffb36b; outline: 1px dashed #ffb36b; outline-offset: 4px; }
 
 .loader { display: none; }
-/* écran de chargement : un astérisque tramé (mêmes points que le site) qui tourne, puis fondu */
-.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; background: var(--bg); transition: background-color 0.6s var(--ease-flow); }
-/* fermeture : le fond du chargeur s'efface (on voit déjà le fond de page) ; au relais, l'anneau, identique au « o » du
-   logo dessiné dessous, disparaît d'un coup : aucun fondu par-dessus le logo */
-.js .loader--closing { background-color: transparent; }
+/* écran de chargement : l'anneau du « o » qui tourne, puis se complète et passe le relais au logo */
+.js .loader { display: grid; place-items: center; position: fixed; inset: 0; z-index: 200; }
+/* fond du chargeur : couche à part, effacée en opacité (compositeur) pendant la fermeture */
+.js .loader::before { content: ''; position: absolute; inset: 0; background: var(--bg); transition: opacity 0.6s var(--ease-flow); }
+.js .loader--closing::before { opacity: 0; }
 .is-loaded .loader { visibility: hidden; }
-.loader__spin { width: 96px; height: 96px; }
+/* l'anneau : rayon du relais --r1 (main.js), 60 % pendant le chargement ; anneau du kit (intérieur 0,514 × extérieur),
+   roue fixe du kit (--iris-conic). Animations de transformation et d'opacité seulement : fluides même si la page calcule. */
+.loader__o { --r1: 44px; position: relative; width: calc(var(--r1) * 2); height: calc(var(--r1) * 2); transform: scale(0.6); }
+.loader__ring { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic);
+  -webkit-mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%);
+          mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%); }
+/* l'arc (0,85 tour) tourne à 0,9 tour/s ; la roue qu'il dévoile tourne en sens inverse : ses couleurs restent fixes.
+   Opacité 0 à la queue → 1 à la tête (courbe u^1,6), tête arrondie (disque au bout, à 306°). */
+.loader__arc { position: absolute; inset: 0; animation: spin 1.111s linear infinite;
+  -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(rgb(0 0 0 / 0.000) 0.00%, rgb(0 0 0 / 0.036) 10.62%, rgb(0 0 0 / 0.109) 21.25%, rgb(0 0 0 / 0.208) 31.88%, rgb(0 0 0 / 0.330) 42.50%, rgb(0 0 0 / 0.471) 53.12%, rgb(0 0 0 / 0.631) 63.75%, rgb(0 0 0 / 0.808) 74.38%, rgb(0 0 0 / 1.000) 85.00%, transparent 85.01%);
+          mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(rgb(0 0 0 / 0.000) 0.00%, rgb(0 0 0 / 0.036) 10.62%, rgb(0 0 0 / 0.109) 21.25%, rgb(0 0 0 / 0.208) 31.88%, rgb(0 0 0 / 0.330) 42.50%, rgb(0 0 0 / 0.471) 53.12%, rgb(0 0 0 / 0.631) 63.75%, rgb(0 0 0 / 0.808) 74.38%, rgb(0 0 0 / 1.000) 85.00%, transparent 85.01%); }
+.loader__arc > .loader__ring { animation: spin 1.111s linear infinite reverse; }
+/* fermeture (1,3 s) : l'anneau se complète, puis grandit en accélérant (t²) jusqu'au rayon du relais */
+.loader__full { opacity: 0; }
+.loader--closing .loader__full { opacity: 1; transition: opacity 1.3s cubic-bezier(0.45, 0, 0.55, 1); }
+.loader--closing .loader__o { transform: scale(1); transition: transform var(--grow, 400ms) cubic-bezier(0.333, 0, 0.667, 0.333) calc(1300ms - var(--grow, 400ms)); }
+@media (prefers-reduced-motion: reduce) { .loader__arc, .loader__arc > .loader__ring { animation: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
 .skip:focus-visible { transform: none; }
@@ -72,6 +88,8 @@ a { color: inherit; }
 .topbar__glass i:nth-child(5) { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); -webkit-mask: linear-gradient(to top, transparent 80%, #000 100%); mask: linear-gradient(to top, transparent 80%, #000 100%); }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .topbar__glass { display: block; } }
 :root[data-theme="light"] .topbar__glass { display: block; }
+/* grand écran : le flou de la barre s'éteint sur une plus grande hauteur (aucune limite basse visible) */
+@media (min-width: 769px) { .topbar__glass { height: calc(100% + 120px); } }
 .brand__mark { height: 42px; width: auto; }
 .topbar__nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 34px); font-size: 17px; }
 .topbar__nav a { text-decoration: none; }
@@ -118,6 +136,21 @@ a { color: inherit; }
 .work__pin::after { right: 0; -webkit-mask: linear-gradient(270deg, #000, transparent); mask: linear-gradient(270deg, #000, transparent); }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .work__pin::before, :root:not([data-theme="dark"]) .work__pin::after { content: ''; } }
 :root[data-theme="light"] .work__pin::before, :root[data-theme="light"] .work__pin::after { content: ''; }
+
+/* mobile : fondus latéraux de la piste étroits (le titre de la vignette visible reste net) */
+@media (max-width: 768px) {
+  .work__track { --fade: 28px; }
+  .work__pin::before, .work__pin::after { width: 28px; }
+  /* le texte défile juste sous les liens du haut : fondu du haut plus couvrant */
+  .edge--top { height: 104px; background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, transparent) 45%, color-mix(in srgb, var(--bg) 40%, transparent) 75%, color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
+}
+/* écrans tactiles : zones de toucher d'au moins 44 px dans la barre du haut, sans changer le dessin */
+@media (pointer: coarse) {
+  .topbar__nav a:not(.lang) { padding-block: 11px; margin-block: -11px; }
+  .topbar__nav a:not(.lang)::after { bottom: 6px; }
+  .theme-toggle, .topbar .lang { position: relative; }
+  .theme-toggle::before, .topbar .lang::before { content: ''; position: absolute; inset: -7px -4px; }
+}
 
 /* toile WebGL : fixe, derrière tout le contenu ; les vues [data-gl] y sont dessinées à leur place */
 .bg-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
@@ -188,7 +221,15 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 64px; height: 64px; color: var(--ink); }   /* un seul chevron arrondi, centré (zone cliquable confortable) */
 .hero__cta svg { width: 40px; height: 40px; animation: nudge 1.8s var(--ease-in-out) infinite; }   /* agrandi */
 /* accueil : rien d'autre que le fond, le gros logo et la présentation tant que l'écran ne descend pas */
-.js:not(.hero-done) .topbar, .js:not(.hero-done) .hero__cta, .js:not(.hero-done) .edge { opacity: 0; visibility: hidden; }
+.js:not(.hero-done) .edge { opacity: 0; visibility: hidden; }
+/* barre du haut : juste après que le gros logo a pris sa place de petit logo (bar-on, posée une fois pour toutes) */
+.js:not(.bar-on) .topbar { opacity: 0; visibility: hidden; }
+/* flèche : un court instant après la fin de l'arrivée du logo (intro-done, main.js) */
+.js:not(.intro-done) .hero__cta { opacity: 0; visibility: hidden; }
+.intro-done .hero__cta { transition-delay: 0.35s; }
+/* pendant le chargeur et l'arrivée du logo : aucun défilement possible (molette, doigt, barre) */
+.intro-lock, .intro-lock body { overflow: hidden; overscroll-behavior: none; }
+.intro-lock body { touch-action: none; }
 .topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
 @keyframes nudge { 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero__cta svg { animation: none; } }
@@ -366,6 +407,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .fiche__media figure { aspect-ratio: var(--r); }
   .duo { display: grid; gap: 12px; }
   .fiche__next .disp { white-space: normal; }
+  /* titre de la fiche : fond plein, court fondu dessous (le texte et les images ne transparaissent plus) */
+  .fiche__head { background: var(--bg); }
+  .fiche__head::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 20px; background: linear-gradient(var(--bg), color-mix(in srgb, var(--bg) 0%, transparent)); pointer-events: none; }
 }
 
 /* pages annexes */

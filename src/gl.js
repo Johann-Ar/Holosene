@@ -200,7 +200,7 @@ void main() {
   vec2 sc = uScr.xy + p;
   float wT = 1.0 - smoothstep(0.0, EDGE, sc.y), wB = 1.0 - smoothstep(0.0, EDGE, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
-  if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + EDGE, p.x); wR = smoothstep(uClip.y - EDGE, uClip.y, p.x); }
+  if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + uClip.z, p.x); wR = smoothstep(uClip.y - uClip.z, uClip.y, p.x); }   // côtés : largeur uClip.z (120 px, 28 px sur mobile)
   vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
@@ -559,7 +559,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uColor, v.color ? 1 : v.glass)   // au survol : la trame passe en couleur (fondu)
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
-      if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
+      if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 28 : 120, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
@@ -575,7 +575,7 @@ export function createGL(canvas, { reduced }) {
           const by = br.top + br.height / 2, m = Math.min(1, Math.max(0, -b.top / Math.max(1, slot.y - by)))
           dock = { x: br.left + br.width / 2 - b.left, y: by - b.top, h: br.height, m }
           // arrivé : le petit logo de la barre (identique) prend le relais
-          if ((m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked) }
+          if ((m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked); if (docked) document.documentElement.classList.add('bar-on') }
         }
         const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
         gl.uniform3f(U.uInk, ...theme.ink)
@@ -596,7 +596,7 @@ export function createGL(canvas, { reduced }) {
         gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
-        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, 120, 0)
+        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 28 : 120, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
       }

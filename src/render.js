@@ -105,7 +105,7 @@ export function render(lang) {
             <div${p.role?.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.role))}</dt><dd>${esc(t(p.role))}</dd></div>
             <div><dt class="lbl">${esc(t(ui.tools))}</dt><dd>${esc(p.tools)}</dd></div>
             <div><dt class="lbl">${esc(t(ui.year))}</dt><dd>${esc(p.year)}</dd></div>
-            ${credits.map((c) => `<div${c.todo ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.creditsLabel))}</dt><dd>${esc(t(c))}</dd></div>`).join('')}
+            ${credits.length ? `<div${credits.every((c) => c.todo) ? ' class="todo"' : ''}><dt class="lbl">${esc(t(ui.creditsLabel))}</dt>${credits.map((c) => `<dd${c.todo ? ' class="todo"' : ''}>${esc(t(c))}</dd>`).join('')}</div>` : ''}
           </dl>
         </section>
         ${p.link ? `<a class="btn btn--light" href="${esc(p.link.href)}" target="_blank" rel="noopener">${esc(t(p.link.label))} ↗</a>` : ''}
@@ -123,7 +123,7 @@ export function render(lang) {
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
-<div class="loader" aria-hidden="true"><canvas class="loader__spin" width="96" height="96"></canvas></div>
+<div class="loader" aria-hidden="true"><div class="loader__o"><div class="loader__arc"><i class="loader__ring"></i></div><i class="loader__ring loader__full"></i></div></div>
 <canvas class="bg-canvas" aria-hidden="true"></canvas>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
@@ -152,7 +152,7 @@ export function render(lang) {
         <div class="hero__slot" aria-hidden="true"><img class="hero__mark only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576"><img class="hero__mark only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576"></div>
         <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${nameWord}${nameStacked}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
-        <a class="hero__cta" href="#projets" aria-label="${lang === 'fr' ? 'Voir les projets' : 'See the work'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="hero__cta" href="#projets" aria-label="${lang === 'fr' ? 'Voir les projets' : 'See the work'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.4 9.3C8.5 10.3 10.7 12.5 12 15.4C13.3 12.5 15.5 10.3 18.6 9.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       </div>
     </div>
   </section>

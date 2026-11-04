@@ -1,10 +1,10 @@
 import 'virtual:iris.css'
 import './styles.css'
-import { IRIS_INNER_RATIO } from '../design/logo-kit/src/iris.js'
-import { FLOW, FLOW_HOME_MIX, updateFlow } from './flow.js'
+import { FLOW, updateFlow } from './flow.js'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
 import { createBackdrop } from './backdrop.js'
+import { IRIS } from './iris-config.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -32,9 +32,9 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).get('debug') ===
 
 /* Petit logo de la barre du haut : visible seulement quand le gros logo de l'accueil n'est plus à l'écran */
 const heroSlot = document.querySelector('.hero__slot')
-if (!heroSlot) root.classList.add('brand-on')
+if (!heroSlot) root.classList.add('brand-on', 'bar-on')
 // avec WebGL, c'est gl.js qui l'affiche, quand le gros logo l'a rejoint ; sans WebGL : dès que le gros logo est sorti
-else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl')) root.classList.toggle('brand-on', !e.isIntersecting) }).observe(heroSlot)
+else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl')) { root.classList.toggle('brand-on', !e.isIntersecting); if (!e.isIntersecting) root.classList.add('bar-on') } }).observe(heroSlot)
 
 /* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut). Le bouton force l'autre mode (data-theme sur
    <html>, mémorisé ; le script inline de <head> l'applique avant le premier rendu). La barre du navigateur suit. */
@@ -79,6 +79,7 @@ const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gest
 // lieu du saut instantané du navigateur (Lenis ne lisse que la molette et le pavé tactile) ; flèches gauche / droite :
 // taille des points de la trame
 addEventListener('keydown', (e) => {
+  if (root.classList.contains('intro-lock') && [' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) { e.preventDefault(); return }
   if (!lenis || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || root.classList.contains('fiche-open')) return
   if (e.target.closest?.('input, textarea, select, button, a, [contenteditable], .work__track')) return   // Espace y garde son rôle
   // flèches gauche / droite : points de la trame des vignettes plus petits / plus gros
@@ -331,74 +332,38 @@ function scrollEffects() {
     if (lead) { const v = f.toFixed(3); if (lead.dataset.f !== v) { lead.dataset.f = v; lead.style.setProperty('--f', v) } }
   }
 }
-if (reduced) { root.classList.add('hero-done'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
+if (reduced) { root.classList.add('hero-done', 'bar-on'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
-/* Chargeur : le « o » du logo-kit. Un arc tourne ; ses couleurs sont celles de la roue du kit à leur angle exact (il
-   dévoile le vrai « o »), son opacité va de 0 à la queue à 1 à la tête (arrondie) : ni noir ni gris. En fin de
-   chargement, il se referme en anneau plein et grandit en accélérant (60 % → 100 % du rayon du relais) ; le « o » du logo prend le relais
-   au même pixel et à la même vitesse, puis ralentit. Le fond du chargeur s'efface pendant la fermeture.
-   Dégradés coniques Canvas 2D : dessinés par le navigateur, aucun calcul par pixel en JavaScript. */
-const spin = document.querySelector('.loader__spin'), loaderEl = document.querySelector('.loader')
-FLOW.loaderNeeds = !!spin
-let finishLoader = (done) => done()
-if (spin?.getContext('2d').createConicGradient) {
-  const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
-  spin.width = S * dpr; spin.height = S * dpr
-  const x = spin.getContext('2d')
-  const TAU = Math.PI * 2, C = S / 2
-  // couleurs : la roue « flux » de l'image en cours (flow.js, même texture et même horloge que le logo : aucun saut de
-  // couleur au relais), lue à son angle exact ; t = 0 en bas, sens horaire (angle canvas du bas : π/2)
-  FLOW.mix = 1   // réglages « loading » du kit pendant le chargement
-  const flowGradient = () => {
-    const g = x.createConicGradient(Math.PI / 2, C, C), L8 = FLOW.lut, n = 64
-    for (let i = 0; i <= n; i++) { const j = ((i % n) * (FLOW.size / n)) * 4; g.addColorStop(i / n, `rgb(${L8[j]} ${L8[j + 1]} ${L8[j + 2]})`) }
-    return g
-  }
-  // rayon : R1 au relais (fixé par le logo selon l'écran, 44 px au plus), R0 = 60 % de R1 pendant le chargement
-  let finishAt = 0, onDone = null, growD = 400, R1 = 44, R0 = 26, sized = false
-  // fin du chargement : l'arc s'allonge jusqu'au tour complet et sa queue devient opaque (1,3 s) ; pendant les derniers
-  // growD ms, l'anneau grandit en accélérant (t²) jusqu'à 44 px, à la vitesse initiale de la croissance du logo
+/* Chargeur : le « o » du logo-kit. Un arc tourne sur la roue fixe du kit (il en dévoile les couleurs à leur angle exact) ;
+   son opacité va de 0 à la queue à 1 à la tête (arrondie). En fin de chargement, l'anneau se complète (fondu de l'anneau
+   plein) et grandit en accélérant (60 % → 100 % du rayon du relais) ; le « o » du logo prend le relais au même pixel et à
+   la même vitesse, avec la même roue (le flux démarre de 0 à ce moment-là, flow.js), puis ralentit.
+   Tout est en animations CSS de transformation et d'opacité, exécutées par le compositeur du navigateur : le chargeur
+   reste fluide même quand la page prépare WebGL (compilation, envoi des images) sur le fil principal. */
+const loaderEl = document.querySelector('.loader'), loaderO = document.querySelector('.loader__o')
+let finishLoader = (done) => done(), sizeLoader = () => {}
+if (loaderO) {
+  FLOW.t0 = Infinity   // flux à l'arrêt (roue du kit) jusqu'au relais
+  let R1 = 44
+  // rayon du relais selon l'écran (fixé par le logo WebGL, 44 px au plus) : appelé juste après la création de gl
+  sizeLoader = () => { const it = gl?.intro?.(); if (it) { R1 = it.r0; loaderO.style.setProperty('--r1', R1 + 'px') } }
   finishLoader = (done) => {
-    finishAt = performance.now(); onDone = done
-    loaderEl?.classList.add('loader--closing')
-    const it = gl?.intro?.()
-    if (it) { R0 *= it.r0 / R1; R1 = it.r0; const v = 3 * (it.r1 - it.r0) / it.grow; growD = Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(v, 1e-3))) }
+    // durée de la croissance : l'anneau finit à la vitesse initiale de la croissance du logo (v = 3 (r1 − r0) / grow)
+    const it = gl?.intro?.(), R0 = R1 * 0.6
+    const growD = it ? Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(3 * (it.r1 - it.r0) / it.grow, 1e-3))) : 400
+    loaderO.style.setProperty('--grow', growD + 'ms')
+    loaderEl.classList.add('loader--closing')
+    setTimeout(() => { FLOW.t0 = performance.now(); done() }, reduced ? 0 : 1300)
   }
-  const draw = (t) => {
-    // première image : rayon du relais selon l'écran (gl est créé plus bas dans ce fichier, il existe à ce moment-là)
-    if (!sized) { sized = true; const it = gl?.intro?.(); if (it) { R1 = it.r0; R0 = R1 * 0.6 } }
-    if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
-    const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
-    // flux : de « loading » vers « idle » pendant les 600 premières ms de la fermeture
-    const toIdle = finishAt ? Math.min(1, (t - finishAt) / 600) : 0
-    FLOW.mix = 1 - (1 - FLOW_HOME_MIX) * toIdle * toIdle * (3 - 2 * toIdle)
-    const arc = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe          // longueur de l'arc
-    const head = (t / 1000) * TAU * 0.9 - Math.PI / 2               // angle canvas de la tête
-    const tail = head - arc
-    const gz = finishAt ? Math.min(1, Math.max(0, (t - finishAt - (1300 - growD)) / growD)) : 0
-    const R = R0 + (R1 - R0) * gz * gz, r = R * IRIS_INNER_RATIO, mid = (R + r) / 2
-    x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, S, S)
-    x.globalCompositeOperation = 'source-over'
-    x.lineWidth = R - r; x.lineCap = fe >= 1 ? 'butt' : 'round'; x.strokeStyle = flowGradient()
-    x.beginPath(); fe >= 1 ? x.arc(C, C, mid, 0, TAU) : x.arc(C, C, mid, tail, head); x.stroke()
-    if (fe < 1) {
-      // opacité : 0 à la queue (fe à la fermeture) → 1 à la tête, courbe douce ; au-delà de la tête (bout arrondi) : 1,
-      // puis retour à la valeur de la queue au milieu de l'écart, pour que le bout arrondi de la queue reste effacé
-      const h = arc / TAU, g = (1 - h) / 2, a0 = fe
-      const fade = x.createConicGradient(tail, C, C)
-      for (let i = 0; i <= 8; i++) { const u = i / 8; fade.addColorStop(h * u, `rgb(0 0 0 / ${a0 + (1 - a0) * Math.pow(u, 1.6)})`) }
-      fade.addColorStop(Math.min(1, h + g * 0.9), 'rgb(0 0 0 / 1)')
-      fade.addColorStop(Math.min(1, h + g * 0.95), `rgb(0 0 0 / ${a0})`)
-      x.globalCompositeOperation = 'destination-in'; x.fillStyle = fade; x.fillRect(0, 0, S, S)
-    }
-    if (fin >= 1 && onDone) { const d = onDone; onDone = null; FLOW.mix = FLOW_HOME_MIX; FLOW.loaderNeeds = false; d() }
-    requestAnimationFrame(draw)
-  }
-  requestAnimationFrame(draw)
 }
-
 /* Écran de chargement : polices, image de l'accueil, au moins 1 s ; au plus 6 s. Le défilement est bloqué pendant ce temps. */
 lenis?.stop(); scrollTo(0, 0)
+// accueil : la page reste bloquée (molette, doigt, clavier, barre de défilement) pendant le chargeur et l'arrivée du
+// logo ; elle ne se libère qu'à la fin de l'animation (intro-done), et la flèche apparaît juste après (CSS)
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+const introLocked = !!document.querySelector('.hero') && !reduced
+if (introLocked) root.classList.add('intro-lock'); else root.classList.add('intro-done')
+const endIntro = () => { root.classList.remove('intro-lock'); root.classList.add('intro-done'); if (!ficheOf()) lenis?.start() }
 const heroImg = document.querySelector('.hero__view img')
 Promise.race([
   Promise.all([
@@ -408,11 +373,16 @@ Promise.race([
     new Promise((r) => setTimeout(() => (gl?.ready || Promise.resolve()).then(r))),   // logo WebGL prêt (gl créé plus bas)
   ]),
   new Promise((r) => setTimeout(r, 6000)),
-]).then(() => finishLoader(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
+]).then(() => finishLoader(() => {
+  root.classList.add('is-loaded')
+  // fiche ouverte par le lien : rien à attendre ; sinon, fin de l'arrivée du logo (croissance puis glissement)
+  if (!introLocked || ficheOf()) endIntro(); else setTimeout(endIntro, IRIS.intro.grow + IRIS.intro.shift)
+}))
 
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null
 try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (err) { console.warn(err) }
+sizeLoader()
 // fond : formes colorées derrière une plaque dépolie, qui défilent avec la page et réagissent au curseur
 let backdrop = null
 try { backdrop = createBackdrop(document.querySelector('.bg-canvas'), { reduced }) } catch (err) { console.warn(err) }

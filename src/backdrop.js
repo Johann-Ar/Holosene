@@ -89,7 +89,7 @@ export function createBackdrop(canvas, { reduced }) {
   // résolution : le fond n'est fait que de dégradés très doux (sans texture) : un demi-pixel CSS suffit, l'agrandissement
   // par le navigateur ne se voit pas (9 fois moins de pixels qu'en 1,5×)
   const DPR = 0.5
-  let dpr = DPR, W = 0, H = 0, docH = 0, pin = 0, t0 = performance.now(), prev = t0
+  let dpr = DPR, W = 0, H = 0, docH = 0, pin = 0, t0 = performance.now(), prev = t0, gain = 1
   // hauteurs mises en cache (lues au redimensionnement seulement : pas de mise en page forcée à chaque image)
   const measure = () => { docH = Math.max(document.documentElement.scrollHeight, H); pin = hero ? Math.max(0, hero.offsetHeight - H) : 0 }
   const resize = () => {
@@ -124,6 +124,14 @@ export function createBackdrop(canvas, { reduced }) {
       B[i * 4 + 2] = base * s.r
       B[i * 4 + 3] = s.t
     })
+    // minimum de couleur à l'écran : si les formes proches de la vue sont presque toutes éteintes (fond trop blanc),
+    // leur intensité est relevée en douceur (gain lissé, au plus ×2,2) ; aucune forme ajoutée, rien d'aléatoire
+    const sy = Math.max(0, scrollY - pin) + H / 2
+    let seen = 0
+    for (let i = 0; i < N; i++) { const dy = (B[i * 4 + 1] - sy) / (H * 0.9 + B[i * 4 + 2]); seen += A[i] * Math.exp(-dy * dy) }
+    const wantG = Math.min(2.2, Math.max(1, 1.1 / Math.max(seen, 0.05)))
+    gain += (wantG - gain) * (1 - Math.exp(-dt / 1.5))
+    for (let i = 0; i < N; i++) A[i] *= gain
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.uniform2f(U.uRes, W, H); gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uScroll, Math.max(0, scrollY - pin))
     gl.uniform3f(U.uPage, ...page); gl.uniform1f(U.uLight, light)
