@@ -1,6 +1,7 @@
 import 'virtual:iris.css'
 import './styles.css'
 import { IRIS_STOPS, IRIS_INNER_RATIO } from '../design/logo-kit/src/iris.js'
+import { IRIS } from './iris-config.js'
 import Lenis from 'lenis'
 import { createGL } from './gl.js'
 import { createBackdrop } from './backdrop.js'
@@ -327,73 +328,94 @@ function scrollEffects() {
 }
 if (reduced) { root.classList.add('hero-done'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
-/* Chargeur : le « o » du logo-kit. Un arc tourne ; ses couleurs sont celles de la roue du kit à leur angle exact (il
-   dévoile le vrai « o »), son opacité va de 0 à la queue à 1 à la tête (arrondie) : ni noir ni gris. En fin de
-   chargement, il se referme en anneau plein et grandit en accélérant (60 % → 100 % du rayon du relais) ; le « o » du logo prend le relais
-   au même pixel et à la même vitesse, puis ralentit. Le fond du chargeur s'efface pendant la fermeture.
-   Dégradés coniques Canvas 2D : dessinés par le navigateur, aucun calcul par pixel en JavaScript. */
+/* Chargeur : le « o » du logo-kit. Sur une piste discrète (l'anneau complet à l'encre, 7 %), un arc part de midi et
+   avance dans le sens horaire au rythme du vrai chargement (polices, image de l'accueil, texture du logo), lissé par un
+   ressort à amortissement critique : jamais de recul ni de saut, 900 ms au moins, et si le chargement cale, avancée
+   lente vers 90 % sans l'atteindre. Ses couleurs sont celles de la roue du kit à leur angle exact (il dévoile le vrai
+   « o ») ; son opacité va de 0 à la queue à 1 à la tête arrondie : ni noir ni gris. À 100 %, la queue redevient opaque
+   (350 ms) et l'anneau grandit en accélérant jusqu'au rayon du relais ; le « o » du logo reprend au même pixel et à la
+   même vitesse. Dégradés coniques Canvas 2D : dessinés par le navigateur, aucun calcul par pixel en JavaScript. */
 const spin = document.querySelector('.loader__spin'), loaderEl = document.querySelector('.loader')
+const L = IRIS.loader, t0 = performance.now()
+const tasks = [
+  document.fonts?.ready,
+  (() => { const im = document.querySelector('.hero__view img'); return im && !im.complete ? new Promise((r) => { im.addEventListener('load', r, { once: true }); im.addEventListener('error', r, { once: true }) }) : null })(),
+  new Promise((r) => setTimeout(() => (gl?.ready || Promise.resolve()).then(r))),   // logo WebGL prêt (gl créé plus bas)
+].filter(Boolean)
+let settled = 0
+tasks.forEach((t) => Promise.resolve(t).finally(() => settled++))
+const allLoaded = Promise.race([Promise.allSettled(tasks), new Promise((r) => setTimeout(r, 6000))])
 let finishLoader = (done) => done()
 if (spin?.getContext('2d').createConicGradient) {
   const dpr = Math.min(devicePixelRatio || 1, 2), S = 96
   spin.width = S * dpr; spin.height = S * dpr
   const x = spin.getContext('2d')
-  const TAU = Math.PI * 2, C = S / 2
+  const TAU = Math.PI * 2, C = S / 2, TOP = -Math.PI / 2
   // roue du kit : t = 0 en bas, sens horaire (angle canvas : 0 = à droite, sens horaire, y vers le bas → bas = π/2)
-  const wheel = x.createConicGradient(Math.PI / 2, C, C)
-  for (const [p, c] of IRIS_STOPS) wheel.addColorStop(p, c)
+  const layer = document.createElement('canvas'); layer.width = spin.width; layer.height = spin.height
+  const a2 = layer.getContext('2d')
+  const wheel2 = a2.createConicGradient(Math.PI / 2, C, C)
+  for (const [q, c] of IRIS_STOPS) wheel2.addColorStop(q, c)
+  const ink = getComputedStyle(root).getPropertyValue('--ink').trim()
   // rayon : R1 au relais (fixé par le logo selon l'écran, 44 px au plus), R0 = 60 % de R1 pendant le chargement
-  let finishAt = 0, onDone = null, growD = 400, R1 = 44, R0 = 26, sized = false
-  // fin du chargement : l'arc s'allonge jusqu'au tour complet et sa queue devient opaque (1,3 s) ; pendant les derniers
-  // growD ms, l'anneau grandit en accélérant (t²) jusqu'à 44 px, à la vitesse initiale de la croissance du logo
-  finishLoader = (done) => {
-    finishAt = performance.now(); onDone = done
-    loaderEl?.classList.add('loader--closing')
-    const it = gl?.intro?.()
-    if (it) { R0 *= it.r0 / R1; R1 = it.r0; const v = 3 * (it.r1 - it.r0) / it.grow; growD = Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(v, 1e-3))) }
-  }
+  let loaded = false, onDone = null, closeAt = 0, growD = 400, R1 = 44, R0 = 26, sized = false
+  let p = 0, v = 0, prev = 0
+  finishLoader = (done) => { loaded = true; onDone = done }
   const draw = (t) => {
     // première image : rayon du relais selon l'écran (gl est créé plus bas dans ce fichier, il existe à ce moment-là)
-    if (!sized) { sized = true; const it = gl?.intro?.(); if (it) { R1 = it.r0; R0 = R1 * 0.6 } }
-    if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
-    const fin = finishAt ? Math.min(1, (t - finishAt) / 1300) : 0, fe = fin * fin * (3 - 2 * fin)
-    const arc = Math.PI * 1.7 + (TAU - Math.PI * 1.7) * fe          // longueur de l'arc
-    const head = (t / 1000) * TAU * 0.9 - Math.PI / 2               // angle canvas de la tête
-    const tail = head - arc
-    const gz = finishAt ? Math.min(1, Math.max(0, (t - finishAt - (1300 - growD)) / growD)) : 0
-    const R = R0 + (R1 - R0) * gz * gz, r = R * IRIS_INNER_RATIO, mid = (R + r) / 2
-    x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, S, S)
-    x.globalCompositeOperation = 'source-over'
-    x.lineWidth = R - r; x.lineCap = fe >= 1 ? 'butt' : 'round'; x.strokeStyle = wheel
-    x.beginPath(); fe >= 1 ? x.arc(C, C, mid, 0, TAU) : x.arc(C, C, mid, tail, head); x.stroke()
-    if (fe < 1) {
-      // opacité : 0 à la queue (fe à la fermeture) → 1 à la tête, courbe douce ; au-delà de la tête (bout arrondi) : 1,
-      // puis retour à la valeur de la queue au milieu de l'écart, pour que le bout arrondi de la queue reste effacé
-      const h = arc / TAU, g = (1 - h) / 2, a0 = fe
-      const fade = x.createConicGradient(tail, C, C)
-      for (let i = 0; i <= 8; i++) { const u = i / 8; fade.addColorStop(h * u, `rgb(0 0 0 / ${a0 + (1 - a0) * Math.pow(u, 1.6)})`) }
-      fade.addColorStop(Math.min(1, h + g * 0.9), 'rgb(0 0 0 / 1)')
-      fade.addColorStop(Math.min(1, h + g * 0.95), `rgb(0 0 0 / ${a0})`)
-      x.globalCompositeOperation = 'destination-in'; x.fillStyle = fade; x.fillRect(0, 0, S, S)
+    if (!sized) {
+      sized = true; const it = gl?.intro?.()
+      if (it) { R1 = it.r0; R0 = R1 * 0.6; const sp = 3 * (it.r1 - it.r0) / it.grow; growD = Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(sp, 1e-3))) }
+      if (reduced) { R0 = R1; growD = 0 }   // animations réduites : l'anneau se remplit sur place, sans croissance
     }
-    if (fin >= 1 && onDone) { const d = onDone; onDone = null; d() }
+    if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
+    const dt = Math.min(0.05, prev ? (t - prev) / 1000 : 0.016); prev = t
+    const el = t - t0
+    // progression visée : part des ressources chargées, ou avancée lente vers L.stall si ça cale ; jamais avant minMs
+    const real = loaded ? 1 : Math.max(settled / Math.max(tasks.length, 1) * 0.95, L.stall * (1 - Math.exp(-el / L.stallMs)))
+    const target = Math.min(real, el / L.minMs)
+    // ressort à amortissement critique (pas de dépassement), sans recul
+    const w = 1 / L.spring
+    v += (w * w * (target - p) - 2 * w * v) * dt; if (v < 0) v = 0
+    p = Math.min(1, p + v * dt)
+    if (loaded && p > 0.998 && !closeAt) { p = 1; closeAt = t; loaderEl?.classList.add('loader--closing') }
+    const fe = closeAt ? Math.min(1, (t - closeAt) / L.closeMs) : 0, fes = fe * fe * (3 - 2 * fe)
+    const hand = closeAt ? closeAt + Math.max(L.closeMs, growD) : Infinity   // instant du relais
+    const gz = closeAt && growD ? Math.min(1, Math.max(0, (t - (hand - growD)) / growD)) : 0
+    const R = R0 + (R1 - R0) * gz * gz, r = R * IRIS_INNER_RATIO, mid = (R + r) / 2
+    // piste : l'anneau complet à l'encre, très discret (s'efface à la fermeture)
+    x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, S, S)
+    x.lineWidth = R - r; x.lineCap = 'butt'; x.globalAlpha = L.track * (1 - fes); x.strokeStyle = ink
+    x.beginPath(); x.arc(C, C, mid, 0, TAU); x.stroke(); x.globalAlpha = 1
+    // arc : de midi (queue) à la tête, couleurs de la roue à leur angle exact, opacité 0 → 1 appliquée à l'arc seul
+    // (dessiné sur une toile intermédiaire, puis posé sur la piste)
+    const arc = Math.max(0.001, p * TAU)
+    a2.setTransform(dpr, 0, 0, dpr, 0, 0); a2.clearRect(0, 0, S, S); a2.globalCompositeOperation = 'source-over'
+    a2.lineWidth = R - r; a2.strokeStyle = wheel2
+    if (fe >= 1) { a2.lineCap = 'butt'; a2.beginPath(); a2.arc(C, C, mid, 0, TAU); a2.stroke() }
+    else {
+      a2.lineCap = 'round'; a2.beginPath(); a2.arc(C, C, mid, TOP, TOP + arc); a2.stroke()
+      a2.globalCompositeOperation = 'destination-in'; a2.fillStyle = fade(a2, arc, fes); a2.fillRect(0, 0, S, S)
+    }
+    x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(layer, 0, 0)
+    if (closeAt && t >= hand && onDone) { const d = onDone; onDone = null; d() }
     requestAnimationFrame(draw)
+  }
+  // dégradé d'opacité conique : 0 à la queue (fes à la fermeture) → 1 à la tête ; au-delà de la tête (bout arrondi) : 1,
+  // puis retour à la valeur de la queue au milieu de l'écart, pour que le bout arrondi de la queue reste effacé
+  function fade(x, arc, a0) {
+    const h = Math.min(1, arc / TAU), g = (1 - h) / 2
+    const f = x.createConicGradient(TOP, C, C)
+    for (let i = 0; i <= 8; i++) { const u = i / 8; f.addColorStop(h * u, `rgb(0 0 0 / ${a0 + (1 - a0) * Math.pow(u, 1.6)})`) }
+    if (h < 1) { f.addColorStop(Math.min(1, h + g * 0.9), 'rgb(0 0 0 / 1)'); f.addColorStop(Math.min(1, h + g * 0.95), `rgb(0 0 0 / ${a0})`) }
+    return f
   }
   requestAnimationFrame(draw)
 }
 
-/* Écran de chargement : polices, image de l'accueil, au moins 1 s ; au plus 6 s. Le défilement est bloqué pendant ce temps. */
+/* Écran de chargement : le défilement est bloqué jusqu'à la fin du chargement (au plus 6 s). */
 lenis?.stop(); scrollTo(0, 0)
-const heroImg = document.querySelector('.hero__view img')
-Promise.race([
-  Promise.all([
-    document.fonts?.ready,
-    heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
-    new Promise((r) => setTimeout(r, reduced ? 0 : 1000)),
-    new Promise((r) => setTimeout(() => (gl?.ready || Promise.resolve()).then(r))),   // logo WebGL prêt (gl créé plus bas)
-  ]),
-  new Promise((r) => setTimeout(r, 6000)),
-]).then(() => finishLoader(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
+allLoaded.then(() => finishLoader(() => { root.classList.add('is-loaded'); if (!ficheOf()) lenis?.start() }))
 
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
 let gl = null
