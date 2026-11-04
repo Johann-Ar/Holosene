@@ -7,6 +7,7 @@
  * Toile WebGL propre (.bg-canvas), sous tout le contenu ; sans WebGL, le fond uni (--bg) reste.
  */
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
+import { FX } from './fx-config.js'
 
 const N = 14   // nombre de formes réparties dans la page
 // couleurs des formes : positions sur la roue v2 du kit (0 cyan, 0,1 bleu, 0,2 indigo, 0,3 violet, 0,4 magenta, 0,5 rose,
@@ -147,6 +148,8 @@ export function createBackdrop(canvas, { reduced }) {
     const dh = ((hueT - hue + 1.5) % 1) - 0.5
     hue = (hue + dh * (1 - Math.exp(-dt / 0.8)) + 1) % 1
     gl.uniform3f(U.uPtr, ptr.x, ptr.y, ptr.a); gl.uniform1f(U.uPtrHue, hue); gl.uniform4fv(U.uB, B); gl.uniform1fv(U.uA, A)
+    // formes du fond partagées avec les zones floues (vignettes WebGL, bandes CSS) : leur teinte vient du fond, et défile avec lui
+    FX.bg.B = B; FX.bg.A = A; FX.bg.n = N; FX.bg.scroll = Math.max(0, scrollY - pin)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
   return { frame }

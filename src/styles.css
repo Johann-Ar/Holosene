@@ -542,11 +542,16 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   :root[data-theme="light"] .edge--bottom { opacity: 1; background: none; }   /* bas : flou plein (le haut garde son fondu d'origine) */
   .work__track { --fade: var(--band); }
 }
-/* calque de grain et de couleur : dégradé conique fixé sur l'écran (0° à droite), même répartition que le WebGL */
-.fx { position: absolute; inset: 0; pointer-events: none; opacity: var(--fx-a, 0); mix-blend-mode: screen;
-  background: conic-gradient(from 90deg at 50vw 50vh, var(--fxl0) 0deg, var(--fxl1) 90deg, var(--fxl2) 180deg, var(--fxl3) 270deg, var(--fxl0) 360deg) fixed; }
-:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { mix-blend-mode: multiply;
-  background: conic-gradient(from 90deg at 50vw 50vh, var(--fxd0) 0deg, var(--fxd1) 90deg, var(--fxd2) 180deg, var(--fxd3) 270deg, var(--fxd0) 360deg) fixed; }
+/* calque de grain et de couleur : les couleurs viennent du fond, aux endroits couverts par la bande (fx-css.js) */
+.fx { position: absolute; inset: 0; pointer-events: none; opacity: var(--fx-a, 0); mix-blend-mode: screen; }   /* dégradé posé par fx-css.js (couleurs du fond) */
+:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { mix-blend-mode: multiply; }
 .fx::after { content: ''; position: absolute; inset: 0; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.7; }
 .edge--top .fx, .topbar__glass .fx { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
 .edge--bottom .fx { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
+
+/* fond : même grain que les zones floues, posé sur les couleurs floutées du fond (doux sur le blanc) ; fixe, au pixel */
+.bg-grain { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.55; }
+:root[data-theme="dark"] .bg-grain { opacity: 0.4; }
+.js .bg-grain { opacity: 0; transition: opacity 2.6s cubic-bezier(0.33, 0, 0.2, 1); }
+.js.is-loaded .bg-grain { opacity: 0.55; }
+:root[data-theme="dark"].js.is-loaded .bg-grain { opacity: 0.4; }

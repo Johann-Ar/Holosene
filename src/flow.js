@@ -37,9 +37,9 @@ const amountAt = (now) => {
   return 1 - Math.pow(1 - x, 3)
 }
 
-// survol du « o » du logo (FLOW.hoverTarget, fixé par gl.js) : le flux passe en douceur aux réglages « loading » complets
-// et s'accélère (horloge propre, intégrée : jamais de saut quand la vitesse change)
-const HOVER_SPEED = 1.8
+// survol du « o » du logo (FLOW.hoverTarget, fixé par gl.js) : le flux s'accélère seulement, en douceur (horloge
+// propre, intégrée : jamais de saut quand la vitesse change)
+const HOVER_SPEED = 2.2
 let lastAmount = -1, clock = 0, lastNow = null, hover = 0
 export function updateFlow(now) {
   const dt = lastNow === null ? 0 : Math.min(0.1, (now - lastNow) / 1000); lastNow = now
@@ -49,7 +49,7 @@ export function updateFlow(now) {
   // pause : rien de visible, ou roue figée déjà calculée
   if (!(FLOW.glNeeds || FLOW.loaderNeeds) || (amount === 0 && lastAmount === 0)) return
   const s = performance.now()
-  const cfg = irisFlowMix(FLOW.mix + (1 - FLOW.mix) * hover)
+  const cfg = irisFlowMix(FLOW.mix)   // survol : mêmes réglages, seule la vitesse change
   cfg.amount = amount
   irisFlowLUT(clock, cfg, FLOW.size, FLOW.lut)
   FLOW.cpuMs = performance.now() - s

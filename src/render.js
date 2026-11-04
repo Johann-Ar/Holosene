@@ -129,6 +129,7 @@ export function render(lang) {
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <div class="loader" aria-hidden="true"><div class="loader__o"><div class="loader__arc"><i class="loader__ring"></i></div><i class="loader__ring loader__full"></i></div></div>
 <canvas class="bg-canvas" aria-hidden="true"></canvas>
+<div class="bg-grain" aria-hidden="true"></div>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
 <header class="topbar wrap">

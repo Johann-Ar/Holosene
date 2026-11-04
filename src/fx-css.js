@@ -1,12 +1,12 @@
 /**
  * Bandes de flou CSS (haut et bas de l'écran, barre du haut, côtés des pistes, haut des fiches) : même grain et même
  * colorisation que le bord des vignettes (WebGL), avec les mêmes teintes vivantes (fx-config.js, hueAt).
- * - Chaque bande reçoit un calque .fx : un dégradé conique des 4 teintes, fixé sur l'écran (même répartition que dans
- *   le WebGL : 0° à droite, 90° en bas), fondu en « écran » (clair : les sombres se teintent, les blancs restent blancs)
+ * - Chaque bande reçoit un calque .fx : un dégradé dont les couleurs sont lues dans le fond, aux endroits que couvre
+ *   la bande (elles défilent donc avec le fond), fondu en « écran » (clair : les sombres se teintent, les blancs restent blancs)
  *   ou en « produit » (sombre : les clairs se teintent, le noir reste noir), et le grain (texture en tuile).
  * - Côtés des pistes : leur fondu vertical est le complément exact de celui des bandes haut et bas ; dans les coins, les
  *   deux se relaient au lieu de se superposer (un seul flou continu).
- * Les couleurs sont recalculées environ 8 fois par seconde, seulement sur ces calques (aucun recalcul de la page).
+ * Les couleurs sont recalculées à chaque défilement et environ 8 fois par seconde, seulement sur ces calques.
  */
 import { IRIS_STOPS } from '../design/logo-kit/src/iris.js'
 import { FX, hueAt } from './fx-config.js'
@@ -34,7 +34,33 @@ export function startFxCss({ reduced }) {
   for (const pin of pins) for (const side of ['l', 'r']) { const s = document.createElement('div'); s.className = `side side--${side}`; s.setAttribute('aria-hidden', 'true'); pin.append(s); hosts.push(s) }
   const layers = hosts.map((h) => { const f = document.createElement('span'); f.className = 'fx'; f.setAttribute('aria-hidden', 'true'); h.append(f); return f })
 
-  let last = -1e9
+  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
+  // couleur du fond à un point de l'écran : formes du fond (backdrop.js) pondérées comme dans le fond lui-même ;
+  // là où il est neutre, teintes mouvantes réparties autour du centre de l'écran (comme dans le WebGL)
+  function colorAt(x, y, t) {
+    const bg = FX.bg, py = y + bg.scroll
+    let r = 0, g = 0, b = 0, sum = 0
+    if (bg.B) for (let i = 0; i < bg.n; i++) {
+      const j = i * 4, dx = (x - bg.B[j]) / bg.B[j + 2], dy = (py - bg.B[j + 1]) / bg.B[j + 2]
+      const k = Math.min(1, bg.A[i]) * Math.exp(-(dx * dx + dy * dy))
+      if (k < 1e-4) continue
+      const c = wheel(bg.B[j + 3]); r += c[0] * k; g += c[1] * k; b += c[2] * k; sum += k
+    }
+    const ang = ((Math.atan2(y - innerHeight / 2, x - innerWidth / 2) * 180 / Math.PI) + 360) % 360
+    const seg = Math.floor(ang / 90), f = smooth(0, 1, (ang - seg * 90) / 90)
+    const p0 = wheel(hueAt(seg % 4, t)), p1 = wheel(hueAt((seg + 1) % 4, t))
+    const pal = p0.map((v, j) => v + (p1[j] - v) * f)
+    const w = smooth(0.02, 0.35, sum)
+    return sum > 0 ? [r / sum, g / sum, b / sum].map((v, j) => pal[j] + (v - pal[j]) * w) : pal
+  }
+  const tone = (c, dark) => {
+    const l = c[0] * LUMA[0] + c[1] * LUMA[1] + c[2] * LUMA[2]
+    const tint = c.map((v) => (v + (l - v) * FX.palDesat) * FX.palDark)
+    return css(dark ? tint.map((v) => v * DARK_TINT_GAIN) : tint)
+  }
+  const SAMPLES = 6
+  const items = layers.map((f) => ({ f, host: f.parentElement, vertical: f.parentElement.classList.contains('side') }))
+  let last = -1e9, lastScroll = -1
   function tick(now) {
     requestAnimationFrame(tick)
     // côtés : position de chaque piste dans l'écran (fondu vertical complémentaire des bandes haut et bas)
@@ -43,17 +69,25 @@ export function startFxCss({ reduced }) {
       if (pin._pt !== top) { pin._pt = top; pin.style.setProperty('--pt', `${top}px`) }
       if (pin._vh !== innerHeight) { pin._vh = innerHeight; pin.style.setProperty('--vh', `${innerHeight}px`) }
     }
-    if (now - last < 120) return
-    last = now
+    // couleurs : à chaque défilement (elles suivent le fond), sinon environ 8 fois par seconde (teintes mouvantes)
+    if (scrollY === lastScroll && now - last < 120) return
+    last = now; lastScroll = scrollY
     const t = reduced ? 0 : now / 1000
-    const vars = []
-    for (let i = 0; i < 4; i++) {
-      const c = wheel(hueAt(i, t)), l = c[0] * LUMA[0] + c[1] * LUMA[1] + c[2] * LUMA[2]
-      const tint = c.map((v) => (v + (l - v) * FX.palDesat) * FX.palDark)
-      vars.push([`--fxl${i}`, css(tint)], [`--fxd${i}`, css(tint.map((v) => v * DARK_TINT_GAIN))])
+    const rootDark = root.dataset.theme === 'dark', chosen = root.classList.contains('theme-chosen')
+    const a = String(FX.bandStrength * (FX.colorStrength > 0 ? 1 : 0))
+    for (const it of items) {
+      const r = it.host.getBoundingClientRect()
+      if (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > innerHeight) continue
+      const dark = rootDark || (!chosen && !!it.host.closest('.fiche'))
+      const stops = []
+      for (let k = 0; k < SAMPLES; k++) {
+        const u = k / (SAMPLES - 1)
+        const x = it.vertical ? r.left + r.width / 2 : r.left + u * r.width, y = it.vertical ? r.top + u * r.height : r.top + r.height / 2
+        stops.push(tone(colorAt(x, y, t), dark))
+      }
+      it.f.style.backgroundImage = `linear-gradient(${it.vertical ? 'to bottom' : 'to right'}, ${stops.join(', ')})`
+      it.f.style.setProperty('--fx-a', a)
     }
-    vars.push(['--fx-a', String(FX.bandStrength * (FX.colorStrength > 0 ? 1 : 0))])
-    for (const f of layers) for (const [k, v] of vars) f.style.setProperty(k, v)
   }
   requestAnimationFrame(tick)
   return { root }

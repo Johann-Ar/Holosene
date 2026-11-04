@@ -21,6 +21,7 @@ export const FX = {
   palDrift: 0.008,      // tours par seconde (un tour complet en un peu plus de 2 min)
   palWobble: 0.04,      // en plus, chaque teinte ondule doucement autour de sa place (tours)
   bandStrength: 0.5,    // colorisation des bandes de flou CSS (haut, bas, côtés, barre du haut)
+  bg: { B: null, A: null, n: 0, scroll: 0 },   // formes du fond (backdrop.js) : centre (px, page), rayon, teinte ; intensité
   version: 0,           // incrémenté quand un réglage change (panneau ?debug=iris) : gl.js renvoie les valeurs au GPU
 }
 

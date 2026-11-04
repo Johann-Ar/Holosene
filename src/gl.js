@@ -240,13 +240,15 @@ uniform float uVivid;   // 0 : couleurs telles quelles (sombre), 1 : plus franch
 uniform float uEdgeFloor;
 uniform vec4 uClip;
 uniform vec2 uScrY;   // haut de la vignette à l'écran, hauteur de l'écran (px CSS)
-uniform float uInv;   // 0 : aspiration ; 1 : aspiration inversée (touche Espace maintenue)
+uniform float uInv;   // 0 : aspiration ; 1 : aspiration inversée (touche P maintenue)
 uniform vec2 uScrX;   // gauche de la vignette à l'écran, largeur de l'écran (px CSS)
 // zones floues (fx-config.js) : force de la couleur, aberration, grain, part colorée du grain ; largeur des zones
 // (côtés de la piste, haut et bas de l'écran : celles des flous CSS) ; graine du grain (ne change qu'au défilement)
 uniform vec4 uFx;
 uniform vec2 uFxZone;
 uniform float uSeed;
+uniform vec4 uBgB[14];  // formes du fond (backdrop.js) : centre (px CSS ; y dans la page), rayon, teinte + 100 × intensité arrondie
+uniform float uBgScroll; // défilement du fond (px CSS)
 uniform vec4 uPalHue;   // 4 positions sur la roue du kit (tirées au hasard au chargement, dérivent lentement)
 uniform vec2 uPalTone;  // désaturation, luminosité des teintes (sourdes, sombres)
 uniform vec4 uPalDeg;   // angle de chaque teinte (degrés, 0 : droite, sens horaire)
@@ -260,6 +262,19 @@ float ign(vec2 q) { return fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00
 // teinte selon l'angle autour du centre de l'écran (corrigé du format), interpolation douce et cyclique
 // teinte sourde à partir d'une position sur la roue du kit : désaturée puis assombrie
 vec3 tintOf(float h) { vec3 c = irisAt(h); return mix(c, vec3(dot(c, LUMA)), uPalTone.x) * uPalTone.y; }
+// teinte du fond à cet endroit : moyenne des couleurs des formes du fond, pondérée comme dans backdrop.js ; .w : présence
+vec4 bgAt(vec2 sp) {
+  vec2 w = sp + vec2(0.0, uBgScroll);
+  vec3 c = vec3(0.0); float sum = 0.0;
+  for (int i = 0; i < 14; i++) {
+    vec4 b = uBgB[i];
+    float a = floor(b.w) / 100.0, h = fract(b.w);
+    vec2 d = (w - b.xy) / max(b.z, 1.0);
+    float k = a * exp(-dot(d, d));
+    c += irisAt(h) * k; sum += k;
+  }
+  return vec4(c / max(sum, 1e-4), sum);
+}
 vec3 palAt(vec2 sp) {
   vec2 d = (sp - vec2(uScrX.y, uScrY.y) * 0.5) / vec2(uScrX.y, uScrY.y);
   float a = mod(degrees(atan(d.y, d.x)), 360.0);
@@ -302,7 +317,7 @@ void main() {
     float zone = trackW < 769.0 ? 0.075 * trackW : min(75.0, 0.14 * trackW);   // portée : PC 110 px au plus ; mobile, zone étroite
     float k = trackW < 769.0 ? 0.12 : 0.08;
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));             // distance au bord le plus proche de la piste
-    k *= 1.0 - 2.0 * uInv;   // Espace maintenu : aspiration inversée (la vignette gonfle vers le bord)
+    k *= 1.0 - 2.0 * uInv;   // touche P maintenue : aspiration inversée (la vignette gonfle vers le bord)
     sqz = 1.0 - k * exp(-d / (0.28 * zone));
     float dy = max(0.0, min(scrY, uScrY.y - scrY));                     // distance au haut ou au bas de l'écran
     sqx = 1.0 - (k / 1.5) * exp(-dy / (0.28 * zone));   // haut et bas : force ÷ 1,5
@@ -368,7 +383,9 @@ void main() {
   // sombre : l'inverse (les clairs se teintent, le noir reste noir). Puis grain fin, surtout dans les tons moyens.
   if (m > 0.001) {
     float l = dot(col, LUMA), sl = smoothstep(0.0, 1.0, l);
-    vec3 tint = palAt(sp);
+    vec4 bg = bgAt(sp);   // la teinte vient du fond (elle défile avec lui) ; là où le fond est neutre : teintes mouvantes
+    vec3 bgTint = mix(bg.rgb, vec3(dot(bg.rgb, LUMA)), uPalTone.x) * uPalTone.y;
+    vec3 tint = mix(palAt(sp), bgTint, smoothstep(0.02, 0.35, bg.w));
     vec3 mapped = uVivid > 0.5 ? mix(tint, vec3(1.0), sl) : mix(vec3(0.0), min(tint * DARK_TINT_GAIN, vec3(1.0)), sl);
     col = mix(col, mapped, m * uFx.x);
     float w = m * (1.0 - abs(l * 2.0 - 1.0)) * uFx.z * (uVivid > 0.5 ? 1.0 : DARK_GRAIN);
@@ -422,11 +439,12 @@ export function createGL(canvas, { reduced }) {
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg', 'uInv']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg', 'uInv', 'uBgB', 'uBgScroll']) GU[n] = gl.getUniformLocation(gProg, n)
   // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
   // défilement pour la graine du grain), aucune allocation par image
   // teintes : 4 positions sur la roue, tirées au hasard à chaque chargement (un quart de tour d'écart environ, pour rester
   // variées), qui dérivent lentement ensemble ; plus de couleurs fixes d'un endroit de l'écran
+  const BG = new Float32Array(14 * 4)   // formes du fond (réutilisé à chaque image)
   const SEED_STEP = 48   // px de défilement entre deux tirages du grain (grain fixe à l'arrêt)
   let fxSent = -1, fxW = -1, fxSeed = -1
   const sendFx = () => {
@@ -440,6 +458,12 @@ export function createGL(canvas, { reduced }) {
     }
     const ht = reduced ? 0 : performance.now() / 1000   // teintes vivantes (fx-config.js), même horloge que les bandes CSS
     gl.uniform4f(GU.uPalHue, hueAt(0, ht), hueAt(1, ht), hueAt(2, ht), hueAt(3, ht))
+    // formes du fond (même image que la toile de fond) : teinte et intensité tassées dans une seule composante
+    const bgd = FX.bg
+    if (bgd.B) {
+      for (let i = 0; i < 14; i++) { const j = i * 4; BG[j] = bgd.B[j]; BG[j + 1] = bgd.B[j + 1]; BG[j + 2] = bgd.B[j + 2]; BG[j + 3] = Math.floor(Math.min(1, bgd.A[i]) * 99) + bgd.B[j + 3] % 1 }
+      gl.uniform4fv(GU.uBgB, BG); gl.uniform1f(GU.uBgScroll, bgd.scroll)
+    }
     const seed = reduced ? 0 : Math.floor(scrollY / SEED_STEP) % 97
     if (seed !== fxSeed) { fxSeed = seed; gl.uniform1f(GU.uSeed, seed) }
   }
@@ -597,10 +621,10 @@ export function createGL(canvas, { reduced }) {
     }
   }
   let halSent = -1
-  // touche Espace maintenue : l'aspiration des bords s'inverse (en douceur, à l'appui comme au relâchement)
+  // touche P maintenue : l'aspiration des bords s'inverse (en douceur, à l'appui comme au relâchement)
   let inv = 0, invTarget = 0
-  addEventListener('keydown', (e) => { if (e.key === ' ' && !e.target.closest?.('input, textarea, [contenteditable]')) invTarget = 1 })
-  addEventListener('keyup', (e) => { if (e.key === ' ') invTarget = 0 })
+  addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) invTarget = 1 })
+  addEventListener('keyup', (e) => { if (e.code === 'KeyP') invTarget = 0 })
   addEventListener('blur', () => { invTarget = 0 })
   function draw(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
@@ -723,7 +747,7 @@ export function createGL(canvas, { reduced }) {
           if (document.documentElement.classList.contains('intro-done') && (m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked); if (docked) document.documentElement.classList.add('bar-on') }
         }
         const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
-        // survol du « o » (souris) : le flux s'intensifie (flow.js)
+        // survol du « o » (souris) : son animation s'accélère seulement (flow.js)
         { const oR = O_R * xf[2] * 1.25, ox = b.left + xf[0] + O_OFF[0] * xf[2], oy = b.top + xf[1] + O_OFF[1] * xf[2]
           FLOW.hoverTarget = hoverDevice && !ptr.touch && !reduced && Math.hypot(ptr.x - ox, ptr.y - oy) < oR ? 1 : 0 }
         gl.uniform3f(U.uInk, ...theme.ink)
@@ -736,8 +760,8 @@ export function createGL(canvas, { reduced }) {
         // aspiration inversée : la vignette peut déborder de son cadre ; on dessine sur une marge autour (sinon coupée)
         const mx = inv > 0.001 && !own ? Math.ceil(pw * 0.08) : 0, my = inv > 0.001 && !own ? Math.ceil(ph * 0.1) : 0
         gl.viewport(sx - mx, sy - my, pw + 2 * mx, ph + 2 * my); gl.scissor(Math.max(0, sx - mx), Math.max(0, sy - my), pw + 2 * mx, ph + 2 * my)
-        gl.uniform1f(GU.uInv, own ? 0 : inv)
         gl.useProgram(gProg)
+        gl.uniform1f(GU.uInv, own ? 0 : inv)   // aspiration inversée (touche P) : après useProgram, sur le programme du verre
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
