@@ -13,11 +13,11 @@
   --ink: var(--bg-dark);
 }
 :root[data-theme="light"] { color-scheme: light; --bg: var(--bg-light); --ink: var(--bg-dark); }
-:root[data-theme="dark"] { color-scheme: dark; --bg: var(--bg-dark); --ink: white; }
+:root[data-theme="dark"] { color-scheme: dark; --bg: #161616; --ink: white; }   /* sombre : un peu plus noir que le #1E1E1E du kit */
 
 /* par défaut, l'accueil est en clair et les fiches projet en sombre (calque fixe au-dessus de la page), dès leur
    ouverture, sans transition. Dès que le visiteur choisit un mode (bouton, theme-chosen), il vaut pour tout le site. */
-:root:not(.theme-chosen) .fiche { color-scheme: dark; --bg: var(--bg-dark); --ink: white; }
+:root:not(.theme-chosen) .fiche { color-scheme: dark; --bg: #161616; --ink: white; }
 
 /* neutres recalculés là où --bg / --ink changent : la page et les fiches */
 :root, .fiche {

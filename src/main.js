@@ -120,7 +120,7 @@ function leave(el, kind, ms) {
 function syncFiche() {
   const open = ficheOf()
   // transitions : d'un projet à l'autre, l'ancien glisse sous le nouveau rideau ; à la fermeture, le rideau se retire
-  if (prevFiche && prevFiche !== open && !reduced) leave(prevFiche, open ? 'is-under' : 'is-closing', open ? 1000 : 640)
+  if (prevFiche && prevFiche !== open && !reduced) leave(prevFiche, open ? 'is-under' : 'is-closing', open ? 1000 : 900)
   prevFiche = open
   root.classList.toggle('fiche-open', !!open)
   document.body.style.overflow = open ? 'hidden' : ''

@@ -33,7 +33,7 @@ void main() {
   // proximité du curseur : les formes se rapprochent de la plaque
   float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * 260.0 * 260.0));
   // chaque forme n'agit que sur sa zone (somme de taches, sans moyenne) : entre elles, le fond reste celui du thème
-  vec3 base = uPage * mix(0.7, 1.0, uLight);       // sombre : fond assombri
+  vec3 base = uPage * mix(0.75, 1.0, uLight);      // sombre : fond assombri (#161616 × 0,75 ≈ #101010)
   float amp = mix(0.16, 0.2, uLight) * (1.0 + 2.6 * P);   // nettement renforcée sous le curseur
   vec3 col = base;
   for (int i = 0; i < ${N}; i++) {
