@@ -415,17 +415,26 @@ const word = null
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 // À propos : mots allumés au fil du défilement (comme la présentation de l'accueil), dans l'ordre de lecture ; tout est
 // allumé quand le dernier paragraphe atteint le milieu de l'écran ; en remontant, ils s'éteignent dans l'ordre inverse
-let swWords = null, swOn = -1
-const resetScrollWords = () => { swWords = null; swOn = -1 }
+// textes des sections (Projets choisis, Travaux de recherche, À propos, adresse) : chaque mot (ou lettre de l'adresse)
+// apparaît quand il passe au-dessus d'une ligne fixe de l'écran, aux 7/8 de sa hauteur, et disparaît en repassant
+// dessous : les textes s'allument ligne par ligne au fil du défilement, dans l'ordre de lecture. Positions des mots
+// mises en cache (position dans la page), recalculées au redimensionnement et au changement de langue.
+const SW_LINE = 7 / 8
+let swWords = null, swY = null, swOn = null
+const resetScrollWords = () => { swWords = null }
+addEventListener('resize', resetScrollWords)
+addEventListener('load', resetScrollWords)
 function scrollWords(vh) {
-  swWords ??= [...document.querySelectorAll('[data-sw] .w')]
-  if (!swWords.length) return
-  const paras = document.querySelectorAll('[data-sw]')
-  const top = paras[0].getBoundingClientRect().top, bottom = paras[paras.length - 1].getBoundingClientRect().bottom
-  // début : le premier paragraphe aux trois quarts de l'écran (après le titre et le texte au-dessus)
-  const p = Math.min(1, Math.max(0, (vh * 0.76 - top) / Math.max(1, bottom - top + vh * 0.26)))
-  const on = Math.round(p * swWords.length)
-  if (on !== swOn) { swWords.forEach((w, i) => w.classList.toggle('on', i < on)); swOn = on }
+  if (!swWords) {
+    swWords = [...document.querySelectorAll('[data-sw] .w')]
+    swY = swWords.map((w) => w.getBoundingClientRect().top + scrollY + w.offsetHeight * 0.5)
+    swOn = swWords.map((w) => w.classList.contains('on'))
+  }
+  const line = scrollY + vh * SW_LINE
+  for (let i = 0; i < swWords.length; i++) {
+    const on = swY[i] < line
+    if (on !== swOn[i]) { swOn[i] = on; swWords[i].classList.toggle('on', on) }
+  }
 }
 function scrollEffects() {
   scrollWords(innerHeight)
@@ -623,3 +632,12 @@ document.addEventListener('click', async (e) => {
 // retour arrière vers l'autre langue (adresse de page différente de la langue affichée) : rechargement
 let shownPath = location.pathname
 addEventListener('popstate', () => { if (location.pathname !== shownPath) location.reload() })
+
+/* Flèche de l'accueil : après sa première apparition, elle se cache dès qu'on défile, et ne revient qu'après un moment
+   sans défilement */
+{ let t = null
+  addEventListener('scroll', () => {
+    if (!root.classList.contains('intro-done')) return
+    root.classList.add('cta-idle-off'); clearTimeout(t)
+    t = setTimeout(() => root.classList.remove('cta-idle-off'), 2600)
+  }, { passive: true }) }

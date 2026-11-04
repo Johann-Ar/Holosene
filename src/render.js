@@ -172,7 +172,7 @@ export function render(lang) {
   <section class="work" id="projets" aria-labelledby="proj-t">
     <header class="sec-head wrap">
       <h2 class="disp" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
-      <p class="lbl sec-head__sub" data-seq>${seq(t(workIntro))}</p>
+      <p class="lbl sec-head__sub" data-sw>${seq(t(workIntro))}</p>
     </header>
     ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, genre: t(p.genre), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
   </section>
@@ -180,7 +180,7 @@ export function render(lang) {
   <section class="work work--research" id="recherche" aria-labelledby="research-t">
     <header class="sec-head wrap">
       <h2 class="disp" id="research-t">${esc(t(ui.research))}</h2>
-      <p class="lbl sec-head__sub" data-seq>${seq(t(research.intro))}</p>
+      <p class="lbl sec-head__sub" data-sw>${seq(t(research.intro))}</p>
     </header>
     ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), genre: t(r.kind), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
@@ -190,7 +190,7 @@ export function render(lang) {
     ${about.map((a) => `<p data-sw>${seq(t(a))}</p>`).join('')}
     <div class="contact" id="contact" data-reveal>
       <h2 class="lbl" id="contact-t">${esc(t(ui.contact))}</h2>
-      <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-seq data-seq-group aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
+      <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-sw data-sw-letters aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
       <div class="contact__row">
         <button class="btn btn--light copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
         <ul class="socials">${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>

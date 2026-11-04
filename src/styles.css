@@ -650,9 +650,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* À propos : texte long, apparition légèrement plus rapide (≈ 2 s pour l'ensemble) */
 .js .about [data-seq] .w { transition-delay: calc(var(--i, 0) * 28ms); }
 
-/* adresse mail : apparition lettre par lettre (même effet), plus serrée */
-.js .mail [data-seq] .w { transition-delay: calc(var(--i, 0) * 22ms); filter: blur(4px); }
-.js .mail [data-seq].in .w { filter: none; }
+/* adresse mail : lettre par lettre, à la suite du texte d'À propos (défilement) */
+.js .mail [data-sw] .w { filter: blur(4px); transition-duration: 0.25s, 0.3s; }
+.js .mail [data-sw] .w.on { filter: none; }
 
 /* grille : le texte des liens et boutons surlignés tombe exactement sur la marge (le rembourrage du surlignage est
    compensé ; seul l'aplat déborde, au survol) */
@@ -665,3 +665,11 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .js [data-sw] .w { opacity: 0; filter: blur(6px); transition: opacity 0.4s var(--ease-flow), filter 0.5s var(--ease-flow); }
 .js [data-sw] .w.on { opacity: 1; filter: none; }
 @media (prefers-reduced-motion: reduce) { .js [data-sw] .w { opacity: 1; filter: none; transition: none; } }
+
+/* flèche : cachée pendant le défilement (cta-idle-off, main.js), retour en fondu et flou */
+.cta-idle-off .hero__cta { opacity: 0 !important; filter: blur(6px); visibility: hidden; transition: opacity 0.35s var(--ease-flow), filter 0.35s var(--ease-flow), visibility 0.35s !important; }
+/* survol et appui des boutons : un léger flou passe sur les lettres */
+@keyframes hl-blur { 40% { filter: blur(1.1px); } }
+.topbar__nav a:not(.lang):hover, .socials a:hover, .foot a:hover, .mail:hover, .fiche__close:hover, .topbar .lang:hover, .btn--light:hover, .theme-toggle:hover, .fiche__open:hover, .legal a:not(.btn):hover,
+.topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { animation: hl-blur 0.45s var(--hl-ease); }
+@media (prefers-reduced-motion: reduce) { .cta-idle-off .hero__cta { opacity: 1 !important; visibility: visible; filter: none; } }
