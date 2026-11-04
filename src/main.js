@@ -77,11 +77,33 @@ let touchAxis = null
 addEventListener('touchstart', () => { touchAxis = null }, { passive: true, capture: true })
 const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both',   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
   syncTouch: false,   // au doigt : défilement natif du téléphone (inertie, rebonds, vitesse : ceux du système)
-  virtualScroll: ({ deltaX, deltaY, event }) => {
-    if (!event.type.includes('touch')) return true
-    if (!touchAxis && (deltaX || deltaY)) touchAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'x' : 'y'
-    return touchAxis !== 'x'
+  virtualScroll: (data) => {
+    const { deltaX, deltaY, event } = data
+    if (event.type.includes('touch')) {
+      if (!touchAxis && (deltaX || deltaY)) touchAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'x' : 'y'
+      return touchAxis !== 'x'
+    }
+    // molette et pavé tactile : vitesse bridée (scrollLimit)
+    if (lenis) { data.deltaY = scrollLimit(deltaY); data.deltaX = scrollLimit(deltaX) }
+    return true
   } })
+// Défilement bridé, à la molette et au pavé tactile. Chaque coup est plafonné, et la cible ne peut pas prendre trop
+// d'avance sur la position affichée : on peut aller vite, sans à-coups ni images « abstraites ».
+// Découverte : en descendant dans une partie de la page encore jamais vue pendant cette visite, plafonds plus serrés
+// (les éléments y apparaissent pour la première fois : on laisse le temps aux animations) ; une partie déjà vue, ou une
+// remontée, retrouve le régime normal.
+const SCROLL_CAP = { step: 150, lead: 0.7 }, SCROLL_FIRST = { step: 55, lead: 0.24 }
+let scrollReached = 0
+function scrollLimit(d) {
+  if (!d) return d
+  const cur = lenis.animatedScroll, tgt = lenis.targetScroll
+  scrollReached = Math.max(scrollReached, cur)
+  const first = d > 0 && tgt >= scrollReached - 4
+  const cap = first ? SCROLL_FIRST : SCROLL_CAP
+  d = Math.max(-cap.step, Math.min(cap.step, d))
+  const lead = cap.lead * innerHeight
+  return d > 0 ? Math.min(d, Math.max(0, cur + lead - tgt)) : Math.max(d, Math.min(0, cur - lead - tgt))
+}
 // clavier : Espace (Maj+Espace pour remonter), Page suivante / précédente font défiler en douceur de 80 % d'écran, au
 // lieu du saut instantané du navigateur (Lenis ne lisse que la molette et le pavé tactile) ; flèches gauche / droite :
 // taille des points de la trame

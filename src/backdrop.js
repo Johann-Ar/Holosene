@@ -35,8 +35,8 @@ void main() {
   float PR = mix(165.0, 260.0, uLight);   // rayon de l'effet du curseur (sombre : plus petit)
   float P = uPtr.z * exp(-dot(s - uPtr.xy, s - uPtr.xy) / (2.0 * PR * PR));
   // chaque forme n'agit que sur sa zone (somme de taches, sans moyenne) : entre elles, le fond reste celui du thème
-  vec3 base = uPage * mix(0.75, 1.0, uLight);      // sombre : fond assombri (#161616 × 0,75 ≈ #101010)
-  float amp = mix(0.16, 0.2, uLight) * (1.0 + 2.6 * P);   // nettement renforcée sous le curseur
+  vec3 base = uPage * mix(0.7, 1.0, uLight);       // sombre : fond assombri (#0D0D0D × 0,7 ≈ #090909)
+  float amp = mix(0.1, 0.2, uLight) * (1.0 + 2.6 * P);   // sombre : taches de couleur plus discrètes (plus de noir)   // nettement renforcée sous le curseur
   vec3 col = base;
   for (int i = 0; i < ${N}; i++) {
     vec4 b = uB[i];
@@ -46,7 +46,7 @@ void main() {
   }
   // halo du curseur : même sur une zone neutre, une tache douce de la même famille que les formes (même roue, même
   // dégradé gaussien, intensité comparable) ; sa teinte est celle de la forme la plus proche (uPtrHue, lissée)
-  col = mix(col, irisAt(uPtrHue), clamp(P * mix(0.14, 0.18, uLight), 0.0, 0.7));
+  col = mix(col, irisAt(uPtrHue), clamp(P * mix(0.09, 0.18, uLight), 0.0, 0.7));
   col += (hash(gl_FragCoord.xy) - 0.5) / 255.0;   // tramage invisible (±0,5/255) : pas de bandes dans les dégradés
   gl_FragColor = vec4(col, 1.0);
 }`
