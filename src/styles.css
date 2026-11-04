@@ -184,9 +184,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .has-gl .hero__mark { visibility: hidden; }
 .hero__word { margin: 0; line-height: 0; }
 .hero__word .studio__word { width: min(64vw, 820px); height: auto; }
-.hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: var(--fs-text); line-height: 1.55; color: var(--ink-86); text-wrap: balance; }
-.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 40px; height: 40px; color: var(--ink); }   /* un seul chevron arrondi, centré (zone cliquable confortable) */
-.hero__cta svg { width: 16px; height: 16px; animation: nudge 1.8s var(--ease-in-out) infinite; }   /* petit, comme les anciennes flèches */
+.hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: var(--fs-text); line-height: 1.3; color: var(--ink-86); text-wrap: balance; }
+.hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 64px; height: 64px; color: var(--ink); }   /* un seul chevron arrondi, centré (zone cliquable confortable) */
+.hero__cta svg { width: 40px; height: 40px; animation: nudge 1.8s var(--ease-in-out) infinite; }   /* agrandi */
 /* accueil : rien d'autre que le fond, le gros logo et la présentation tant que l'écran ne descend pas */
 .js:not(.hero-done) .topbar, .js:not(.hero-done) .hero__cta, .js:not(.hero-done) .edge { opacity: 0; visibility: hidden; }
 .topbar, .hero__cta { transition: opacity 0.8s var(--ease-flow), visibility 0.8s; }   /* après la présentation de l'accueil */
@@ -342,7 +342,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche__media figure { border-radius: 26px; overflow: hidden; background: var(--card-bg); }
 .fiche__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .fiche__next { display: grid; justify-items: start; gap: 10px; text-decoration: none; color: var(--c-white); }
-.fiche__next .disp { font-size: clamp(2.2rem, 4vw, 3.6rem); white-space: nowrap; }
+.fiche__next .disp { font-size: clamp(2.2rem, 4vw, 3.6rem); max-width: 8.5em; text-wrap: balance; overflow-wrap: normal; word-break: normal; hyphens: manual; }   /* « Photographique / Volume » : à la ligne */
 
 /* grand écran : une seule rangée, qui défile à l'horizontale (molette, pavé tactile, doigt) */
 @media (min-width: 769px) {

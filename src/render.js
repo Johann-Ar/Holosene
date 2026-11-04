@@ -79,7 +79,11 @@ export function render(lang) {
     const credits = [...(p.credits || []), ...(p.coverCredit ? [p.coverCredit] : [])]
     const next = projects[(i + 1) % projects.length]
     // petites images (moins de 700 px de large) regroupées par deux, l'une sur l'autre
-    const fig = (x) => { const [w, h] = sizes[x.src] || [1200, 800]; return `<figure style="--r:${(w / h).toFixed(3)}"><img src="${m(x.src)}" alt="${esc(t(x.alt))}" width="${w}" height="${h}" loading="lazy" decoding="async"></figure>` }
+    // images des fiches : chaque image prend le format le plus proche d'un jeu fixe, du 16:9 (1920 × 1080, le plus
+    // large) au 9:16 (smartphone, le plus haut) ; elle est recadrée dedans (object-fit: cover), jamais déformée
+    const FORMATS = [16 / 9, 3 / 2, 4 / 3, 1, 4 / 5, 2 / 3, 9 / 16]
+    const format = (w, h) => FORMATS.reduce((best, f) => (Math.abs(Math.log(f * h / w)) < Math.abs(Math.log(best * h / w)) ? f : best))
+    const fig = (x) => { const [w, h] = sizes[x.src] || [1200, 800]; return `<figure style="--r:${format(w, h).toFixed(4)}"><img src="${m(x.src)}" alt="${esc(t(x.alt))}" width="${w}" height="${h}" loading="lazy" decoding="async"></figure>` }
     const small = (x) => (sizes[x.src]?.[0] || 1200) < 700
     const media = []
     for (let k = 0; k < p.media.length; k++) {
