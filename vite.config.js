@@ -75,7 +75,7 @@ function themeHead() {
       const meta = `<meta name="theme-color" content="${colors.bgDark}" media="(prefers-color-scheme: dark)" />
   <meta name="theme-color" content="${colors.bgLight}" media="(prefers-color-scheme: light)" />`
       // mode forcé par le bouton, appliqué avant le premier rendu (pas de flash) ; sinon le CSS suit l'appareil
-      const boot = `<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}try{history.scrollRestoration='manual';if(location.hash&&!/^#p-/.test(location.hash))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours en haut de page (ni position mémorisée ni ancre de section ; les fiches #p-… restent ouvrables par lien)
+      const boot = `<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}try{history.scrollRestoration='manual';var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(location.hash&&(!/^#p-/.test(location.hash)||(n&&n.type==='reload')))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours l'accueil, en haut (ni position mémorisée, ni ancre, ni fiche ouverte) ; un lien direct vers une fiche #p-… l'ouvre toujours
       return html.replace('</head>', `  ${meta}\n  ${boot}\n</head>`)
     },
   }

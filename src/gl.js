@@ -260,7 +260,7 @@ void main() {
   if (uClip.z > 0.0) {
     float zone = (uClip.y - uClip.x) < 769.0 ? 0.1 * (uClip.y - uClip.x) : min(160.0, 0.3 * (uClip.y - uClip.x));   // mobile : zone trois fois plus étroite
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));   // distance au bord le plus proche de la piste
-    sqz = 1.0 - 0.12 * exp(-d / (0.28 * zone));                // décroissance exponentielle : forte au ras du bord seulement
+    sqz = 1.0 - ((uClip.y - uClip.x) < 769.0 ? 0.12 : 0.08) * exp(-d / (0.28 * zone));   // PC : 8 % au plus (mobile 12 %)                // décroissance exponentielle : forte au ras du bord seulement
     p.y = uRes.y * 0.5 + (p.y - uRes.y * 0.5) / sqz;
   }
   float aa = 0.9 / (uDpr * sqz);
