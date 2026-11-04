@@ -17,7 +17,7 @@
 
 /* par défaut, l'accueil est en clair et les fiches projet en sombre (calque fixe au-dessus de la page), dès leur
    ouverture, sans transition. Dès que le visiteur choisit un mode (bouton, theme-chosen), il vaut pour tout le site. */
-:root:not(.theme-chosen) .fiche { color-scheme: dark; --bg: #161616; --ink: white; }
+:root:not(.theme-chosen) .fiche, :root:not(.theme-chosen) .fiche-veil { color-scheme: dark; --bg: #161616; --ink: white; }
 
 /* neutres recalculés là où --bg / --ink changent : la page et les fiches */
 :root, .fiche {

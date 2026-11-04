@@ -112,6 +112,7 @@ document.addEventListener('click', (e) => {
 
 /* Fiches projet : ouvertes par l'ancre #p-<slug> ; focus, Échap, focus piégé, défilement de la page bloqué. */
 let lastFocus = null, prevFiche = null
+const veil = document.querySelector('.fiche-veil')
 const ficheOf = () => (/^#p-/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null)
 function leave(el, kind, ms) {
   el.classList.add('is-leaving', kind)
@@ -121,6 +122,8 @@ function syncFiche() {
   const open = ficheOf()
   // transitions : d'un projet à l'autre, l'ancien glisse sous le nouveau rideau ; à la fermeture, le rideau se retire
   if (prevFiche && prevFiche !== open && !reduced) leave(prevFiche, open ? 'is-under' : 'is-closing', open ? 1000 : 900)
+  // fermeture : le voile en dégradé glisse avec le bord gauche de la fiche
+  if (prevFiche && !open && !reduced && veil) { veil.classList.remove('is-on'); void veil.offsetWidth; veil.classList.add('is-on'); setTimeout(() => veil.classList.remove('is-on'), 850) }
   prevFiche = open
   root.classList.toggle('fiche-open', !!open)
   document.body.style.overflow = open ? 'hidden' : ''

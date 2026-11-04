@@ -198,5 +198,6 @@ export function render(lang) {
 </footer>
 
 ${projects.map(fiche).join('')}
+<div class="fiche-veil" aria-hidden="true"></div>
 `
 }

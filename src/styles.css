@@ -418,16 +418,18 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 @keyframes gallery-in { from { opacity: 0; transform: translateX(100px); } }
 .fiche.is-under { z-index: 49; pointer-events: none; }
 .fiche.is-under .fiche__head, .fiche.is-under .fiche__row { animation: slide-away 0.6s var(--ease-in-out) forwards; }
-/* fermeture : l'inverse de l'ouverture ; la même bande en dégradé d'opacité, doublée d'un flou, repart vers la droite et
-   dévoile l'accueil ; le contenu suit en s'estompant */
-.fiche.is-closing { z-index: 51; pointer-events: none; animation: curtain-out 0.85s cubic-bezier(0.65, 0, 0.35, 1) forwards;
-  -webkit-mask: linear-gradient(90deg, transparent calc(var(--cut) - 18vw), #000 var(--cut)); mask: linear-gradient(90deg, transparent calc(var(--cut) - 18vw), #000 var(--cut)); }
-.fiche.is-closing::before { content: ''; position: fixed; top: 0; bottom: 0; left: calc(var(--cut) - 18vw); width: 18vw; z-index: 60; pointer-events: none;
-  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  -webkit-mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); }
-.fiche.is-closing .fiche__row, .fiche.is-closing .fiche__head { animation: content-out 0.6s var(--ease-flow) forwards; }
-@keyframes curtain-out { from { --cut: 0%; } to { --cut: calc(100% + 18vw); } }
-@keyframes content-out { to { opacity: 0; transform: translateX(60px); } }
+/* fermeture : la fiche glisse vers la droite et dévoile l'accueil ; contre son bord gauche, un voile en dégradé
+   (.fiche-veil) glisse avec elle, au même rythme : le bord n'est jamais net. Seulement des translations, faites par la
+   carte graphique : rien n'est redessiné pendant l'animation, aucune saccade */
+.fiche.is-closing { z-index: 51; pointer-events: none; will-change: transform; animation: fiche-out 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.fiche.is-closing .fiche__row, .fiche.is-closing .fiche__head { animation: content-out 0.5s var(--ease-flow) forwards; }
+.fiche-veil { display: none; position: fixed; top: 0; bottom: 0; left: 0; width: 18vw; z-index: 51; pointer-events: none; will-change: transform;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 0%, transparent), var(--bg)); }
+.fiche-veil.is-on { display: block; animation: veil-out 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+@keyframes fiche-out { to { transform: translate3d(100vw, 0, 0); } }
+@keyframes veil-out { from { transform: translate3d(-18vw, 0, 0); } to { transform: translate3d(82vw, 0, 0); } }
+@keyframes content-out { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .fiche-veil { display: none !important; } }
 @keyframes curtain-in { from { --cut: calc(100% + 18vw); } to { --cut: 0%; } }
 @keyframes rise { from { opacity: 0; transform: translateX(56px); } }
 @keyframes slide-away { to { opacity: 0; transform: translateX(-64px); } }
