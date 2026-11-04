@@ -128,7 +128,7 @@ a { color: inherit; }
 :root[data-theme="light"] .edge { opacity: 0.35; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 :root[data-theme="light"] .edge--top { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
 :root[data-theme="light"] .edge--bottom { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
-.fiche-open .edge { display: none; }
+.fiche-open body > .edge { display: none; }   /* les fiches ont leur propre fondu du haut */
 .work__pin { position: relative; }
 /* mode clair : aux bords gauche et droit de la piste, les vignettes ne s'effacent pas vers le blanc ; elles passent sous
    un flou progressif (backdrop-filter masqué en dégradé) */
@@ -234,7 +234,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__cta { position: absolute; left: 50%; bottom: calc(5svh + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 2; pointer-events: auto; display: grid; place-items: center; width: 64px; height: 64px; color: var(--ink); }   /* un seul chevron arrondi, centré (zone cliquable confortable) */
 .hero__cta svg { width: 40px; height: 40px; animation: nudge 1.8s var(--ease-in-out) infinite; }   /* agrandi */
 /* accueil : rien d'autre que le fond, le gros logo et la présentation tant que l'écran ne descend pas */
-.js:not(.hero-done) .edge { opacity: 0; visibility: hidden; }
+.js:not(.hero-done) body > .edge { opacity: 0; visibility: hidden; }
 .js:not(.intro-done) .topbar { opacity: 0; visibility: hidden; }   /* barre du haut : dès la fin de l'animation d'apparition du logo */
 .js:not(.intro-done) .topbar * { visibility: hidden !important; }   /* aucun élément de la barre (petit logo compris) pendant l'intro */
 /* flèche : un court instant après la fin de l'arrivée du logo (intro-done, main.js) */
@@ -405,8 +405,11 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .fiche:target, .fiche:target *, .fiche.is-under *, .fiche.is-closing, .fiche.is-closing * { animation: none !important; }
   .fiche.is-leaving { display: none; }
 }
-/* barre de la fiche : clair/sombre et Fermer, en haut à droite */
-.fiche__head { position: sticky; top: 0; z-index: 3; display: flex; justify-content: flex-end; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 12px; }
+/* barre de la fiche : Fermer, en haut à droite ; dessous, exactement le même fondu que la barre de l'accueil (même
+   .edge--top et, en clair, même flou progressif .topbar__glass), selon le mode de la fiche */
+:root:not(.theme-chosen) .fiche .topbar__glass { display: none; }   /* fiche sombre par défaut : pas de voile blanc */
+:root[data-theme="light"]:not(.theme-chosen) .fiche .edge { opacity: 1; -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask: none; mask: none; }   /* fiche sombre par défaut : le fondu sombre de l'accueil */
+.fiche__head { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 12px; }
 .fiche__tools { display: flex; align-items: center; gap: 12px; flex: none; }
 .fiche__close { flex: none; font: 400 var(--fs-small) var(--font-text); color: var(--c-white); text-decoration: none; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 16px; }
 /* colonne de texte : titre, un seul texte explicatif, fiche technique, lien vers le projet */
@@ -455,10 +458,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .duo { display: grid; gap: 30px; }
   .fiche__next { margin-top: 48px; }
   .fiche__next .disp { white-space: normal; }
-  /* barre de la fiche : fond plein et court fondu dessous (le contenu ne transparaît pas) */
-  .fiche__head { background: none; }
-  .fiche__head::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 18px); z-index: -1; pointer-events: none;
-    background: linear-gradient(180deg, var(--bg) calc(100% - 18px), color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
 }
 
 /* pages annexes */
