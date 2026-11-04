@@ -21,6 +21,7 @@ uniform float uScroll;  // défilement de la page (px CSS)
 uniform vec3 uPage;     // --bg du thème
 uniform float uLight;   // 1 : mode clair
 uniform vec3 uPtr;      // curseur (px CSS, dans la fenêtre), présence (0 à 1)
+uniform float uPtrHue;  // teinte du halo du curseur (position sur la roue)
 uniform vec4 uB[${N}];  // formes : centre (px CSS, dans la page), rayon (px), position sur la roue (0 à 1)
 uniform float uA[${N}]; // intensité de chaque forme (cycle de vie : naît, s'intensifie, s'éteint)
 ${KIT_IRIS}
@@ -41,6 +42,9 @@ void main() {
     float k = exp(-dot(d, d) * mix(1.0, 1.9, P));   // plus près de la plaque : bord plus net
     col = mix(col, irisAt(b.w), clamp(k * amp * uA[i], 0.0, 0.7));
   }
+  // halo du curseur : même sur une zone neutre, une tache douce de la même famille que les formes (même roue, même
+  // dégradé gaussien, intensité comparable) ; sa teinte est celle de la forme la plus proche (uPtrHue, lissée)
+  col = mix(col, irisAt(uPtrHue), clamp(P * mix(0.14, 0.18, uLight), 0.0, 0.7));
   col += (hash(gl_FragCoord.xy) - 0.5) / 255.0;   // tramage invisible (±0,5/255) : pas de bandes dans les dégradés
   gl_FragColor = vec4(col, 1.0);
 }`
@@ -59,7 +63,7 @@ export function createBackdrop(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uRes', 'uDpr', 'uScroll', 'uPage', 'uLight', 'uPtr', 'uB', 'uA']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uRes', 'uDpr', 'uScroll', 'uPage', 'uLight', 'uPtr', 'uPtrHue', 'uB', 'uA']) U[n] = gl.getUniformLocation(prog, n)
 
   // thème : --bg du site, relu quand le mode change
   const root = document.documentElement
@@ -89,7 +93,7 @@ export function createBackdrop(canvas, { reduced }) {
   // résolution : le fond n'est fait que de dégradés très doux (sans texture) : un demi-pixel CSS suffit, l'agrandissement
   // par le navigateur ne se voit pas (9 fois moins de pixels qu'en 1,5×)
   const DPR = 0.5
-  let dpr = DPR, W = 0, H = 0, docH = 0, pin = 0, t0 = performance.now(), prev = t0, gain = 1
+  let dpr = DPR, W = 0, H = 0, docH = 0, pin = 0, t0 = performance.now(), prev = t0, gain = 1, hue = Math.random()
   // hauteurs mises en cache (lues au redimensionnement seulement : pas de mise en page forcée à chaque image)
   const measure = () => { docH = Math.max(document.documentElement.scrollHeight, H); pin = hero ? Math.max(0, hero.offsetHeight - H) : 0 }
   const resize = () => {
@@ -135,7 +139,14 @@ export function createBackdrop(canvas, { reduced }) {
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.uniform2f(U.uRes, W, H); gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uScroll, Math.max(0, scrollY - pin))
     gl.uniform3f(U.uPage, ...page); gl.uniform1f(U.uLight, light)
-    gl.uniform3f(U.uPtr, ptr.x, ptr.y, ptr.a); gl.uniform4fv(U.uB, B); gl.uniform1fv(U.uA, A)
+    // teinte du halo : celle de la forme la plus présente sous le curseur ; loin de toute forme, elle glisse lentement
+    // le long de la roue ; transitions toujours douces (chemin le plus court sur la roue)
+    let best = 0, hueT = hue + dt * 0.012
+    const py = ptr.y + Math.max(0, scrollY - pin)
+    for (let i = 0; i < N; i++) { const dx = (ptr.x - B[i * 4]) / B[i * 4 + 2], dy = (py - B[i * 4 + 1]) / B[i * 4 + 2], k = A[i] * Math.exp(-(dx * dx + dy * dy)); if (k > best) { best = k; if (k > 0.04) hueT = B[i * 4 + 3] } }
+    const dh = ((hueT - hue + 1.5) % 1) - 0.5
+    hue = (hue + dh * (1 - Math.exp(-dt / 0.8)) + 1) % 1
+    gl.uniform3f(U.uPtr, ptr.x, ptr.y, ptr.a); gl.uniform1f(U.uPtrHue, hue); gl.uniform4fv(U.uB, B); gl.uniform1fv(U.uA, A)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
   return { frame }
