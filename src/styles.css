@@ -91,7 +91,7 @@ a { color: inherit; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .topbar__glass { display: block; } }
 :root[data-theme="light"] .topbar__glass { display: block; }
 /* grand écran : le flou de la barre s'éteint sur une plus grande hauteur (aucune limite basse visible) */
-@media (min-width: 769px) { .topbar__glass { height: calc(100% + 120px); } }
+@media (min-width: 769px) { .topbar__glass { height: calc(100% + 60px); } .edge--top { height: 96px; } }   /* PC : fondu de la barre plus court */
 .brand__mark { height: 48px; width: auto; }   /* PC ; téléphone : 34 px (plus bas) */
 .theme-toggle { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--ink); border-radius: 50%; background: none; color: inherit; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
 .theme-toggle svg { width: 16px; height: 16px; }
