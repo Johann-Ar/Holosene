@@ -514,7 +514,7 @@ export function createGL(canvas, { reduced }) {
     const small = w < 760
     const big = bigOf(w, h)
     // fin : à sa place dans la composition de l'accueil (.hero__slot, au-dessus du nom et de la présentation)
-    const q = e(k(0, 0.45))
+    const q = e(k(0, 0.61))   // le logo rejoint sa place (même découpage que main.js : scène sans temps mort)
     let size = big + (slot.h - big) * q
     // repos du gros logo : placé pour que son « o » soit exactement à la hauteur du centre de l'écran (là où le chargeur
     // passe le relais) : au relais, le « o » ne glisse que vers la droite, sans descendre
