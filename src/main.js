@@ -137,7 +137,12 @@ document.addEventListener('click', (e) => {
   if (!el) return
   e.preventDefault()
   history.pushState(null, '', '#' + id)
-  lenis ? lenis.scrollTo(el, { duration: 1.4 }) : el.scrollIntoView()
+  // durée selon la distance (une longue remontée n'est pas plus brusque qu'une courte), courbe douce au départ et à
+  // l'arrivée (ease in-out quintique) ; retour en haut (logo) : jusqu'à la toute première image de l'accueil
+  const dist = Math.abs((id === 'top' ? 0 : el.getBoundingClientRect().top + scrollY) - scrollY)
+  const duration = Math.min(2.4, Math.max(0.9, 0.8 + dist / 4200))
+  const ease = (t) => (t < 0.5 ? 16 * t ** 5 : 1 - Math.pow(-2 * t + 2, 5) / 2)
+  lenis ? lenis.scrollTo(id === 'top' ? 0 : el, { duration, easing: ease, force: true, lock: true }) : el.scrollIntoView({ behavior: 'smooth' })
 })
 
 /* Fiches projet : ouvertes par l'ancre #p-<slug> ; focus, Échap, focus piégé, défilement de la page bloqué. */
@@ -458,7 +463,9 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 //   3. fin de l'animation (intro-done) : la flèche apparaît, la page se libère.
 // Pendant 1 et 2 : rien n'est possible. Défilement bloqué (molette, doigt, clavier, barre, focus), et tout le contenu
 // de la page est inerte (ni clic, ni focus, ni défilement par le focus) ; la page reste en haut.
-const introLocked = !!document.querySelector('.hero') && !reduced && !ficheOf()
+// retour depuis une page annexe (bouton Fermer des mentions légales) : pas de chargeur ni d'intro, on revient sur Contact
+const backTo = (() => { try { const v = sessionStorage.getItem('backTo'); sessionStorage.removeItem('backTo'); return document.querySelector('.hero') ? v : null } catch { return null } })()
+const introLocked = !!document.querySelector('.hero') && !reduced && !ficheOf() && !backTo
 const inertEls = [...document.body.children].filter((e) => !e.matches('.loader, canvas, script, .bg-canvas, .gl-canvas'))
 let unblock = () => {}
 if (introLocked) {
@@ -472,10 +479,14 @@ if (introLocked) {
   unblock = () => { removeEventListener('wheel', block, { capture: true }); removeEventListener('touchmove', block, { capture: true }); removeEventListener('scroll', pin) }
 } else root.classList.add('intro-done')
 const endIntro = () => {
-  if (root.classList.contains('intro-done')) return
-  inertEls.forEach((e) => { e.inert = false }); unblock()
-  scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })
-  root.classList.remove('intro-lock'); root.classList.add('intro-done')
+  // fin de l'intro verrouillée : page libérée, remise en haut
+  if (root.classList.contains('intro-lock')) {
+    inertEls.forEach((e) => { e.inert = false }); unblock()
+    scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })
+    root.classList.remove('intro-lock')
+  }
+  root.classList.add('intro-done')
+  // toujours : le défilement doux démarre (y compris sur les pages sans intro, où il restait arrêté)
   if (!ficheOf()) lenis?.start()
 }
 const heroImg = document.querySelector('.hero__view img')
@@ -483,7 +494,7 @@ Promise.race([
   Promise.all([
     document.fonts?.ready,
     heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
-    new Promise((r) => setTimeout(r, reduced ? 0 : 1000)),
+    new Promise((r) => setTimeout(r, reduced || backTo ? 0 : 1000)),
     // toute la page (images des vignettes comprises) : rien ne se charge plus pendant l'animation du logo
     document.readyState === 'complete' ? null : new Promise((r) => addEventListener('load', r, { once: true })),
     new Promise((r) => setTimeout(() => (gl?.ready || Promise.resolve()).then(r))),   // logo WebGL prêt (gl créé plus bas)
@@ -494,6 +505,8 @@ Promise.race([
   // fiche ouverte par le lien : rien à attendre ; sinon, fin de l'arrivée du logo (croissance puis glissement)
   // l'animation du logo dure croissance + glissement ; la page ne se libère qu'à la fin
   if (!introLocked || ficheOf()) endIntro(); else setTimeout(endIntro, IRIS.intro.grow + IRIS.intro.shift)
+  // retour sur Contact : tout de suite, puis une fois la mise en page stabilisée
+  if (backTo) { const go = () => { const el = document.getElementById(backTo); if (!el) return; const y = el.getBoundingClientRect().top + scrollY - innerHeight * 0.15; if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else scrollTo(0, y) }; go(); setTimeout(go, 300) }
 }))
 
 /* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
@@ -521,3 +534,16 @@ function loop(t) {
 requestAnimationFrame(loop)
 
 syncFiche()
+
+/* Fermer (pages annexes) : retour à l'accueil, sur Contact, sans tout relancer. Si l'on vient de l'accueil, retour arrière
+   (le navigateur réaffiche la page telle qu'on l'a laissée) ; sinon, chargement de l'accueil sans chargeur ni intro. */
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('[data-close]')
+  if (!a) return
+  try { sessionStorage.setItem('backTo', 'contact') } catch {}
+  let fromHome = false
+  try { const r = new URL(document.referrer); fromHome = r.origin === location.origin && !/mentions-legales/.test(r.pathname) } catch {}
+  if (fromHome && history.length > 1) { e.preventDefault(); history.back() }
+})
+// page réaffichée par le retour arrière (mémoire du navigateur) : rien à relancer, et le drapeau ne doit pas servir plus tard
+addEventListener('pageshow', (e) => { if (e.persisted) { try { sessionStorage.removeItem('backTo') } catch {} } })
