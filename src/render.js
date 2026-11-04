@@ -190,7 +190,7 @@ export function render(lang) {
     ${about.map((a) => `<p data-seq>${seq(t(a))}</p>`).join('')}
     <div class="contact" id="contact" data-reveal>
       <h2 class="lbl" id="contact-t">${esc(t(ui.contact))}</h2>
-      <a class="mail" href="mailto:${esc(site.email)}" translate="no"><span>${esc(site.email)}</span></a>
+      <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-seq data-seq-group aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
       <div class="contact__row">
         <button class="btn btn--light copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
         <ul class="socials">${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>

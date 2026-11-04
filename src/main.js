@@ -6,6 +6,7 @@ import { createGL } from './gl.js'
 import { createBackdrop } from './backdrop.js'
 import { IRIS } from './iris-config.js'
 import { startFxCss } from './fx-css.js'
+import { swapLanguage } from './lang-swap.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -41,10 +42,10 @@ else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl') 
    d'une fiche) inverse le mode de la partie où l'on est, et ce mode vaut ensuite pour tout le site (mémorisé). */
 const applyThemeColor = () => { const bg = getComputedStyle(root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
 const themeOf = (el) => (!root.classList.contains('theme-chosen') && el.closest('.fiche') ? 'dark' : root.dataset.theme || 'light')
-const THEME_WORD = root.lang === 'en' ? { dark: 'Dark', light: 'Light' } : { dark: 'Sombre', light: 'Clair' }
+const themeWord = () => (root.lang === 'en' ? { dark: 'Dark', light: 'Light' } : { dark: 'Sombre', light: 'Clair' })
 const labelThemes = () => document.querySelectorAll('.theme-toggle').forEach((b) => {
   const next = themeOf(b) === 'light' ? 'dark' : 'light'
-  b.setAttribute('aria-label', b.dataset[next]); const t = b.querySelector('.theme-toggle__t'); if (t) t.textContent = THEME_WORD[next]
+  b.setAttribute('aria-label', b.dataset[next]); const t = b.querySelector('.theme-toggle__t'); if (t) t.textContent = themeWord()[next]
 })
 document.addEventListener('click', (e) => {
   const b = e.target.closest('.theme-toggle')
@@ -370,7 +371,7 @@ function showCard(card) {
 
 /* À propos : le logotype se trace puis se remplit ; les grands textes s'allument mot à mot au défilement. */
 const hero = document.querySelector('.hero')
-const heroWords = [...document.querySelectorAll('.hero__line .w')]
+let heroWords = [...document.querySelectorAll('.hero__line .w')]
 if (!heroWords.length) root.classList.add('hero-done')   // pages sans accueil : tout est visible d'emblée
 let heroOn = -1
 const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
@@ -382,10 +383,16 @@ const word = null
 // une section = une seule séquence, dans l'ordre de lecture : le rang des mots se poursuit d'un paragraphe à l'autre
 // (chaque mot attend le précédent), et toute la séquence démarre quand son premier paragraphe arrive à l'écran
 { const groups = new Map()
-  for (const el of document.querySelectorAll('[data-seq]')) { const g = el.closest('section') || el.parentElement; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(el) }
-  const io = new IntersectionObserver((es) => es.forEach((e) => { if (!e.isIntersecting) return; const list = groups.get(e.target._seqGroup); list.forEach((el) => el.classList.add('in')); io.unobserve(e.target) }), { threshold: 0.35 })
+  for (const el of document.querySelectorAll('[data-seq]')) { const g = el.closest('[data-seq-group]') || el.closest('section') || el.parentElement; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(el) }
+  // comme la présentation de l'accueil : apparaît en arrivant à l'écran, disparaît quand on remonte au-dessus (le texte
+  // repasse sous le bas de l'écran) ; reste allumé quand on l'a dépassé vers le bas
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    const list = groups.get(e.target._seqGroup)
+    if (e.isIntersecting) list.forEach((el) => el.classList.add('in'))
+    else if (e.boundingClientRect.top > 0) list.forEach((el) => el.classList.remove('in'))
+  }), { threshold: 0.35 })
   for (const [g, list] of groups) {
-    let i = 0
+    let i = 0   // rang des mots (ou des lettres) dans le groupe
     for (const el of list) for (const w of el.querySelectorAll('.w')) w.style.setProperty('--i', i++)
     list[0]._seqGroup = g; io.observe(list[0])
   } }
@@ -547,3 +554,39 @@ document.addEventListener('click', (e) => {
 })
 // page réaffichée par le retour arrière (mémoire du navigateur) : rien à relancer, et le drapeau ne doit pas servir plus tard
 addEventListener('pageshow', (e) => { if (e.persisted) { try { sessionStorage.removeItem('backTo') } catch {} } })
+
+/* Changement de langue sans rechargement (lang-swap.js) : textes remplacés sur place, adresse mise à jour ; en cas de
+   doute (structure différente, page introuvable), chargement normal. */
+document.addEventListener('click', async (e) => {
+  const a = e.target.closest('.topbar .lang')
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey || ficheOf() || !root.classList.contains('intro-done')) return
+  e.preventDefault()
+  const url = new URL(a.getAttribute('href'), location.href).href
+  try {
+    await swapLanguage(url, {
+      onWhole: (el) => {
+        if (el.matches('[data-hwords]')) {
+          // présentation de l'accueil : nouveaux mots, même état (allumés selon l'avancée de la scène)
+          const lit = root.classList.contains('hero-done') || heroOn > 0
+          heroWords = [...el.querySelectorAll('.w')]; heroOn = -1
+          if (lit && root.classList.contains('hero-done')) heroWords.forEach((w) => w.classList.add('on'))
+        } else {
+          // textes des sections : rangs des mots dans la section, déjà apparus si la section l'était
+          const grp = el.closest('[data-seq-group]') || el.closest('section') || el.parentElement
+          const same = (p) => (p.closest('[data-seq-group]') || p.closest('section') || p.parentElement) === grp
+          let i = 0
+          for (const p of grp.querySelectorAll('[data-seq]')) if (same(p)) for (const w of p.querySelectorAll('.w')) w.style.setProperty('--i', i++)
+        }
+      },
+      onDone: () => {
+        try { store.set('lang', root.lang) } catch {}
+        history.pushState(null, '', url); shownPath = location.pathname
+        labelThemes()
+        dispatchEvent(new Event('resize'))   // largeurs des textes changées : pistes, WebGL et fond se remesurent
+      },
+    })
+  } catch (err) { console.warn('changement de langue : chargement normal', err); location.href = url }
+})
+// retour arrière vers l'autre langue (adresse de page différente de la langue affichée) : rechargement
+let shownPath = location.pathname
+addEventListener('popstate', () => { if (location.pathname !== shownPath) location.reload() })

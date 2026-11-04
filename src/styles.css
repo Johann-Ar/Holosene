@@ -646,3 +646,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* À propos : texte long, apparition légèrement plus rapide (≈ 2 s pour l'ensemble) */
 .js .about [data-seq] .w { transition-delay: calc(var(--i, 0) * 28ms); }
+
+/* adresse mail : apparition lettre par lettre (même effet), plus serrée */
+.js .mail [data-seq] .w { transition-delay: calc(var(--i, 0) * 22ms); filter: blur(4px); }
+.js .mail [data-seq].in .w { filter: none; }
