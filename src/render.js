@@ -125,6 +125,14 @@ export function render(lang) {
 
   const selected = projects.filter((p) => !p.research)
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
+  // texte apparaissant mot à mot au défilement (même effet que la présentation de l'accueil) ; **gras** conservé ;
+  // --i : rang du mot (décalage de l'apparition)
+  const seq = (str) => { let bold = false, i = 0; return esc(str).split(' ').map((w) => {
+    const open = w.startsWith('**'), close = w.replace(/^\*\*/, '').endsWith('**') || (open && w.length > 4 && w.endsWith('**'))
+    const word = w.replace(/\*\*/g, ''); if (open) bold = true
+    const out = `<span class="w" style="--i:${i++}">${bold ? `<strong>${word}</strong>` : word}</span>`
+    if (close) bold = false
+    return out }).join(' ') }
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
 <div class="loader" aria-hidden="true"><div class="loader__o"><div class="loader__arc"><i class="loader__ring"></i></div><i class="loader__ring loader__full"></i></div></div>
@@ -165,7 +173,7 @@ export function render(lang) {
   <section class="work" id="projets" aria-labelledby="proj-t">
     <header class="sec-head wrap">
       <h2 class="disp" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
-      <p class="lbl sec-head__sub" data-reveal>${esc(t(workIntro))}</p>
+      <p class="lbl sec-head__sub" data-seq>${seq(t(workIntro))}</p>
     </header>
     ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, genre: t(p.genre), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
   </section>
@@ -173,14 +181,14 @@ export function render(lang) {
   <section class="work work--research" id="recherche" aria-labelledby="research-t">
     <header class="sec-head wrap">
       <h2 class="disp" id="research-t">${esc(t(ui.research))}</h2>
-      <p class="lbl sec-head__sub" data-reveal>${esc(t(research.intro))}</p>
+      <p class="lbl sec-head__sub" data-seq>${seq(t(research.intro))}</p>
     </header>
     ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), genre: t(r.kind), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
 
   <section class="about wrap" id="a-propos" aria-labelledby="about-t">
     <h2 class="lbl" id="about-t" data-reveal>${esc(t(ui.studio))}</h2>
-    ${about.map((a, k) => `<p data-reveal style="--d:${k * 80}ms">${esc(t(a)).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</p>`).join('')}
+    ${about.map((a) => `<p data-seq>${seq(t(a))}</p>`).join('')}
     <div class="contact" id="contact" data-reveal>
       <h2 class="lbl" id="contact-t">${esc(t(ui.contact))}</h2>
       <a class="mail" href="mailto:${esc(site.email)}" translate="no"><span>${esc(site.email)}</span></a>

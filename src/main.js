@@ -331,6 +331,9 @@ const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
 // même hauteur de cadre pour les deux (celle de HOLO, avec ses capitales) : les lettres gardent la même échelle
 
 const word = null
+// textes des sections : apparition mot à mot quand ils arrivent à l'écran, une seule fois par chargement de page
+{ const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } }), { threshold: 0.35 })
+  document.querySelectorAll('[data-seq]').forEach((el) => io.observe(el)) }
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
 function scrollEffects() {
   const vh = innerHeight
