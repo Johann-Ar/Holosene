@@ -650,3 +650,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* adresse mail : apparition lettre par lettre (même effet), plus serrée */
 .js .mail [data-seq] .w { transition-delay: calc(var(--i, 0) * 22ms); filter: blur(4px); }
 .js .mail [data-seq].in .w { filter: none; }
+
+/* grille : le texte des liens et boutons surlignés tombe exactement sur la marge (le rembourrage du surlignage est
+   compensé ; seul l'aplat déborde, au survol) */
+.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle { margin-inline: -0.32em !important; }
