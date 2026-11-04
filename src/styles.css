@@ -55,7 +55,7 @@ a { color: inherit; }
 .is-loaded .loader { visibility: hidden; }
 /* l'anneau : rayon du relais --r1 (main.js), 60 % pendant le chargement ; anneau du kit (intérieur 0,514 × extérieur),
    roue fixe du kit (--iris-conic). Animations de transformation et d'opacité seulement : fluides même si la page calcule. */
-.loader__o { --r1: 44px; opacity: 0; filter: blur(10px); transition: opacity 0.9s var(--ease-flow), filter 1.1s var(--ease-flow); position: relative; width: calc(var(--r1) * 2); height: calc(var(--r1) * 2); transform: scale(0.6); }
+.loader__o { --r1: 44px; opacity: 0; filter: blur(18px); transition: opacity 0.35s var(--ease-flow), filter 1.2s var(--ease-flow); position: relative; width: calc(var(--r1) * 2); height: calc(var(--r1) * 2); transform: scale(0.6); }
 .loader__ring { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic);
   -webkit-mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%);
           mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%); }
@@ -67,8 +67,8 @@ a { color: inherit; }
 .loader__band { position: absolute; inset: 0; }
 .loader__band > .loader__ring { animation: spin 1.111s linear infinite reverse; }
 /* fermeture (1,3 s) : l'anneau se complète, puis grandit en accélérant (t²) jusqu'au rayon du relais */
-.loader__full { opacity: 0; }
-.loader--closing .loader__full { opacity: 1; transition: opacity 1.3s cubic-bezier(0.45, 0, 0.55, 1); }
+.loader__full { opacity: 0; filter: blur(calc(var(--r1) * 0.4)); }
+.loader--closing .loader__full { opacity: 1; filter: none; transition: opacity 0.35s var(--ease-flow), filter 1.3s cubic-bezier(0.45, 0, 0.55, 1); }   /* l'anneau se complète par le flou */
 .loader--closing .loader__o { transform: scale(1); transition: transform var(--grow, 400ms) cubic-bezier(0.333, 0, 0.667, 0.333) calc(1300ms - var(--grow, 400ms)); }
 /* l'anneau n'apparaît qu'une fois à sa vraie taille (is-ready, main.js), en fondu : aucun saut de taille */
 .loader.is-ready .loader__o { opacity: 1; filter: none; }   /* apparition : fondu et flou, comme les autres éléments */
@@ -604,15 +604,15 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* chargeur : plus l'arc s'amenuise vers sa queue, plus il est flou (cinq tranches qui se fondent l'une dans l'autre, de
    la tête nette au bout très flou) ; chaque tranche est d'abord découpée (.loader__band), puis floutée (.loader__arc) : aucun
    bord net (aucun contour net à peine visible) */
-.loader__arc--k0 > .loader__band { -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 44%, #000 56%, #000 85%, transparent 85.01%); mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 44%, #000 56%, #000 85%, transparent 85.01%); }
-.loader__arc.loader__arc--k1 { filter: blur(calc(var(--r1) * 0.05)); }
-.loader__arc--k1 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 30%, #000 44%, transparent 56%); mask: conic-gradient(transparent 0%, transparent 30%, #000 44%, transparent 56%); }
-.loader__arc.loader__arc--k2 { filter: blur(calc(var(--r1) * 0.1)); }
-.loader__arc--k2 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 18%, #000 30%, transparent 44%); mask: conic-gradient(transparent 0%, transparent 18%, #000 30%, transparent 44%); }
-.loader__arc.loader__arc--k3 { filter: blur(calc(var(--r1) * 0.17)); }
-.loader__arc--k3 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 8%, #000 18%, transparent 30%); mask: conic-gradient(transparent 0%, transparent 8%, #000 18%, transparent 30%); }
-.loader__arc.loader__arc--k4 { filter: blur(calc(var(--r1) * 0.26)); }
-.loader__arc--k4 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, #000 8%, transparent 18%); mask: conic-gradient(transparent 0%, #000 8%, transparent 18%); }
+.loader__arc--k0 > .loader__band { -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 46%, #000 50%, #000 85%, transparent 85.01%); mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(transparent 0%, transparent 46%, #000 50%, #000 85%, transparent 85.01%); }
+.loader__arc.loader__arc--k1 { filter: blur(calc(var(--r1) * 0.06)); }
+.loader__arc--k1 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 32%, #000 36%, #000 46%, transparent 50%); mask: conic-gradient(transparent 0%, transparent 32%, #000 36%, #000 46%, transparent 50%); }
+.loader__arc.loader__arc--k2 { filter: blur(calc(var(--r1) * 0.13)); }
+.loader__arc--k2 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 20%, #000 24%, #000 32%, transparent 36%); mask: conic-gradient(transparent 0%, transparent 20%, #000 24%, #000 32%, transparent 36%); }
+.loader__arc.loader__arc--k3 { filter: blur(calc(var(--r1) * 0.22)); }
+.loader__arc--k3 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, transparent 9%, #000 13%, #000 20%, transparent 24%); mask: conic-gradient(transparent 0%, transparent 9%, #000 13%, #000 20%, transparent 24%); }
+.loader__arc.loader__arc--k4 { filter: blur(calc(var(--r1) * 0.36)); }
+.loader__arc--k4 > .loader__band { -webkit-mask: conic-gradient(transparent 0%, #000 3%, #000 9%, transparent 13%); mask: conic-gradient(transparent 0%, #000 3%, #000 9%, transparent 13%); }
 /* bouton clair / sombre : texte, comme EN / FR (le mode vers lequel on bascule) */
 .theme-toggle { width: auto !important; height: auto !important; font: 800 var(--fs-small)/1.5 var(--font-text); text-transform: uppercase; letter-spacing: 0.02em; padding: 0.12em 0.32em !important; }
 

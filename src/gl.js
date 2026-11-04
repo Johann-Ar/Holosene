@@ -379,7 +379,7 @@ void main() {
   }
   // zones floues : gradient map pondérée par le flou. Clair : les sombres prennent la teinte, les blancs restent blancs ;
   // sombre : l'inverse (les clairs se teintent, le noir reste noir). Puis grain fin, surtout dans les tons moyens.
-  if (m > 0.001) {
+  if (m > 0.001 && (uFx.x > 0.0 || uFx.z > 0.0)) {   // rien à calculer si la colorisation et le grain sont coupés
     float l = dot(col, LUMA), sl = smoothstep(0.0, 1.0, l);
     vec4 bg = bgAt(sp);   // la teinte vient du fond (elle défile avec lui) ; là où le fond est neutre : teintes mouvantes
     vec3 bgTint = mix(bg.rgb, vec3(dot(bg.rgb, LUMA)), uPalTone.x) * uPalTone.y;
@@ -458,7 +458,7 @@ export function createGL(canvas, { reduced }) {
     gl.uniform4f(GU.uPalHue, hueAt(0, ht), hueAt(1, ht), hueAt(2, ht), hueAt(3, ht))
     // formes du fond (même image que la toile de fond) : teinte et intensité tassées dans une seule composante
     const bgd = FX.bg
-    if (bgd.B) {
+    if (bgd.B && FX.colorStrength > 0) {   // formes du fond : seulement si la colorisation est active
       for (let i = 0; i < 14; i++) { const j = i * 4; BG[j] = bgd.B[j]; BG[j + 1] = bgd.B[j + 1]; BG[j + 2] = bgd.B[j + 2]; BG[j + 3] = Math.floor(Math.min(1, bgd.A[i]) * 99) + bgd.B[j + 3] % 1 }
       gl.uniform4fv(GU.uBgB, BG); gl.uniform1f(GU.uBgScroll, bgd.scroll)
     }

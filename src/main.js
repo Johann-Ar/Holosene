@@ -332,6 +332,13 @@ function workFrame(now = performance.now()) {
     // mobile (piste finie) : à l'arrêt, la piste se cale sur la carte la plus proche (toujours centrée) ; PC : défilement
     // libre, les vignettes restent là où le geste les a laissées
     if (r.finite && !r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
+    // PC : léger magnétisme, dans la continuité de l'élan. Une fois le geste fini, la cible (où la piste allait s'arrêter,
+    // inertie comprise) glisse doucement vers la carte la plus proche ; la piste la suit avec sa douceur habituelle
+    if (!r.finite && !r.isDown() && now - r.last > (r.wheel ? 180 : 90)) {
+      const goal = Math.round(r.target / r.step) * r.step
+      r.target += (goal - r.target) * (reduced ? 1 : 1 - Math.exp(-dt / 0.22))
+      r.wheel = false
+    }
     // PC (défilement libre) : quand la piste est entièrement hors de l'écran, elle se recale d'un coup sur la carte la plus
     // proche (personne ne le voit) ; en y revenant, les vignettes sont en place dans la grille
     if (!r.finite && !r.isDown()) {
