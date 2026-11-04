@@ -413,7 +413,22 @@ const word = null
     list[0]._seqGroup = g; io.observe(list[0])
   } }
 const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)')].map((el) => ({ el, words: [...el.querySelectorAll('.w')], on: -1 }))
+// À propos : mots allumés au fil du défilement (comme la présentation de l'accueil), dans l'ordre de lecture ; tout est
+// allumé quand le dernier paragraphe atteint le milieu de l'écran ; en remontant, ils s'éteignent dans l'ordre inverse
+let swWords = null, swOn = -1
+const resetScrollWords = () => { swWords = null; swOn = -1 }
+function scrollWords(vh) {
+  swWords ??= [...document.querySelectorAll('[data-sw] .w')]
+  if (!swWords.length) return
+  const paras = document.querySelectorAll('[data-sw]')
+  const top = paras[0].getBoundingClientRect().top, bottom = paras[paras.length - 1].getBoundingClientRect().bottom
+  // début : le premier paragraphe aux trois quarts de l'écran (après le titre et le texte au-dessus)
+  const p = Math.min(1, Math.max(0, (vh * 0.76 - top) / Math.max(1, bottom - top + vh * 0.26)))
+  const on = Math.round(p * swWords.length)
+  if (on !== swOn) { swWords.forEach((w, i) => w.classList.toggle('on', i < on)); swOn = on }
+}
 function scrollEffects() {
+  scrollWords(innerHeight)
   const vh = innerHeight
   // la bande du bas s'efface en haut de page (mots-clés de l'accueil) et en fin de page (pied de page)
   root.classList.toggle('edge-bottom-off', scrollY < 40 || scrollY + vh > document.documentElement.scrollHeight - 120)
@@ -586,6 +601,8 @@ document.addEventListener('click', async (e) => {
           const lit = root.classList.contains('hero-done') || heroOn > 0
           heroWords = [...el.querySelectorAll('.w')]; heroOn = -1
           if (lit && root.classList.contains('hero-done')) heroWords.forEach((w) => w.classList.add('on'))
+        } else if (el.matches('[data-sw]')) {
+          resetScrollWords()   // À propos : nouveaux mots, rallumés selon le défilement
         } else {
           // textes des sections : rangs des mots dans la section, déjà apparus si la section l'était
           const grp = el.closest('[data-seq-group]') || el.closest('section') || el.parentElement

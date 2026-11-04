@@ -187,7 +187,7 @@ export function render(lang) {
 
   <section class="about wrap" id="a-propos" aria-labelledby="about-t">
     <h2 class="lbl" id="about-t" data-reveal>${esc(t(ui.studio))}</h2>
-    ${about.map((a) => `<p data-seq>${seq(t(a))}</p>`).join('')}
+    ${about.map((a) => `<p data-sw>${seq(t(a))}</p>`).join('')}
     <div class="contact" id="contact" data-reveal>
       <h2 class="lbl" id="contact-t">${esc(t(ui.contact))}</h2>
       <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-seq data-seq-group aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>

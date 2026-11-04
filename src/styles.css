@@ -657,3 +657,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* barre du haut : même écart entre Sombre et EN qu'entre les liens du menu */
 @media (min-width: 641px) { .topbar__tools { gap: clamp(16px, 2.4vw, 34px); } }
+
+/* À propos : mots allumés par le défilement, comme la présentation de l'accueil (main.js, scrollEffects) */
+.js [data-sw] .w { opacity: 0; filter: blur(6px); transition: opacity 0.4s var(--ease-flow), filter 0.5s var(--ease-flow); }
+.js [data-sw] .w.on { opacity: 1; filter: none; }
+@media (prefers-reduced-motion: reduce) { .js [data-sw] .w { opacity: 1; filter: none; transition: none; } }
