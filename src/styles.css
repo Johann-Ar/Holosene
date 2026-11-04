@@ -70,11 +70,17 @@ a { color: inherit; }
 .loader__band { position: absolute; inset: 16.6667%; }
 .loader__band > .loader__ring { animation: spin 1.111s linear infinite reverse; }
 /* fermeture (1,3 s) : l'anneau se complète, puis grandit en accélérant (t²) jusqu'au rayon du relais */
-.loader__full { opacity: 0; filter: blur(calc(var(--r1) * 0.06)); }
+.loader__full { opacity: 0; }
 /* fermeture : l'anneau complet (mêmes couleurs aux mêmes endroits que l'arc) vient remplir le vide de l'arc, net ; le
    halo de la queue s'éteint juste après ; puis l'anneau grandit jusqu'au relais avec le logo */
-.loader--closing .loader__full { opacity: 1; filter: none; transition: opacity 0.55s cubic-bezier(0.33, 0, 0.2, 1), filter 0.55s cubic-bezier(0.33, 0, 0.2, 1); }
-.loader--closing .loader__spin { opacity: 0; transition: opacity 0.4s cubic-bezier(0.33, 0, 0.2, 1) 0.4s; }
+.loader--closing .loader__full { opacity: 1; transition: opacity 0.4s cubic-bezier(0.33, 0, 0.2, 1) 0.22s; }
+/* l'anneau arrive d'abord flou (copie floutée, flou fixe), puis le net le remplace : seule l'opacité varie, animée par la
+   carte graphique (un flou animé serait recalculé par la page, occupée à la fin du chargement : saccades) */
+.loader__soft { position: absolute; inset: -25%; opacity: 0; filter: blur(calc(var(--r1) * 0.09)); pointer-events: none; }
+.loader__soft > .loader__ring { inset: 16.6667%; }
+.loader--closing .loader__soft { animation: loader-soft 0.75s cubic-bezier(0.33, 0, 0.2, 1) forwards; }
+@keyframes loader-soft { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 0; } }
+.loader--closing .loader__spin { opacity: 0; transition: opacity 0.4s cubic-bezier(0.33, 0, 0.2, 1) 0.2s; }
 .loader--closing .loader__o { transform: scale(1); transition: transform var(--grow, 400ms) cubic-bezier(0.333, 0, 0.667, 0.333) calc(1300ms - var(--grow, 400ms)); }
 /* l'anneau n'apparaît qu'une fois à sa vraie taille (is-ready, main.js), en fondu : aucun saut de taille */
 .loader.is-ready .loader__o { opacity: 1; filter: none; }   /* apparition : fondu et flou, comme les autres éléments */
@@ -677,11 +683,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* FR/EN : la langue affichée à l'encre, la barre et l'autre langue en gris (comme les mentions légales) ; le gris suit
    la langue de la page (même balisage dans les deux langues : changement de langue sans rechargement) */
-.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: var(--c-grey-text); transition: color var(--hl-dur) var(--hl-ease); }
+.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 48%, var(--bg)); transition: color var(--hl-dur) var(--hl-ease); }
 .topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: inherit !important; }   /* au survol : FR, / et EN en couleur du fond */
 
-/* touche F maintenue (main.js) : en haut, exactement la bande du bas (hauteur, flou, fondu), à la place du voile clair */
-.f-band .topbar__glass { display: none !important; }
-.f-band body > .edge--top { visibility: visible; height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
-  -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
-:root[data-theme="light"].f-band body > .edge--top { opacity: 1; background: none; }
