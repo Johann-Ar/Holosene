@@ -372,15 +372,14 @@ if (spin?.getContext('2d').createConicGradient) {
       if (reduced) { R0 = R1; growD = 0 }   // animations réduites : l'anneau se remplit sur place, sans croissance
     }
     if (root.classList.contains('is-loaded') && getComputedStyle(spin.parentElement).visibility === 'hidden') return
-    const dt = Math.min(0.05, prev ? (t - prev) / 1000 : 0.016); prev = t
+    const dt = Math.min(1, prev ? (t - prev) / 1000 : 0.016); prev = t   // temps réel (même à faible cadence)
     const el = t - t0
     // progression visée : part des ressources chargées, ou avancée lente vers L.stall si ça cale ; jamais avant minMs
     const real = loaded ? 1 : Math.max(settled / Math.max(tasks.length, 1) * 0.95, L.stall * (1 - Math.exp(-el / L.stallMs)))
     const target = Math.min(real, el / L.minMs)
     // ressort à amortissement critique (pas de dépassement), sans recul
-    const w = 1 / L.spring
-    v += (w * w * (target - p) - 2 * w * v) * dt; if (v < 0) v = 0
-    p = Math.min(1, p + v * dt)
+    const w = 1 / L.spring, n = Math.ceil(dt / 0.008), h = dt / n   // petits pas : stable quelle que soit la cadence
+    for (let i = 0; i < n; i++) { v += (w * w * (target - p) - 2 * w * v) * h; if (v < 0) v = 0; p = Math.min(1, p + v * h) }
     if (loaded && p > 0.998 && !closeAt) { p = 1; closeAt = t; loaderEl?.classList.add('loader--closing') }
     const fe = closeAt ? Math.min(1, (t - closeAt) / L.closeMs) : 0, fes = fe * fe * (3 - 2 * fe)
     const hand = closeAt ? closeAt + Math.max(L.closeMs, growD) : Infinity   // instant du relais
