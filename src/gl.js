@@ -8,6 +8,7 @@
 import { GLASS_GLSL } from './glass.js'
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 import KIT from '../design/logo-kit/tokens/iris.json'
+import { IRIS } from './iris-config.js'
 
 // roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
 // (0 = en haut, sens horaire, y vers le bas). fwidth vient de OES_standard_derivatives (repli : 1 px).
@@ -55,7 +56,7 @@ uniform vec4 uMarkXf;   // accueil : monogramme, centre (px), hauteur (px), rota
 uniform vec4 uEye;      // inutilisé (xy, zw)
 uniform vec3 uInk;      // encre du thème (S du monogramme)
 uniform float uEdgeFloor; // opacité au ras des bords latéraux de la piste (0 en clair : effacement complet)
-uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), inutilisé
+uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), rotation de la roue (rad)
 
 vec2 cover(vec2 p) {
   float s = max(uRes.x / uImg.x, uRes.y / uImg.y);
@@ -90,7 +91,9 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float cov = clamp(sd * upx * uDpr + 0.5, 0.0, 1.0);
     if (cov < 0.001) return vec4(0.0);
     // aplat exact du kit (comme design/logo-kit/ref) : S à l'encre du thème, « o » : roue du kit ; bords nets, sans halo
-    vec3 g = isO ? irisColor(lp - uMono.yz) : uInk;
+    // roue du « o » : orientation du kit au repos ; rotation lente (animation passive), la silhouette ne bouge pas
+    vec2 po = lp - uMono.yz; float ca = cos(uMono.w), sa = sin(uMono.w);
+    vec3 g = isO ? irisColor(vec2(ca * po.x + sa * po.y, -sa * po.x + ca * po.y)) : uInk;
     float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
     float al = cov * shapeRev;
     return vec4(g * cov * shapeRev, al);
@@ -388,7 +391,7 @@ export function createGL(canvas, { reduced }) {
    *  place en ralentissant ; puis, seulement quand le S apparaît, le monogramme glisse jusqu'à sa position.
    *  Ensuite le défilement p le ramène à sa place dans la composition (au-dessus du nom). Renvoie aussi l'apparition du S. */
   const O_OFF = [(MONO_O[0] - MONO_W / 2) / 1000, (MONO_O[1] - 500) / 1000], O_R = KIT.ring.outerRadius * MONO_U / 1000
-  const GROW = 850, SHIFT = 850
+  const GROW = IRIS.intro.grow, SHIFT = IRIS.intro.shift
   const bigOf = (w, h) => Math.min(h * 0.46, w * (w < 760 ? 0.5 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil
   const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * 0.62)   // rayon du « o » au relais avec le chargeur (px)
   function markXf(w, h, p, ms, slot, oc) {
@@ -532,6 +535,10 @@ export function createGL(canvas, { reduced }) {
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
         const xf = markXf(w, h, p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top])
         gl.uniform3f(U.uInk, ...theme.ink)
+        // rotation passive de la roue du « o » : démarre en douceur une fois le logo posé (fin de l'arrivée)
+        const ms = reduced ? 0 : now - v.seen - (IRIS.intro.grow + IRIS.intro.shift)
+        const e = Math.max(0, ms), ramp = Math.min(1, e / IRIS.o.rampMs), ramp3 = ramp * ramp * (3 - 2 * ramp)
+        gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 2 * Math.PI * (e / (IRIS.o.turnSeconds * 1000)) * ramp3)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
       }
       gl.drawArrays(gl.TRIANGLES, 0, 3)
