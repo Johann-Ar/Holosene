@@ -9,6 +9,7 @@ import { GLASS_GLSL } from './glass.js'
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 import KIT from '../design/logo-kit/tokens/iris.json'
 import { IRIS } from './iris-config.js'
+import { FLOW } from './flow.js'
 
 // roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
 // (0 = en haut, sens horaire, y vers le bas). fwidth vient de OES_standard_derivatives (repli : 1 px).
@@ -56,7 +57,8 @@ uniform vec4 uMarkXf;   // accueil : monogramme, centre (px), hauteur (px), rota
 uniform vec4 uEye;      // inutilisé (xy, zw)
 uniform vec3 uInk;      // encre du thème (S du monogramme)
 uniform float uEdgeFloor; // opacité au ras des bords latéraux de la piste (0 en clair : effacement complet)
-uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), rotation de la roue (rad)
+uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), inutilisé
+uniform sampler2D uFlow; // roue animée « flux » (texture 1D du kit, partagée avec le chargeur)
 
 vec2 cover(vec2 p) {
   float s = max(uRes.x / uImg.x, uRes.y / uImg.y);
@@ -70,6 +72,8 @@ float vnoise(vec2 x) {
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
 }
 ${IRIS_GLSL}
+// couleur de la roue « flux » en p (relatif au centre, y vers le bas) : même convention d'angle que irisColor
+vec3 flowColor(vec2 p) { float u = fract((degrees(atan(p.y, p.x)) + 90.0 - 180.0) / 360.0); return texture2D(uFlow, vec2(u, 0.5)).rgb; }
 
 ${GLASS_GLSL}
 // trame en un point : un point par cellule, sa taille suit la lumière de l'image (couleur prémultipliée, alpha).
@@ -91,9 +95,8 @@ vec4 halftoneS(vec2 p, vec2 off) {
     float cov = clamp(sd * upx * uDpr + 0.5, 0.0, 1.0);
     if (cov < 0.001) return vec4(0.0);
     // aplat exact du kit (comme design/logo-kit/ref) : S à l'encre du thème, « o » : roue du kit ; bords nets, sans halo
-    // roue du « o » : orientation du kit au repos ; rotation lente (animation passive), la silhouette ne bouge pas
-    vec2 po = lp - uMono.yz; float ca = cos(uMono.w), sa = sin(uMono.w);
-    vec3 g = isO ? irisColor(vec2(ca * po.x + sa * po.y, -sa * po.x + ca * po.y)) : uInk;
+    // roue du « o » : animation « flux » du kit (les couleurs respirent, rien ne tourne ; au repos : la roue finale)
+    vec3 g = isO ? flowColor(lp - uMono.yz) : uInk;
     float shapeRev = isO ? 1.0 : smoothstep(0.0, 1.0, uReveal);
     float al = cov * shapeRev;
     return vec4(g * cov * shapeRev, al);
@@ -178,7 +181,7 @@ vec3 withLens(vec2 q, vec3 base) {
       // dérivées dans cette branche, où elles ne sont pas fiables)
       float aw = 1.0 / uDpr;
       float ring = smoothstep(uLensO + aw * 0.5, uLensO - aw * 0.5, d) * smoothstep(R - 1.0 - aw * 0.5, R - 1.0 + aw * 0.5, d);
-      col = mix(col, irisColor(lp), ring);
+      col = mix(col, flowColor(lp), ring);
     }
   }
   return col;
@@ -308,9 +311,16 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uMaskB, 5)
   gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 0)
+  // texture du flux (unité 6) : 512 × 1, répétée en u, filtrage linéaire, ré-envoyée quand elle change
+  const flowTex = gl.createTexture(); let flowVer = -1
+  gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, flowTex)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FLOW.size, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, FLOW.lut)
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.REPEAT], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v)
+  gl.uniform1i(U.uFlow, 6)
+  gl.activeTexture(gl.TEXTURE0)
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.enable(gl.SCISSOR_TEST)
 
@@ -456,10 +466,18 @@ export function createGL(canvas, { reduced }) {
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
+    // roue « flux » : nouvelle texture calculée pour cette image (flow.js) → envoyée au GPU
+    // (rattachée à l'unité 6 à chaque image, puis l'unité 0 redevient active : une texture créée ensuite ne doit pas
+    // prendre la place de celle du flux)
+    gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, flowTex)
+    if (FLOW.version !== flowVer) { flowVer = FLOW.version; gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, FLOW.size, 1, gl.RGBA, gl.UNSIGNED_BYTE, FLOW.lut) }
+    gl.activeTexture(gl.TEXTURE0)
+    let flowNeeded = lens.s > 0.01
     if (document.documentElement.classList.contains('fiche-open')) {
       // fiche projet ouverte : le curseur reste toujours visible
       if (lens.hidden) { document.documentElement.classList.remove('lens-on'); lens.hidden = false }
       lens.s = 0
+      FLOW.glNeeds = false
       return
     }
     // la lentille : visible quand le pointeur est sur une carte (pas sur l'accueil)
@@ -499,7 +517,7 @@ export function createGL(canvas, { reduced }) {
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
       const reveal = 1   // vignettes : trame toujours complète (plus d'apparition ni de disparition en noir)
-      if (v.mark) { maskFor(v); if (!v.maskB) continue }
+      if (v.mark) { maskFor(v); if (!v.maskB) continue; flowNeeded = true }
       const hov = !v.mark && hoverDevice && still && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
@@ -556,10 +574,6 @@ export function createGL(canvas, { reduced }) {
         }
         const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
         gl.uniform3f(U.uInk, ...theme.ink)
-        // rotation passive de la roue du « o » : démarre en douceur une fois le logo posé (fin de l'arrivée)
-        const ms = reduced ? 0 : now - v.seen - (IRIS.intro.grow + IRIS.intro.shift)
-        const e = Math.max(0, ms), ramp = Math.min(1, e / IRIS.o.rampMs), ramp3 = ramp * ramp * (3 - 2 * ramp)
-        gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], IRIS.o.freeze ? 0 : 2 * Math.PI * (e / (IRIS.o.turnSeconds * 1000)) * ramp3)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
       }
       gl.drawArrays(gl.TRIANGLES, 0, 3)
@@ -582,6 +596,7 @@ export function createGL(canvas, { reduced }) {
         gl.drawArrays(gl.TRIANGLES, 0, 3)
       }
     }
+    FLOW.glNeeds = flowNeeded   // ni logo ni lentille à l'écran : le flux se met en pause
   }
   document.documentElement.classList.add('has-gl')
   // le logo de l'accueil est prêt (champ de distance chargé dès le départ) : le chargeur attend ce moment, sans quoi le

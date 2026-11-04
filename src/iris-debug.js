@@ -1,23 +1,23 @@
 /**
- * Panneau de réglages ?debug=iris : curseurs sur les valeurs de src/iris-config.js (modifiées en direct), « figer à
- * t = 0 » (roue du « o » à l'orientation du kit) et comparaison avec la référence du kit. Chargé uniquement en
+ * Panneau de réglages ?debug=iris : curseurs sur les valeurs de src/iris-config.js et sur IRIS_FLOW.idle (modifiées en
+ * direct), « figer la roue » (roue finale du kit, sans flux) et comparaison avec la référence du kit. Chargé uniquement en
  * développement (main.js : import.meta.env.DEV) : il n'existe pas dans le site publié.
  */
 import { IRIS } from './iris-config.js'
+import { FLOW, IRIS_FLOW } from './flow.js'
 import refDark from '../design/logo-kit/ref/monogram-iris-dark@2x.png'
 import refLight from '../design/logo-kit/ref/monogram-iris-light@2x.png'
 
 const SLIDERS = [
-  ['o', 'turnSeconds', 'Rotation du « o » : un tour en (s)', 24, 40, 1],
-  ['o', 'rampMs', 'Démarrage de la rotation (ms)', 2000, 6000, 100],
   ['intro', 'grow', 'Croissance du « o » (ms)', 600, 1200, 10],
   ['intro', 'shift', 'Glissement du monogramme (ms)', 600, 1200, 10],
-  ['loader', 'track', 'Piste du chargeur (opacité)', 0.06, 0.08, 0.005],
-  ['loader', 'minMs', 'Durée minimale du chargeur (ms)', 600, 1500, 50],
-  ['loader', 'stall', 'Plafond si le chargement cale', 0.8, 0.95, 0.01],
-  ['loader', 'stallMs', 'Avancée lente si ça cale (ms)', 3000, 10000, 250],
-  ['loader', 'spring', 'Ressort de la progression (s)', 0.1, 0.4, 0.01],
-  ['loader', 'closeMs', 'Fermeture du chargeur (ms)', 250, 500, 10],
+]
+
+// réglages du flux (IRIS_FLOW du kit), dans les plages indiquées en commentaire dans iris-flow.js
+const FLOW_SLIDERS = [
+  ['breath', 'respiration', 0.15, 0.45, 0.01], ['breathPeriod', 'période de respiration (s)', 8, 16, 0.5],
+  ['waves', 'amplitude des vagues', 0.3, 0.8, 0.01], ['waveSpeed', 'vitesse des vagues (tours/s)', 0.02, 0.07, 0.001],
+  ['waveWidth', 'largeur des vagues (couleurs)', 1.2, 2.5, 0.05], ['wander', 'dérive du rose (°)', 0, 8, 0.5],
 ]
 
 export function mountIrisDebug() {
@@ -34,12 +34,22 @@ export function mountIrisDebug() {
     input.addEventListener('input', () => { IRIS[group][key] = Number(input.value); show() })
     show(); row.append(out, input); box.append(row)
   }
-  // figer la roue du « o » à t = 0 (orientation du kit)
+  // flux : réglages « idle » (logo de l'accueil) ; même plages que le kit
+  for (const [key, label, min, max, step] of FLOW_SLIDERS) {
+    const row = document.createElement('label')
+    row.style.cssText = 'display:grid;gap:2px;margin-top:8px'
+    const out = document.createElement('span')
+    const input = Object.assign(document.createElement('input'), { type: 'range', min, max, step, value: IRIS_FLOW.idle[key] })
+    const show = () => { out.textContent = `Flux (idle) — ${label} : ${IRIS_FLOW.idle[key]}` }
+    input.addEventListener('input', () => { IRIS_FLOW.idle[key] = Number(input.value); show() })
+    show(); row.append(out, input); box.append(row)
+  }
+  // figer la roue à t = 0 (amount = 0 : la roue finale du kit)
   const freeze = document.createElement('label')
   freeze.style.cssText = 'display:flex;gap:6px;margin-top:10px'
   const cb = Object.assign(document.createElement('input'), { type: 'checkbox' })
-  cb.addEventListener('change', () => { IRIS.o.freeze = cb.checked })
-  freeze.append(cb, 'Figer le « o » à t = 0')
+  cb.addEventListener('change', () => { FLOW.frozen = cb.checked })
+  freeze.append(cb, 'Figer la roue (roue finale, sans flux)')
   // référence du kit, à comparer avec le logo
   const ref = document.createElement('label')
   ref.style.cssText = 'display:flex;gap:6px;margin-top:6px'
