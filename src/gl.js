@@ -9,6 +9,7 @@ import { GLASS_GLSL } from './glass.js'
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 import KIT from '../design/logo-kit/tokens/iris.json'
 import { IRIS } from './iris-config.js'
+import { FX } from './fx-config.js'
 import { FLOW } from './flow.js'
 
 // roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
@@ -57,6 +58,7 @@ uniform vec4 uMarkXf;   // accueil : monogramme, centre (px), hauteur (px), rota
 uniform vec4 uEye;      // inutilisé (xy, zw)
 uniform vec3 uInk;      // encre du thème (S du monogramme)
 uniform float uEdgeFloor; // opacité au ras des bords latéraux de la piste (0 en clair : effacement complet)
+uniform float uHal;      // halation (fx-config.js)
 uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), inutilisé
 uniform sampler2D uFlow; // roue animée « flux » (texture 1D du kit, partagée avec le chargeur)
 
@@ -202,6 +204,8 @@ void main() {
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + uClip.z, p.x); wR = smoothstep(uClip.y - uClip.z, uClip.y, p.x); }   // côtés : largeur uClip.z (120 px, 28 px sur mobile)
   vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur
+  // halation : l'aspiration varie lentement d'un endroit à l'autre (± uHal), le sombre bave de façon irrégulière
+  suck *= 1.0 + uHal * sin(sc.x * 0.031 + sc.y * 0.017) * sin(sc.y * 0.027 - sc.x * 0.013);
 
   // autour de l'anneau du curseur, la trame est légèrement écartée (perturbation des points)
   vec2 hp = p;
@@ -236,7 +240,31 @@ uniform float uVivid;   // 0 : couleurs telles quelles (sombre), 1 : plus franch
 uniform float uEdgeFloor;
 uniform vec4 uClip;
 uniform vec2 uScrY;   // haut de la vignette à l'écran, hauteur de l'écran (px CSS)
+uniform vec2 uScrX;   // gauche de la vignette à l'écran, largeur de l'écran (px CSS)
+// zones floues (fx-config.js) : force de la couleur, aberration, grain, part colorée du grain ; largeur des zones
+// (côtés de la piste, haut et bas de l'écran : celles des flous CSS) ; graine du grain (ne change qu'au défilement)
+uniform vec4 uFx;
+uniform vec2 uFxZone;
+uniform float uSeed;
+uniform vec3 uPal[4];
+uniform vec4 uPalDeg;   // angle de chaque teinte (degrés, 0 : droite, sens horaire)
 ${IRIS_GLSL}
+const float PI2 = 6.2831853;
+const vec3 LUMA = vec3(0.299, 0.587, 0.114);
+const float DARK_GRAIN = 0.7;      // thème sombre : grain réduit de 30 %
+const float DARK_TINT_GAIN = 2.4;  // thème sombre : les clairs prennent la teinte, éclaircie (le noir reste noir)
+// bruit de tramage « interleaved gradient noise » (Jimenez) : réparti comme un bruit bleu, sans texture, au pixel physique
+float ign(vec2 q) { return fract(52.9829189 * fract(dot(q, vec2(0.06711056, 0.00583715)))); }
+// teinte selon l'angle autour du centre de l'écran (corrigé du format), interpolation douce et cyclique
+vec3 palAt(vec2 sp) {
+  vec2 d = (sp - vec2(uScrX.y, uScrY.y) * 0.5) / vec2(uScrX.y, uScrY.y);
+  float a = mod(degrees(atan(d.y, d.x)), 360.0);
+  vec4 g = uPalDeg;
+  if (a < g.y) return mix(uPal[0], uPal[1], smoothstep(g.x, g.y, a));
+  if (a < g.z) return mix(uPal[1], uPal[2], smoothstep(g.y, g.z, a));
+  if (a < g.w) return mix(uPal[2], uPal[3], smoothstep(g.z, g.w, a));
+  return mix(uPal[3], uPal[0], smoothstep(g.w, 360.0 + g.x, a));
+}
 float sdCard(vec2 p) {
   vec2 q = abs(p - uRes * 0.5) - (uRes * 0.5 - uRadius);
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
@@ -254,6 +282,10 @@ vec3 at(vec2 q) {
 void main() {
   vec2 p = (gl_FragCoord.xy - uOrigin) / uDpr;
   p.y = uRes.y - p.y;
+  // masque des zones floues m : 0 au net, 1 au ras du bord (côtés de la piste, haut et bas de l'écran)
+  vec2 sp = vec2(uScrX.x + p.x, uScrY.x + p.y);   // position du point à l'écran (px CSS)
+  float m = max(1.0 - smoothstep(0.0, uFxZone.y, sp.y), 1.0 - smoothstep(0.0, uFxZone.y, uScrY.y - sp.y));
+  if (uClip.z > 0.0) m = max(m, max(1.0 - smoothstep(uClip.x, uClip.x + uFxZone.x, p.x), smoothstep(uClip.y - uFxZone.x, uClip.y, p.x)));
   // aspiration aux bords, même principe des quatre côtés (décroissance exponentielle, forte au ras du bord seulement) :
   // - bords gauche et droit de la piste : la vignette perd de la hauteur (jusqu'à 8 % sur PC, 12 % sur mobile) ;
   // - haut et bas de l'écran : elle perd de la largeur, dans la même proportion et sur la même zone ;
@@ -274,6 +306,12 @@ void main() {
   float aa = 0.9 / (uDpr * min(sqz, sqx));
   float sd = sdCard(p);
   vec3 col = at(p);
+  // aberration chromatique : rouge et bleu lus de part et d'autre, le long du rayon depuis le centre de l'écran (vert en place)
+  if (m > 0.001 && uFx.y > 0.0) {
+    vec2 dir = normalize(sp - vec2(uScrX.y, uScrY.y) * 0.5 + 1e-4);
+    vec2 off = dir * m * uFx.y * uRes.x;
+    col.r = at(p + off).r; col.b = at(p - off).b;
+  }
   float W = (uClip.z > 0.0 && uClip.z < 25.0) ? 26.0 : 34.0;   // épaisseur du verre (mobile : × 0,75)
   float di = sdInner(p, W);
   float t = di < 0.0 ? 1.0 : clamp(-sd / max(-sd + di, 1e-3), 0.0, 1.0);   // 0 à l'arête, 1 au bord intérieur
@@ -320,6 +358,18 @@ void main() {
     g = mix(g, tint, rim * 0.5 * uGlass);                          // liseré irisé fin le long de l'arête
     col = mix(col, g, 1.0 - smoothstep(0.6, 1.0, t));
   }
+  // zones floues : gradient map pondérée par le flou. Clair : les sombres prennent la teinte, les blancs restent blancs ;
+  // sombre : l'inverse (les clairs se teintent, le noir reste noir). Puis grain fin, surtout dans les tons moyens.
+  if (m > 0.001) {
+    float l = dot(col, LUMA), sl = smoothstep(0.0, 1.0, l);
+    vec3 tint = palAt(sp);
+    vec3 mapped = uVivid > 0.5 ? mix(tint, vec3(1.0), sl) : mix(vec3(0.0), min(tint * DARK_TINT_GAIN, vec3(1.0)), sl);
+    col = mix(col, mapped, m * uFx.x);
+    float w = m * (1.0 - abs(l * 2.0 - 1.0)) * uFx.z * (uVivid > 0.5 ? 1.0 : DARK_GRAIN);
+    vec2 gq = gl_FragCoord.xy + uSeed * vec2(37.0, 17.0);
+    vec3 n = vec3(ign(gq), ign(gq + vec2(13.0, 71.0)), ign(gq + vec2(59.0, 29.0))) - 0.5;
+    col = clamp(col + (vec3(n.x) * (1.0 - uFx.w) + n * uFx.w) * w, 0.0, 1.0);
+  }
   float a = 1.0 - smoothstep(-aa, aa, sd);
   if (uClip.z > 0.0) a *= (uEdgeFloor + (1.0 - uEdgeFloor) * pow(smoothstep(uClip.x, uClip.x + uClip.z, p.x) * (1.0 - smoothstep(uClip.y - uClip.z, uClip.y, p.x)), 0.6));
   gl_FragColor = vec4(col * a, a);
@@ -337,8 +387,9 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow', 'uHal']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uMaskB, 5)
+  gl.uniform1f(U.uHal, FX.halation)
   gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 0)
   // texture du flux (unité 6) : 512 × 1, répétée en u, filtrage linéaire, ré-envoyée quand elle change
   const flowTex = gl.createTexture(); let flowVer = -1
@@ -365,7 +416,25 @@ export function createGL(canvas, { reduced }) {
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPal', 'uPalDeg']) GU[n] = gl.getUniformLocation(gProg, n)
+  // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
+  // défilement pour la graine du grain), aucune allocation par image
+  const PAL = new Float32Array(12), hex3 = (h, o) => { for (let i = 0; i < 3; i++) PAL[o + i] = parseInt(h.slice(1 + i * 2, 3 + i * 2), 16) / 255 }
+  const SEED_STEP = 48   // px de défilement entre deux tirages du grain (grain fixe à l'arrêt)
+  let fxSent = -1, fxW = -1, fxSeed = -1
+  const sendFx = () => {
+    const small = W < 769
+    if (fxSent !== FX.version || fxW !== small) {
+      fxSent = FX.version; fxW = small
+      FX.pal.forEach((c, i) => hex3(c.hex, i * 3))
+      gl.uniform3fv(GU.uPal, PAL); gl.uniform4f(GU.uPalDeg, ...FX.pal.map((c) => c.deg))
+      // franges : jamais sur mobile ni avec animations réduites ; zones : largeurs des flous CSS (côtés, haut et bas)
+      gl.uniform4f(GU.uFx, FX.colorStrength, small || reduced ? 0 : FX.aberration, FX.grain, FX.grainChroma)
+      gl.uniform2f(GU.uFxZone, small ? 21 : 120, small ? 90 : 120)
+    }
+    const seed = reduced ? 0 : Math.floor(scrollY / SEED_STEP) % 97
+    if (seed !== fxSeed) { fxSeed = seed; gl.uniform1f(GU.uSeed, seed) }
+  }
   const fbo = gl.createFramebuffer(), fboTex = gl.createTexture()
   let fboW = 0, fboH = 0
   function ensureFbo(w, h) {
@@ -447,7 +516,10 @@ export function createGL(canvas, { reduced }) {
     // fin : à sa place dans la composition de l'accueil (.hero__slot, au-dessus du nom et de la présentation)
     const q = e(k(0, 0.45))
     let size = big + (slot.h - big) * q
-    let cx = w / 2 + (slot.x - w / 2) * q, cy = h / 2 + (slot.y - h / 2) * q
+    // repos du gros logo : placé pour que son « o » soit exactement à la hauteur du centre de l'écran (là où le chargeur
+    // passe le relais) : au relais, le « o » ne glisse que vers la droite, sans descendre
+    const cy0 = h / 2 - O_OFF[1] * big
+    let cx = w / 2 + (slot.x - w / 2) * q, cy = cy0 + (slot.y - cy0) * q
     // après la scène de l'accueil : en continuant de défiler, le logo rapetisse et rejoint le petit logo de la barre
     // (dock : sa place, dans le repère de la vue, et l'avancée m de 0 à 1)
     if (dock && dock.m > 0) {
@@ -495,7 +567,29 @@ export function createGL(canvas, { reduced }) {
   const follow = (a, b, tau, dt) => a + (b - a) * (1 - Math.exp(-dt / tau))
 
   let last = performance.now(), time = 0
+  // ?debug=perf : temps GPU par image (moyenne de 60 images), et temps JavaScript ; ?fx=0 coupe les zones floues
+  // colorées pour comparer. Le temps GPU demande EXT_disjoint_timer_query (Chrome, Firefox ; pas Safari ni iOS).
+  const perfOn = new URLSearchParams(location.search).get('debug') === 'perf'
+  const tq = perfOn ? gl.getExtension('EXT_disjoint_timer_query') : null
+  const perfQ = [], perfGpu = [], perfJs = []
+  let perfEl = null
+  if (perfOn) { perfEl = document.createElement('div'); perfEl.style.cssText = 'position:fixed;left:8px;bottom:8px;z-index:9999;padding:6px 10px;border-radius:8px;background:rgb(0 0 0 / .8);color:#fff;font:12px/1.4 ui-monospace,monospace;pointer-events:none'; document.body.append(perfEl) }
   function frame(now) {
+    if (!perfOn) return draw(now)
+    const q = tq?.createQueryEXT(); if (q) tq.beginQueryEXT(tq.TIME_ELAPSED_EXT, q)
+    const t0 = performance.now(); draw(now); perfJs.push(performance.now() - t0)
+    if (q) { tq.endQueryEXT(tq.TIME_ELAPSED_EXT); perfQ.push(q) }
+    while (tq && perfQ.length && tq.getQueryObjectEXT(perfQ[0], tq.QUERY_RESULT_AVAILABLE_EXT)) {
+      const q0 = perfQ.shift(); if (!gl.getParameter(tq.GPU_DISJOINT_EXT)) perfGpu.push(tq.getQueryObjectEXT(q0, tq.QUERY_RESULT_EXT) / 1e6); tq.deleteQueryEXT(q0)
+    }
+    if (perfJs.length >= 60) {
+      const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length
+      perfEl.textContent = `GPU ${perfGpu.length ? avg(perfGpu).toFixed(2) + ' ms' : 'non mesurable ici'} · JS ${avg(perfJs).toFixed(2)} ms · zones floues ${FX.colorStrength || FX.grain ? 'actives' : 'coupées (?fx=0)'}`
+      perfJs.length = 0; perfGpu.length = 0
+    }
+  }
+  let halSent = -1
+  function draw(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
@@ -566,6 +660,7 @@ export function createGL(canvas, { reduced }) {
       let x0 = own ? 0 : Math.round(b.left * dpr), y0 = own ? 0 : Math.round((H - b.bottom) * dpr)
       const sx = x0, sy = y0
       gl.useProgram(prog)
+      if (halSent !== FX.version) { halSent = FX.version; gl.uniform1f(U.uHal, FX.halation) }
       if (glassy) {
         // passe 1 : le contenu de la vignette dans la texture intermédiaire
         ensureFbo(pw, ph)
@@ -632,7 +727,8 @@ export function createGL(canvas, { reduced }) {
         gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
-        gl.uniform2f(GU.uScrY, b.top, H)
+        gl.uniform2f(GU.uScrY, b.top, H); gl.uniform2f(GU.uScrX, b.left, W)
+        sendFx()
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 120, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)

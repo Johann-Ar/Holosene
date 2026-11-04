@@ -104,6 +104,7 @@ export function render(lang) {
   <section class="fiche" id="p-${p.slug}" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="p-${p.slug}-t" tabindex="-1">
     <div class="edge edge--top" aria-hidden="true"></div>
     <header class="fiche__head wrap"><div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(5)}</div>
+      <span class="disp fiche__mini" aria-hidden="true">${esc(p.title)}</span>
       <div class="fiche__tools"><a class="fiche__close" href="#${p.research ? 'recherche' : 'projet'}-${p.slug}">${esc(t(ui.close))}</a></div>
     </header>
     <div class="fiche__row">

@@ -5,6 +5,7 @@
  */
 import { IRIS } from './iris-config.js'
 import { FLOW, IRIS_FLOW } from './flow.js'
+import { FX } from './fx-config.js'
 import refDark from '../design/logo-kit/ref/monogram-iris-dark@2x.png'
 import refLight from '../design/logo-kit/ref/monogram-iris-light@2x.png'
 
@@ -42,6 +43,16 @@ export function mountIrisDebug() {
     const input = Object.assign(document.createElement('input'), { type: 'range', min, max, step, value: IRIS_FLOW.idle[key] })
     const show = () => { out.textContent = `Flux (idle) — ${label} : ${IRIS_FLOW.idle[key]}` }
     input.addEventListener('input', () => { IRIS_FLOW.idle[key] = Number(input.value); show() })
+    show(); row.append(out, input); box.append(row)
+  }
+  // zones floues colorées (fx-config.js)
+  for (const [key, label, min, max, step] of [['colorStrength', 'couleur dans le flou', 0, 1, 0.01], ['aberration', 'aberration', 0, 0.01, 0.0005], ['grain', 'grain', 0, 0.15, 0.005], ['grainChroma', 'grain coloré', 0, 1, 0.05], ['halation', 'halation', 0, 0.3, 0.01]]) {
+    const row = document.createElement('label')
+    row.style.cssText = 'display:grid;gap:2px;margin-top:8px'
+    const out = document.createElement('span')
+    const input = Object.assign(document.createElement('input'), { type: 'range', min, max, step, value: FX[key] })
+    const show = () => { out.textContent = `Zones floues — ${label} : ${FX[key]}` }
+    input.addEventListener('input', () => { FX[key] = Number(input.value); FX.version++; show() })
     show(); row.append(out, input); box.append(row)
   }
   // figer la roue à t = 0 (amount = 0 : la roue finale du kit)

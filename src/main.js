@@ -190,6 +190,9 @@ const fiches = [...document.querySelectorAll('.fiche')].map((f) => {
     row.style.transform = wide.matches ? `translate3d(${(-F.x).toFixed(1)}px, 0, 0)` : ''
   }
   f.querySelectorAll('img').forEach((i) => i.addEventListener('load', () => F.measure()))
+  // mobile : une fois le titre passé sous la barre, son rappel compact apparaît dans la barre (à côté de Fermer)
+  const title = f.querySelector('.fiche__title')
+  if (title) new IntersectionObserver(([e]) => f.classList.toggle('is-titled', !e.isIntersecting && e.boundingClientRect.top < 80), { root: f, rootMargin: '-64px 0px 0px 0px' }).observe(title)
   return F
 })
 addEventListener('resize', () => fiches.forEach((F) => F.measure()))
