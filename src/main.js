@@ -106,7 +106,10 @@ function scrollLimit(d) {
   const cap = first ? SCROLL_FIRST : SCROLL_CAP
   d = Math.max(-cap.step, Math.min(cap.step, d))
   const lead = cap.lead * innerHeight
-  return d > 0 ? Math.min(d, Math.max(0, cur + lead - tgt)) : Math.max(d, Math.min(0, cur - lead - tgt))
+  const out = d > 0 ? Math.min(d, Math.max(0, cur + lead - tgt)) : Math.max(d, Math.min(0, cur - lead - tgt))
+  // jamais exactement 0 : sinon Lenis croit qu'il ne se passe rien et laisse le navigateur défiler lui-même (le défilement
+  // natif et le défilement doux se battent : saccades)
+  return out || Math.sign(d) * 1e-3
 }
 // clavier : Espace (Maj+Espace pour remonter), Page suivante / précédente font défiler en douceur de 80 % d'écran, au
 // lieu du saut instantané du navigateur (Lenis ne lisse que la molette et le pavé tactile) ; flèches gauche / droite :
