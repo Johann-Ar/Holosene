@@ -203,7 +203,6 @@ void main() {
     hp = p - lq / max(dl, 1.0) * g * uCell * 1.6;
   }
   vec4 h = halftoneS(hp, suck);
-  if (uLens.z > 0.5) { float dl = length(p - uLens.xy); float g = exp(-max(dl - uLensO, 0.0) / (uLensO * 0.18)) * step(uLensO, dl); h *= 1.0 + 0.35 * g; }
   vec3 col = h.rgb; float a = h.a;
   col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
 
