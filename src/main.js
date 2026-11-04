@@ -5,7 +5,6 @@ import Lenis from 'lenis'
 import { createGL } from './gl.js'
 import { createBackdrop } from './backdrop.js'
 import { IRIS } from './iris-config.js'
-import { heroP, startHeroScene } from './hero-scene.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -331,7 +330,7 @@ function scrollEffects() {
   root.classList.toggle('edge-bottom-off', scrollY < 40 || scrollY + vh > document.documentElement.scrollHeight - 120)
   // accueil épinglé : avancée hp (0 à 1) ; le mot se trace puis se remplit, puis la présentation s'allume
   const hr = hero?.getBoundingClientRect()
-  const hp = hr ? heroP(Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh)))) : 1   // + partie jouée seule après l'intro (hero-scene.js)
+  const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
     const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,3 à 0,58)
@@ -407,13 +406,12 @@ if (introLocked) {
   addEventListener('touchmove', block, { passive: false, capture: true })
   addEventListener('scroll', pin, { passive: true })
   unblock = () => { removeEventListener('wheel', block, { capture: true }); removeEventListener('touchmove', block, { capture: true }); removeEventListener('scroll', pin) }
-} else { root.classList.add('intro-done'); startHeroScene(true) }
+} else root.classList.add('intro-done')
 const endIntro = () => {
   if (root.classList.contains('intro-done')) return
   inertEls.forEach((e) => { e.inert = false }); unblock()
   scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })
   root.classList.remove('intro-lock'); root.classList.add('intro-done')
-  startHeroScene()   // le logo rejoint sa place, le nom se trace, la présentation s'allume
   if (!ficheOf()) lenis?.start()
 }
 const heroImg = document.querySelector('.hero__view img')
@@ -438,6 +436,8 @@ Promise.race([
 let gl = null
 try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (err) { console.warn(err) }
 sizeLoader()
+// le chargeur ne s'affiche qu'une fois à sa taille définitive (image suivante, taille appliquée), en fondu
+requestAnimationFrame(() => requestAnimationFrame(() => loaderEl?.classList.add('is-ready')))
 // fond : formes colorées derrière une plaque dépolie, qui défilent avec la page et réagissent au curseur
 let backdrop = null
 try { backdrop = createBackdrop(document.querySelector('.bg-canvas'), { reduced }) } catch (err) { console.warn(err) }

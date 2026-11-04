@@ -43,7 +43,7 @@ a { color: inherit; }
 .is-loaded .loader { visibility: hidden; }
 /* l'anneau : rayon du relais --r1 (main.js), 60 % pendant le chargement ; anneau du kit (intérieur 0,514 × extérieur),
    roue fixe du kit (--iris-conic). Animations de transformation et d'opacité seulement : fluides même si la page calcule. */
-.loader__o { --r1: 44px; position: relative; width: calc(var(--r1) * 2); height: calc(var(--r1) * 2); transform: scale(0.6); }
+.loader__o { --r1: 44px; opacity: 0; transition: opacity 0.6s var(--ease-flow); position: relative; width: calc(var(--r1) * 2); height: calc(var(--r1) * 2); transform: scale(0.6); }
 .loader__ring { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic);
   -webkit-mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%);
           mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%); }
@@ -57,6 +57,8 @@ a { color: inherit; }
 .loader__full { opacity: 0; }
 .loader--closing .loader__full { opacity: 1; transition: opacity 1.3s cubic-bezier(0.45, 0, 0.55, 1); }
 .loader--closing .loader__o { transform: scale(1); transition: transform var(--grow, 400ms) cubic-bezier(0.333, 0, 0.667, 0.333) calc(1300ms - var(--grow, 400ms)); }
+/* l'anneau n'apparaît qu'une fois à sa vraie taille (is-ready, main.js), en fondu : aucun saut de taille */
+.loader.is-ready .loader__o { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .loader__arc, .loader__arc > .loader__ring { animation: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
@@ -140,8 +142,8 @@ a { color: inherit; }
 
 /* mobile : fondus latéraux de la piste étroits (le titre de la vignette visible reste net) */
 @media (max-width: 768px) {
-  .work__track { --fade: 28px; }
-  .work__pin::before, .work__pin::after { width: 28px; }
+  .work__track { --fade: 21px; }
+  .work__pin::before, .work__pin::after { width: 21px; }
   /* le texte défile juste sous les liens du haut : fondu du haut plus couvrant */
   .edge--top { height: 104px; background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, transparent) 45%, color-mix(in srgb, var(--bg) 40%, transparent) 75%, color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
 }
@@ -167,7 +169,7 @@ a { color: inherit; }
 /* toile WebGL : fixe, derrière tout le contenu ; les vues [data-gl] y sont dessinées à leur place */
 .bg-canvas { position: fixed; inset: 0 0 auto 0; width: 100%; height: 100lvh; z-index: -2; pointer-events: none; }
 /* fond : invisible pendant le chargement, il arrive en fondu une fois tout chargé */
-.js .bg-canvas { opacity: 0; transition: opacity 1.2s var(--ease-flow); }
+.js .bg-canvas { opacity: 0; transition: opacity 2.6s cubic-bezier(0.33, 0, 0.2, 1); }   /* fond : apparition lente et fondue */
 .js.is-loaded .bg-canvas { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .js .bg-canvas { transition: none; } }
 /* la scène d'accueil passe sous la toile WebGL : le logo est dessiné devant le mot HOLO / SENE */
@@ -205,7 +207,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 }
 
 /* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
-.hero { position: relative; height: 150svh; }   /* scène épinglée : nom et présentation se jouent seuls après l'intro (hero-scene.js) ; le défilement fait partir le logo vers la barre */
+.hero { position: relative; height: 280svh; }   /* scène épinglée : le défilement anime le monogramme, puis le mot et la présentation */
 .hero__pin { position: sticky; top: 0; height: 100svh; min-height: 560px; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .hero { height: 100svh; } }
 .hero__view { position: absolute; inset: 0; }
@@ -311,12 +313,17 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .work__nav svg { display: block; transition: transform var(--dur-base) var(--ease-flow); }
 .work__nav[data-dir="1"]:hover svg { transform: translateX(2px); }
 .work__nav[data-dir="-1"]:hover svg { transform: translateX(-2px); }
-/* mobile : vignettes plus petites (62 % de l'écran), exactement centrées, voisines visibles de chaque côté (≈ 60 px) ;
+/* mobile : vignettes carrées (68 % de l'écran), exactement centrées, voisines visibles de chaque côté (≈ 48 px) ;
    piste finie (pas de copies, pas de boucle) ; titre centré, sous-titre plus petit et plus gris */
 @media (max-width: 760px) {
-  .card { width: 62vw; gap: 14px; }
+  .card { width: 68vw; gap: 14px; }
+  .card__media { aspect-ratio: 1; }   /* vignettes carrées sur mobile */
   .work__strip { gap: 14px; }
-  .work__track.wrap { padding-left: 19vw; padding-right: 19vw; }
+  .work__track.wrap { padding-left: 16vw; padding-right: 16vw; }
+  /* flèche de l'accueil : plus grande et plus grasse sur mobile */
+  .hero__cta { width: 72px; height: 72px; }
+  .hero__cta svg { width: 52px; height: 52px; }
+  .hero__cta path { stroke-width: 2.6; }
   .card--copy { display: none; }
   .card__line, .card__line a, .card__line > span { justify-items: center; text-align: center; }
   .card__name { font-size: 1.3rem; }

@@ -9,7 +9,6 @@ import { GLASS_GLSL } from './glass.js'
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 import KIT from '../design/logo-kit/tokens/iris.json'
 import { IRIS } from './iris-config.js'
-import { heroP } from './hero-scene.js'
 import { FLOW } from './flow.js'
 
 // roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
@@ -197,7 +196,7 @@ void main() {
 
   // verre liquide : près des bords de l'écran (haut, bas) et de la piste (gauche, droite), l'image est aspirée vers
   // l'intérieur (on lit l'image plus loin du bord). Aux bords gauche et droit, la vignette perd aussi de la hauteur (passe verre).
-  const float EDGE = 120.0;   // même largeur que les fondus CSS (bord haut en référence)
+  float EDGE = uScr.z < 769.0 ? 90.0 : 120.0;   // haut et bas de l'écran (mobile : × 0,75, comme les autres largeurs d'effet)
   vec2 sc = uScr.xy + p;
   float wT = 1.0 - smoothstep(0.0, EDGE, sc.y), wB = 1.0 - smoothstep(0.0, EDGE, uScr.w - sc.y);
   float wL = 0.0, wR = 0.0;
@@ -259,7 +258,7 @@ void main() {
   // comprimé dans cette hauteur (on lit plus loin de l'axe médian) ; zone : 30 % de la piste, 160 px au plus
   float sqz = 1.0;
   if (uClip.z > 0.0) {
-    float zone = (uClip.y - uClip.x) < 769.0 ? 0.1 * (uClip.y - uClip.x) : min(160.0, 0.3 * (uClip.y - uClip.x));   // mobile : zone trois fois plus étroite
+    float zone = (uClip.y - uClip.x) < 769.0 ? 0.075 * (uClip.y - uClip.x) : min(160.0, 0.3 * (uClip.y - uClip.x));   // mobile : zone étroite
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));   // distance au bord le plus proche de la piste
     sqz = 1.0 - ((uClip.y - uClip.x) < 769.0 ? 0.12 : 0.08) * exp(-d / (0.28 * zone));   // PC : 8 % au plus (mobile 12 %)                // décroissance exponentielle : forte au ras du bord seulement
     p.y = uRes.y * 0.5 + (p.y - uRes.y * 0.5) / sqz;
@@ -267,7 +266,7 @@ void main() {
   float aa = 0.9 / (uDpr * sqz);
   float sd = sdCard(p);
   vec3 col = at(p);
-  float W = 34.0;
+  float W = (uClip.z > 0.0 && uClip.z < 25.0) ? 26.0 : 34.0;   // épaisseur du verre (mobile : × 0,75)
   float di = sdInner(p, W);
   float t = di < 0.0 ? 1.0 : clamp(-sd / max(-sd + di, 1e-3), 0.0, 1.0);   // 0 à l'arête, 1 au bord intérieur
   if (t < 1.0) {
@@ -576,7 +575,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
       gl.uniform1f(U.uEdgeFloor, theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5 ? 1 : 0.12)   // clair : pas d'effacement (flou CSS aux bords)
-      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : v.cell * (W >= 769 ? 1 / 1.15 : 1) * Math.min(1, Math.max(0.55, W / 1100)) * cellScale   /* PC : un cran plus fin (÷ 1,15) ; trame proportionnelle à la largeur d'écran (mobile : 0,55) */)
+      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : v.cell * (W >= 769 ? 1 / 1.15 : 1) * Math.min(1, Math.max(0.45, W / 1100)) * cellScale   /* PC : un cran plus fin (÷ 1,15) ; trame proportionnelle à la largeur d'écran (mobile : 0,45) */)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       // texte de la vignette (unité 3) ; sans texte, l'unité est vidée : elle ne doit jamais désigner la texture dans
@@ -587,13 +586,13 @@ export function createGL(canvas, { reduced }) {
       gl.uniform1f(U.uColor, v.color ? 1 : v.glass)   // au survol : la trame passe en couleur (fondu)
       gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
-      if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 28 : 120, 0)
+      if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 120, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) {
         const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
-        const p = heroP(Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H))))   // même avancée que le texte (hero-scene.js)
+        const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
         // animations réduites : pas de scène de défilement, le logo est d'emblée à sa place (au-dessus du nom)
         // place du petit logo de la barre ; le logo y arrive quand la vue a remonté de (hauteur du logo posé − barre)
@@ -625,7 +624,7 @@ export function createGL(canvas, { reduced }) {
         gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
-        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 28 : 120, 0)
+        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 120, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
       }
