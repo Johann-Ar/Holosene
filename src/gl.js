@@ -153,9 +153,9 @@ vec3 withLens(vec2 q, vec3 base) {
     vec2 lp = q - uLens.xy;
     float d = length(lp);
     if (d < uLensO + 2.0) {
-      // loupe sur le bord intérieur seulement : le centre reste net et non déformé ; dans une bande étroite contre
-      // l'anneau (derniers 30 % du rayon), l'image est lue plus vers le centre (grossie, comme au bord d'une lentille)
-      float k = smoothstep(0.7, 1.0, d / R);
+      // seul effet de la lentille : au bord intérieur, sur une bande étroite contre l'anneau (derniers 20 % du rayon),
+      // l'image est tirée vers le centre ; aucune déformation dans la zone centrale (pas de fisheye)
+      float k = smoothstep(0.8, 1.0, d / R);
       float bend = 0.32 * k * k;
       vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
       vec3 orig = vec3(0.0);
