@@ -92,7 +92,7 @@ a { color: inherit; }
 /* mode clair : verre dépoli de la barre en flou progressif (5 couches empilées, flou doublé à chaque couche de 1 à 16 px, chacune
    visible sur une bande ; le flou croît vers le haut, sans palier) ; il descend sous les liens pour que le dégradé
    finisse en dessous d'eux ; voile léger dégradé par-dessus */
-.topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 48px); z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, white 72%, transparent), color-mix(in srgb, white 34%, transparent) 55%, transparent); }   /* voile blanc : boutons et liens mieux contrastés */
+.topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc((100% + 48px) / 1.5); z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, white 72%, transparent), color-mix(in srgb, white 34%, transparent) 55%, transparent); }   /* voile blanc : boutons et liens mieux contrastés */
 .topbar__glass i { position: absolute; inset: 0; }
 /* voile et flou de la barre : seulement quand le contenu passe dessous (après la scène de l'accueil), en fondu ; sur
    l'accueil (et pendant le chargement), la barre n'a que ses liens */
@@ -106,7 +106,7 @@ a { color: inherit; }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .topbar__glass { display: block; } }
 :root[data-theme="light"] .topbar__glass { display: block; }
 /* grand écran : le flou de la barre s'éteint sur une plus grande hauteur (aucune limite basse visible) */
-@media (min-width: 769px) { .topbar__glass { height: calc(100% + 60px); } }   /* PC : flou de la barre plus court */
+@media (min-width: 769px) { .topbar__glass { height: calc((100% + 60px) / 1.5); } }   /* PC : flou de la barre plus court */
 .brand__mark { height: 48px; width: auto; }   /* PC ; téléphone : 34 px (plus bas) */
 .theme-toggle { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--ink); border-radius: 50%; background: none; color: inherit; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
 .theme-toggle svg { width: 16px; height: 16px; }
@@ -136,8 +136,8 @@ a { color: inherit; }
 
 /* bords de l'écran : le texte s'efface en fondu net ; la déformation « verre liquide » est faite en WebGL sur les images */
 .edge { position: fixed; left: 0; right: 0; z-index: 15; pointer-events: none; transition: opacity var(--dur-base) var(--ease-flow); }
-.edge--top { top: 0; height: 120px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%); }
-@media (min-width: 769px) { .edge--top { height: 96px; } }   /* PC : fondu du haut plus court */
+.edge--top { top: 0; height: 80px; background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%); }
+@media (min-width: 769px) { .edge--top { height: 64px; } }   /* PC : fondu du haut plus court */
 .edge--bottom { bottom: 0; height: 120px; background: linear-gradient(0deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%); }
 .edge-bottom-off .edge--bottom { opacity: 0 !important; }
 /* mode clair : un voile clair en fondu blanchit le contenu ; à la place, flou progressif (backdrop-filter masqué en dégradé,
@@ -158,7 +158,7 @@ a { color: inherit; }
   .work__track { --fade: 21px; }
   .side { width: 21px; }
   /* le texte défile juste sous les liens du haut : fondu du haut plus couvrant */
-  .edge--top { height: 104px; background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, transparent) 45%, color-mix(in srgb, var(--bg) 40%, transparent) 75%, color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
+  .edge--top { height: 69px; background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 92%, transparent) 45%, color-mix(in srgb, var(--bg) 40%, transparent) 75%, color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
 }
 /* écrans tactiles : zones de toucher d'au moins 44 px dans la barre du haut, sans changer le dessin */
 @media (pointer: coarse) {
