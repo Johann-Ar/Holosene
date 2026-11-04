@@ -592,7 +592,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle {
   text-decoration: none; padding: 0.12em 0.32em !important;
   background: linear-gradient(var(--ink), var(--ink)) no-repeat left / 0% 100% !important;
-  transition: background-size var(--hl-dur) var(--hl-ease), color var(--hl-dur) var(--hl-ease) !important; }
+  transition: background-size var(--hl-dur) var(--hl-ease), color var(--hl-dur) var(--hl-ease), filter var(--hl-dur) var(--hl-ease), text-shadow var(--hl-dur) var(--hl-ease) !important; }
 .topbar__nav a:not(.lang):hover, .topbar__nav a:not(.lang):focus-visible, .socials a:hover, .socials a:focus-visible, .foot a:hover, .foot a:focus-visible,
 .mail:hover, .mail:focus-visible, .fiche__close:hover, .fiche__close:focus-visible, .topbar .lang:hover, .topbar .lang:focus-visible,
 .btn--light:hover, .btn--light:focus-visible, .theme-toggle:hover, .theme-toggle:focus-visible, .theme-toggle:active {
@@ -668,8 +668,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 
 /* flèche : cachée pendant le défilement (cta-idle-off, main.js), retour en fondu et flou */
 .cta-idle-off .hero__cta { opacity: 0 !important; filter: blur(6px); visibility: hidden; transition: opacity 0.35s var(--ease-flow), filter 0.35s var(--ease-flow), visibility 0.35s !important; }
-/* survol et appui des boutons : un léger flou passe sur les lettres */
-@keyframes hl-blur { 40% { filter: blur(1.1px); } }
+/* survol et appui des boutons : les lettres deviennent légèrement floues (tant que dure le survol ou l'appui) */
+.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle, .fiche__open, .legal a:not(.btn) { --hl-blur: 0px; }
 .topbar__nav a:not(.lang):hover, .socials a:hover, .foot a:hover, .mail:hover, .fiche__close:hover, .topbar .lang:hover, .btn--light:hover, .theme-toggle:hover, .fiche__open:hover, .legal a:not(.btn):hover,
-.topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { animation: hl-blur 0.45s var(--hl-ease); }
+.topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { text-shadow: 0 0 0.6px currentColor, 0 0 1.4px currentColor; filter: blur(0.55px); }
+@media (hover: none) { .topbar__nav a:not(.lang):hover:not(:active), .socials a:hover:not(:active), .foot a:hover:not(:active), .mail:hover:not(:active), .fiche__close:hover:not(:active), .topbar .lang:hover:not(:active), .btn--light:hover:not(:active), .theme-toggle:hover:not(:active), .fiche__open:hover:not(:active) { text-shadow: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .cta-idle-off .hero__cta { opacity: 1 !important; visibility: visible; filter: none; } }
