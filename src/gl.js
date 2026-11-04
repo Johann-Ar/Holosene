@@ -59,7 +59,6 @@ uniform vec4 uEye;      // inutilisé (xy, zw)
 uniform vec3 uInk;      // encre du thème (S du monogramme)
 uniform float uEdgeFloor; // opacité au ras des bords latéraux de la piste (0 en clair : effacement complet)
 uniform float uHal;      // halation (fx-config.js)
-uniform float uInvT;     // aspiration inversée (touche P)
 uniform vec4 uMono;     // monogramme : largeur (unités), centre du « o » (unités), inutilisé
 uniform sampler2D uFlow; // roue animée « flux » (texture 1D du kit, partagée avec le chargeur)
 
@@ -205,7 +204,6 @@ void main() {
   float wL = 0.0, wR = 0.0;
   if (uClip.z > 0.0) { wL = 1.0 - smoothstep(uClip.x, uClip.x + uClip.z, p.x); wR = smoothstep(uClip.y - uClip.z, uClip.y, p.x); }   // côtés : largeur uClip.z (120 px, 28 px sur mobile)
   vec2 suck = vec2(pow(wL, 2.0) - pow(wR, 2.0), pow(wT, 2.0) - pow(wB, 2.0)) * 60.0;   // aspiration des images vers l'intérieur
-  suck *= 1.0 - 2.5 * uInvT;   // touche P : le contenu est repoussé vers l'extérieur
   // halation : l'aspiration varie lentement d'un endroit à l'autre (± uHal), le sombre bave de façon irrégulière
   suck *= 1.0 + uHal * sin(sc.x * 0.031 + sc.y * 0.017) * sin(sc.y * 0.027 - sc.x * 0.013);
 
@@ -242,7 +240,6 @@ uniform float uVivid;   // 0 : couleurs telles quelles (sombre), 1 : plus franch
 uniform float uEdgeFloor;
 uniform vec4 uClip;
 uniform vec2 uScrY;   // haut de la vignette à l'écran, hauteur de l'écran (px CSS)
-uniform float uInv;   // 0 : aspiration ; 1 : aspiration inversée (touche P maintenue)
 uniform vec2 uScrX;   // gauche de la vignette à l'écran, largeur de l'écran (px CSS)
 // zones floues (fx-config.js) : force de la couleur, aberration, grain, part colorée du grain ; largeur des zones
 // (côtés de la piste, haut et bas de l'écran : celles des flous CSS) ; graine du grain (ne change qu'au défilement)
@@ -319,7 +316,6 @@ void main() {
     float zone = trackW < 769.0 ? 0.075 * trackW : min(75.0, 0.14 * trackW);   // portée : PC 110 px au plus ; mobile, zone étroite
     float k = trackW < 769.0 ? 0.12 : 0.08;
     float d = max(0.0, min(p.x - uClip.x, uClip.y - p.x));             // distance au bord le plus proche de la piste
-    k *= mix(1.0, -3.0, uInv); zone *= mix(1.0, 2.2, uInv);   // touche P maintenue : aspiration inversée, nettement marquée (la vignette gonfle vers le bord)
     sqz = 1.0 - k * exp(-d / (0.28 * zone));
     float dy = max(0.0, min(scrY, uScrY.y - scrY));                     // distance au haut ou au bas de l'écran
     sqx = 1.0 - (k / 1.5) * exp(-dy / (0.28 * zone));   // haut et bas : force ÷ 1,5
@@ -412,7 +408,7 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow', 'uHal', 'uInvT']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow', 'uHal']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uMaskB, 5)
   gl.uniform1f(U.uHal, FX.halation)
   gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 0)
@@ -441,7 +437,7 @@ export function createGL(canvas, { reduced }) {
   const gProg = gl.createProgram()
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
-  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg', 'uInv', 'uBgB', 'uBgScroll']) GU[n] = gl.getUniformLocation(gProg, n)
+  const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg', 'uBgB', 'uBgScroll']) GU[n] = gl.getUniformLocation(gProg, n)
   // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
   // défilement pour la graine du grain), aucune allocation par image
   // teintes : 4 positions sur la roue, tirées au hasard à chaque chargement (un quart de tour d'écart environ, pour rester
@@ -623,15 +619,9 @@ export function createGL(canvas, { reduced }) {
     }
   }
   let halSent = -1
-  // touche P maintenue : l'aspiration des bords s'inverse (en douceur, à l'appui comme au relâchement)
-  let inv = 0, invTarget = 0
-  addEventListener('keydown', (e) => { if (e.code === 'KeyP' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) invTarget = 1 })
-  addEventListener('keyup', (e) => { if (e.code === 'KeyP') invTarget = 0 })
-  addEventListener('blur', () => { invTarget = 0 })
   function draw(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
-    inv = reduced ? invTarget : inv + (invTarget - inv) * (1 - Math.exp(-dt / 0.18))
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
     gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
@@ -701,7 +691,6 @@ export function createGL(canvas, { reduced }) {
       const sx = x0, sy = y0
       gl.useProgram(prog)
       if (halSent !== FX.version) { halSent = FX.version; gl.uniform1f(U.uHal, FX.halation) }
-      gl.uniform1f(U.uInvT, inv)
       if (glassy) {
         // passe 1 : le contenu de la vignette dans la texture intermédiaire
         ensureFbo(pw, ph)
@@ -760,11 +749,8 @@ export function createGL(canvas, { reduced }) {
       if (glassy) {
         // passe 2 : le bord de verre, qui réfracte ce contenu, sur la toile
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-        // aspiration inversée : la vignette peut déborder de son cadre ; on dessine sur une marge autour (sinon coupée)
-        const mx = inv > 0.001 && !own ? Math.ceil(pw * 0.2) : 0, my = inv > 0.001 && !own ? Math.ceil(ph * 0.2) : 0
-        gl.viewport(sx - mx, sy - my, pw + 2 * mx, ph + 2 * my); gl.scissor(Math.max(0, sx - mx), Math.max(0, sy - my), pw + 2 * mx, ph + 2 * my)
+        gl.viewport(sx, sy, pw, ph); gl.scissor(Math.max(0, sx), Math.max(0, sy), pw, ph)
         gl.useProgram(gProg)
-        gl.uniform1f(GU.uInv, own ? 0 : inv)   // aspiration inversée (touche P) : après useProgram, sur le programme du verre
         gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fboTex)
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)

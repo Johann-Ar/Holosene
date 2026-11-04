@@ -541,8 +541,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .work__track { --fade: var(--band); }
 }
 /* grain des flous (même texture que le bord des vignettes), fondu comme son flou ; aucune colorisation */
-.fx { position: absolute; inset: 0; pointer-events: none; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.55; }
-:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { opacity: 0.4; }
+.fx { position: absolute; inset: 0; pointer-events: none; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.28; }   /* discret : se sent plus qu'il ne se voit */
+:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { opacity: 0.2; }
 .edge--top .fx, .topbar__glass .fx { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
 .edge--bottom .fx { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
 
@@ -550,8 +550,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .bg-grain { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.55; }
 :root[data-theme="dark"] .bg-grain { opacity: 0.4; }
 .js .bg-grain { opacity: 0; transition: opacity 2.6s cubic-bezier(0.33, 0, 0.2, 1); }
-.js.is-loaded .bg-grain { opacity: 0.55; }
-:root[data-theme="dark"].js.is-loaded .bg-grain { opacity: 0.4; }
+.js.is-loaded .bg-grain { opacity: 0.28; }
+:root[data-theme="dark"].js.is-loaded .bg-grain { opacity: 0.2; }
 
 /* textes des sections (Projets choisis, Travaux de recherche, À propos) : apparition mot à mot, comme la présentation de
    l'accueil (fondu d'opacité et flou), quand ils arrivent à l'écran ; une seule fois par chargement (main.js) */
