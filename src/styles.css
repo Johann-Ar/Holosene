@@ -536,8 +536,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 @media (min-width: 769px) {
   .side { display: block; }
   .edge--bottom { height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px); }
-  :root[data-theme="dark"] .edge--top { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-  .edge--top { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
   .edge--bottom { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
   :root[data-theme="light"] .edge--bottom { opacity: 1; background: none; }   /* bas : flou plein (le haut garde son fondu d'origine) */
   .work__track { --fade: var(--band); }
@@ -550,7 +548,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* grain : seulement dans les sombres en clair (et les clairs en sombre), comme dans le WebGL */
 .fx::after { content: ''; position: absolute; inset: 0; background: url('/media/grain.png'); mix-blend-mode: lighten; opacity: 0.5; filter: brightness(0.55); }
 :root[data-theme="dark"] .fx::after, :root:not(.theme-chosen) .fiche .fx::after { mix-blend-mode: darken; filter: brightness(1.6); }
-.edge--top .fx, .topbar__glass .fx { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
 .edge--bottom .fx { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
 
 /* fond : même grain que les zones floues, posé sur les couleurs floutées du fond (doux sur le blanc) ; fixe, au pixel */

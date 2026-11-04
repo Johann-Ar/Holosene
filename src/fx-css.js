@@ -28,7 +28,8 @@ const css = (c) => `rgb(${c.map((v) => Math.round(Math.min(1, Math.max(0, v)) * 
 export function startFxCss({ reduced }) {
   const root = document.documentElement
   // un calque .fx dans chaque bande de flou
-  const hosts = [...document.querySelectorAll('.edge, .topbar__glass')]
+  // le haut (barre du menu, fondu du haut) garde son fondu d'origine, sans calque : seulement le bas et les côtés
+  const hosts = [...document.querySelectorAll('.edge--bottom')]
   // côtés des pistes : deux bandes réelles par piste (plus de pseudo-éléments), pour y poser le calque
   const pins = [...document.querySelectorAll('.work__pin')]
   for (const pin of pins) for (const side of ['l', 'r']) { const s = document.createElement('div'); s.className = `side side--${side}`; s.setAttribute('aria-hidden', 'true'); pin.append(s); hosts.push(s) }
