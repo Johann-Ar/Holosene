@@ -116,7 +116,7 @@ a { color: inherit; }
 .topbar__nav a:not(.lang)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1.5px; border-radius: 99px; background: var(--iris-line); clip-path: inset(0 100% 0 0 round 99px); transition: clip-path var(--dur-slow) var(--ease-flow); }
 .topbar__nav a:not(.lang):hover::after, .topbar__nav a:not(.lang):focus-visible::after { clip-path: inset(0 0 0 0 round 99px); }
 .topbar .lang { font: 500 var(--fs-small) var(--font-text); letter-spacing: 0.02em; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 6px 10px; }
-@media (max-width: 640px) { .topbar__nav a[href="#recherche"] { display: none; } .topbar__nav { gap: 14px; font-size: 15px; } .brand__mark { height: 34px; } }
+@media (max-width: 640px) { .topbar__nav { gap: 14px; font-size: 15px; } .brand__mark { height: 34px; } }
 /* mobile : Projets et À propos à gauche (Contact est dans À propos), logo au centre, mode et langue à droite */
 @media (max-width: 640px) { .topbar__nav a[href="#contact"] { display: none; } }
 

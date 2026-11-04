@@ -134,7 +134,7 @@ export function render(lang) {
 <header class="topbar wrap">
   <div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(5)}</div>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
-    <a href="#projets">${esc(t(ui.projects))}</a><a href="#recherche">${esc(t(ui.research))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
+    <a href="#projets">${esc(t(ui.projects))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
   </nav>
   <a href="#top" class="brand" aria-label="Holosene">
     <img class="brand__mark only-dark" draggable="false" src="${root}media/monogram-iris-dark.svg" alt="Holosene" width="470" height="576">
