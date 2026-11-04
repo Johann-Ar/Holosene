@@ -14,11 +14,13 @@ Tout ce qui touche au logo, au « o » irisé ou à l'anneau de la lentille du c
 | Logo / monogramme (web, HTML, SVG) | `design/logo-kit/svg/monogram-*.svg` (copiés dans `public/media/`) |
 | Couleurs de la roue en JS / CSS | `import { IRIS_STOPS, cssConic, sampleIris, irisLUT, IRIS_INNER_RATIO } from 'design/logo-kit/src/iris.js'` |
 | Roue en WebGL / shader | `design/logo-kit/src/iris.glsl` (`irisColor(p)`, `irisRing(p, Ro)`) ou texture 1D `irisLUT()` |
-| Variantes (rotation / importance, animation passive) | `IRIS_VARIANTS[nom]` — mêmes couleurs, même intensité, seule la disposition change |
+| Animation du « o » (passif + loader) | `design/logo-kit/src/iris-flow.js` : `irisFlowLUT(t, cfg)` / `irisFlowCss(t, cfg)`, réglages `IRIS_FLOW.idle` / `.loading`. **Jamais de rotation globale de la roue.** |
+| Variantes figées (planches, usages secondaires) | `IRIS_VARIANTS[nom]` — ne pas s'en servir pour animer le logo |
 | Valeurs brutes | `design/logo-kit/tokens/iris.json` |
+| Variables CSS (dark / light) | `design/logo-kit/tokens/theme.css` |
 
 ### Constantes
-- Dégradé conique : `from 180deg`, sens horaire (0deg = haut). Position 0 = vert (en bas), 0,5 = rose #F42D9D (en haut).
+- Dégradé conique : `from 180deg`, sens horaire (0deg = haut). Position 0 = cyan #2ACCC7 (en bas), 0,5 = rose #FE46A8 (en haut). Roue v2 : 10 teintes sans doublon, surface égale, luminosité rapprochée.
 - Anneau : rayon intérieur = **0,514 × rayon extérieur**.
 - Fonds : dark `#1E1E1E`, light `#F6F5F2`. Encre : blanc sur dark, `#1E1E1E` sur light.
 - Dark et light utilisent **exactement la même roue**.

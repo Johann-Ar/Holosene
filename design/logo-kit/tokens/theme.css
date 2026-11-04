@@ -1,0 +1,50 @@
+/* AUTO-GÉNÉRÉ depuis Figma (01 — Logo final). Ne pas modifier à la main. */
+:root {
+  /* Roue irisée v2 — identique en dark et light */
+  --iris-cyan: #2ACCC7; /* 0° */
+  --iris-bleu: #529DFE; /* 36° */
+  --iris-indigo: #727EFE; /* 72° */
+  --iris-violet: #C357FE; /* 108° */
+  --iris-magenta: #FB35E7; /* 144° */
+  --iris-rose: #FE46A8; /* 180° */
+  --iris-corail: #FF7B3E; /* 216° */
+  --iris-jaune: #DEBA26; /* 252° */
+  --iris-vert-jaune: #7CD84A; /* 288° */
+  --iris-vert: #43DA58; /* 324° */
+  --iris-conic: conic-gradient(from 180deg, #2ACCC7 0deg, #2ACCC7 0.0deg, #33C5D1 6.0deg, #3ABEDB 12.0deg, #41B6E4 18.0deg, #47AEED 24.0deg, #4DA6F6 30.0deg, #529DFE 36.0deg, #5998FE 42.0deg, #5F93FE 48.0deg, #658EFE 54.0deg, #6989FE 60.0deg, #6E83FE 66.0deg, #727EFE 72.0deg, #8379FE 78.0deg, #9174FE 84.0deg, #9F6EFE 90.0deg, #AC67FE 96.0deg, #B860FE 102.0deg, #C357FE 108.0deg, #CD54FA 114.0deg, #D650F6 120.0deg, #DF4BF3 126.0deg, #E945EF 132.0deg, #F23EEB 138.0deg, #FB35E7 144.0deg, #FB3ADD 150.0deg, #FC3DD2 156.0deg, #FC40C8 162.0deg, #FD43BD 168.0deg, #FD45B3 174.0deg, #FE46A8 180.0deg, #FE529A 186.0deg, #FE5D8C 192.0deg, #FE667C 198.0deg, #FE6D6B 204.0deg, #FF7557 210.0deg, #FF7B3E 216.0deg, #FB873B 222.0deg, #F69238 228.0deg, #F19D35 234.0deg, #EBA731 240.0deg, #E5B02C 246.0deg, #DEBA26 252.0deg, #D1C02E 258.0deg, #C3C535 264.0deg, #B4CA3B 270.0deg, #A4CF40 276.0deg, #92D445 282.0deg, #7CD84A 288.0deg, #75D84D 294.0deg, #6CD94F 300.0deg, #64D951 306.0deg, #5AD954 312.0deg, #50DA56 318.0deg, #43DA58 324.0deg, #3ED870 330.0deg, #39D684 336.0deg, #34D497 342.0deg, #30D2A8 348.0deg, #2DCFB8 354.0deg, #2ACCC7 360deg);
+  --iris-inner-ratio: 0.514;
+}
+
+/* Thème dark (défaut) */
+:root, [data-theme="dark"] {
+  --bg: #1E1E1E;
+  --ink: #FFFFFF;
+  --logo-src: url("/media/monogram-iris-dark.svg");
+}
+
+/* Thème light */
+[data-theme="light"] {
+  --bg: #F6F5F2;
+  --ink: #1E1E1E;
+  --logo-src: url("/media/monogram-iris-light.svg");
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F6F5F2;
+    --ink: #1E1E1E;
+    --logo-src: url("/media/monogram-iris-light.svg");
+  }
+}
+
+/* Liseré irisé (validé Figma « Liseré irisé — titre & boutons ») */
+:root, [data-theme="dark"] {
+  --title-fringe: 0 -1px 0 rgb(254 70 168 / .45), 0 1.2px 0 rgb(42 204 199 / .45),
+                  -1.2px 0 0 rgb(159 110 254 / .45), 1.2px 0 0 rgb(180 202 58 / .45),
+                  .9px .9px 0 rgb(90 217 84 / .4);
+  --btn-bg: #FFFFFF; --btn-ink: #000000;
+  --btn-rim: 1.5px; --btn-rim-hover: 2px;
+}
+[data-theme="light"] { --title-fringe: none; --btn-bg: #1E1E1E; --btn-ink: #FFFFFF; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) { --title-fringe: none; --btn-bg: #1E1E1E; --btn-ink: #FFFFFF; }
+}

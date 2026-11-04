@@ -1,0 +1,21 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Roue v2 — animation flux</title>
+<style>
+body{margin:0;background:#1E1E1E;color:#ddd;font:14px system-ui;display:flex;flex-direction:column;align-items:center;gap:24px;padding:40px}
+.row{display:flex;gap:40px;flex-wrap:wrap;justify-content:center}
+.ring{width:260px;height:260px;border-radius:50%;-webkit-mask:radial-gradient(circle,transparent 0 calc(51.4% * .5 * 2 / 2 - .5px),#000 calc(25.7% + .5px) calc(50% - 1px),transparent 50%);mask:radial-gradient(circle,transparent 0 calc(25.7% - .5px),#000 25.7% calc(50% - .5px),transparent 50%)}
+.lbl{text-align:center;margin-top:8px;opacity:.7}
+</style>
+<h2>Roue v2 — animation « flux » (pas de rotation)</h2>
+<div class="row"><div><div id="r0" class="ring"></div><div class="lbl">Repos (logo final)</div></div>
+<div><div id="r1" class="ring"></div><div class="lbl">Passif — idle</div></div>
+<div><div id="r2" class="ring"></div><div class="lbl">Chargement — loading</div></div></div>
+<script type="module">
+import { cssConic } from '../src/iris.js';
+import { irisFlowCss, IRIS_FLOW } from '../src/iris-flow.js';
+const q=new URLSearchParams(location.search), T=q.has('t')?+q.get('t'):null;
+r0.style.background=cssConic();
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function frame(ms){const t=T??ms/1000;r1.style.background=irisFlowCss(t,IRIS_FLOW.idle);r2.style.background=irisFlowCss(t,IRIS_FLOW.loading);if(T==null&&!reduce)requestAnimationFrame(frame);}
+frame(0);
+</script></html>
