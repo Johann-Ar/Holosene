@@ -5,6 +5,7 @@ import Lenis from 'lenis'
 import { createGL } from './gl.js'
 import { createBackdrop } from './backdrop.js'
 import { IRIS } from './iris-config.js'
+import { heroP, startHeroScene } from './hero-scene.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -36,23 +37,19 @@ if (!heroSlot) root.classList.add('brand-on', 'bar-on')
 // avec WebGL, c'est gl.js qui l'affiche, quand le gros logo l'a rejoint ; sans WebGL : dès que le gros logo est sorti
 else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl') && root.classList.contains('intro-done')) { root.classList.toggle('brand-on', !e.isIntersecting); if (!e.isIntersecting) root.classList.add('bar-on') } }).observe(heroSlot)
 
-/* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut). Le bouton force l'autre mode (data-theme sur
-   <html>, mémorisé ; le script inline de <head> l'applique avant le premier rendu). La barre du navigateur suit. */
-const themeBtn = document.querySelector('.theme-toggle'), darkMq = matchMedia('(prefers-color-scheme: dark)')
-const themeNow = () => root.dataset.theme || (darkMq.matches ? 'dark' : 'light')
-function syncTheme() {
-  const t = themeNow()
-  themeBtn?.setAttribute('aria-label', themeBtn.dataset[t === 'light' ? 'dark' : 'light'])
-  if (root.dataset.theme) { const bg = getComputedStyle(root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
-}
-themeBtn?.addEventListener('click', () => {
-  const next = themeNow() === 'light' ? 'dark' : 'light'
-  // revenir au mode de l'appareil efface le choix : le site suit de nouveau l'appareil
-  if (next === (darkMq.matches ? 'dark' : 'light')) { delete root.dataset.theme; store.set('theme', null) } else { root.dataset.theme = next; store.set('theme', next) }
-  syncTheme()
+/* Thème. Sans choix du visiteur : accueil en clair, fiches projet en sombre (CSS). Le bouton (barre du haut ou barre
+   d'une fiche) inverse le mode de la partie où l'on est, et ce mode vaut ensuite pour tout le site (mémorisé). */
+const applyThemeColor = () => { const bg = getComputedStyle(root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
+const themeOf = (el) => (!root.classList.contains('theme-chosen') && el.closest('.fiche') ? 'dark' : root.dataset.theme || 'light')
+const labelThemes = () => document.querySelectorAll('.theme-toggle').forEach((b) => b.setAttribute('aria-label', b.dataset[themeOf(b) === 'light' ? 'dark' : 'light']))
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.theme-toggle')
+  if (!b) return
+  const next = themeOf(b) === 'light' ? 'dark' : 'light'
+  root.dataset.theme = next; root.classList.add('theme-chosen'); store.set('theme', next)
+  labelThemes(); applyThemeColor()
 })
-darkMq.addEventListener?.('change', syncTheme)
-syncTheme()
+labelThemes(); applyThemeColor()
 
 /* Aspiration des images aux bords de l'écran (WebGL), sauf si l'utilisateur réduit les animations. */
 if (!reduced) root.classList.add('liquid')
@@ -74,13 +71,12 @@ document.querySelectorAll('.copy').forEach((b) => {
 
 /* Défilement doux (désactivé si l'utilisateur réduit les animations) ; une seule boucle d'affichage pour le
    défilement et le WebGL, pour que la trame reste collée au texte. */
-// au doigt (syncTouch) : le défilement est aussi piloté par Lenis, dans la même image que le WebGL : les vignettes
-// restent collées à la page (le défilement natif du téléphone, en avance d'une image sur le dessin, les faisait trembler).
-// Un geste qui commence à l'horizontale appartient aux pistes : il ne fait pas défiler la page.
+// au doigt : défilement natif (les vignettes ont alors leur propre image dans la page, gl.js : elles ne traînent pas) ;
+// un geste qui commence à l'horizontale appartient aux pistes : il ne fait pas défiler la page.
 let touchAxis = null
 addEventListener('touchstart', () => { touchAxis = null }, { passive: true, capture: true })
 const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both',   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
-  syncTouch: true, syncTouchLerp: 0.08, touchMultiplier: 1,
+  syncTouch: false,   // au doigt : défilement natif du téléphone (inertie, rebonds, vitesse : ceux du système)
   virtualScroll: ({ deltaX, deltaY, event }) => {
     if (!event.type.includes('touch')) return true
     if (!touchAxis && (deltaX || deltaY)) touchAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'x' : 'y'
@@ -93,12 +89,16 @@ addEventListener('keydown', (e) => {
   if (root.classList.contains('intro-lock') && [' ', 'PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) { e.preventDefault(); return }
   if (!lenis || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || root.classList.contains('fiche-open')) return
   if (e.target.closest?.('input, textarea, select, button, a, [contenteditable], .work__track')) return   // Espace y garde son rôle
-  // flèches gauche / droite : points de la trame des vignettes plus petits / plus gros
-  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); gl?.setCellScale(e.key === 'ArrowRight' ? 1.15 : 1 / 1.15); return }
   const dir = e.key === ' ' ? (e.shiftKey ? -1 : 1) : e.key === 'PageDown' ? 1 : e.key === 'PageUp' ? -1 : 0
   if (!dir) return
   e.preventDefault()
   lenis.scrollTo(lenis.targetScroll + dir * innerHeight * 0.8, { duration: 0.9, easing: (t) => 1 - Math.pow(1 - t, 3) })
+})
+// carte entière cliquable : un toucher (ou clic) sur la carte, hors de ses liens, ouvre sa fiche
+document.addEventListener('click', (e) => {
+  const card = e.target.closest('.card')
+  if (!card || e.target.closest('a')) return
+  card.querySelector('a[href]')?.click()
 })
 document.addEventListener('click', (e) => {
   const a = e.target.closest('a[href^="#"]')
@@ -126,6 +126,11 @@ function syncFiche() {
   root.classList.toggle('fiche-open', !!open)
   document.body.style.overflow = open ? 'hidden' : ''
   if (open) {
+    // ouverture en fondu (CSS) ; une fois arrivée, la fiche n'a plus ni masque ni flou
+    open.classList.remove('is-in')
+    const arrived = (e) => { if (e.target === open && e.animationName === 'curtain-in') { open.classList.add('is-in'); open.removeEventListener('animationend', arrived) } }
+    open.addEventListener('animationend', arrived)
+    setTimeout(() => open.classList.add('is-in'), reduced ? 0 : 1000)   // sécurité si l'événement de fin manque
     lenis?.stop()
     lastFocus ??= document.activeElement
     open.scrollTop = 0
@@ -223,16 +228,19 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
   const track = pin.querySelector('.work__track'), strip = pin.querySelector('.work__strip')
   const originals = [...strip.querySelectorAll('.card')]
   // copies avant et après : cliquables, mais ignorées par le clavier et les lecteurs d'écran
-  const copy = () => originals.map((c) => { const k = c.cloneNode(true); k.removeAttribute('id'); k.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id')); k.setAttribute('aria-hidden', 'true'); k.querySelectorAll('a').forEach((x) => (x.tabIndex = -1)); return k })
+  const copy = () => originals.map((c) => { const k = c.cloneNode(true); k.removeAttribute('id'); k.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id')); k.setAttribute('aria-hidden', 'true'); k.classList.add('card--copy'); k.querySelectorAll('a').forEach((x) => (x.tabIndex = -1)); return k })
   for (let i = 0; i < COPIES; i++) { strip.prepend(...copy()); strip.append(...copy()) }
   const r = { pin, track, strip, originals, x: 0, target: 0, vel: 0, setW: 0, start: 0, n: 0, last: 0 }
+  // mobile : piste finie (copies masquées en CSS) ; elle s'arrête à la première et à la dernière carte
   r.measure = () => {
     const shown = originals.filter((c) => c.offsetParent)
-    r.n = shown.length
-    r.start = shown[0] ? shown[0].offsetLeft - strip.firstElementChild.offsetLeft : 0
     const all = [...strip.children].filter((c) => c.offsetParent)
-    r.setW = all[r.n] ? all[r.n].offsetLeft - all[0].offsetLeft : 0
-    r.step = r.n ? r.setW / r.n : track.clientWidth
+    r.n = shown.length
+    r.finite = all.length === r.n
+    r.start = shown[0] && all[0] ? shown[0].offsetLeft - all[0].offsetLeft : 0
+    r.step = all.length > 1 ? all[1].offsetLeft - all[0].offsetLeft : track.clientWidth
+    r.setW = r.finite ? r.n * r.step : all[r.n] ? all[r.n].offsetLeft - all[0].offsetLeft : 0
+    if (r.finite) { const max = (r.n - 1) * r.step; r.target = Math.min(max, Math.max(0, mod(r.target, r.setW))); r.x = r.target }
   }
   r.measure()
   const nudge = (d) => { r.target = Math.round((r.target + d) / r.step) * r.step; r.last = performance.now() }
@@ -261,7 +269,9 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
     const now = performance.now(), dt = Math.max(1, now - down.pt)
     r.vel = 0.8 * r.vel + 0.2 * (-(e.clientX - down.px) / dt)   // px / ms
     down.px = e.clientX; down.pt = now
-    r.target = r.x = down.t0 - dx; r.last = now
+    let x = down.t0 - dx
+    if (r.finite) { const max = (r.n - 1) * r.step; x = x < 0 ? x * 0.35 : x > max ? max + (x - max) * 0.35 : x }   // butée élastique
+    r.target = r.x = x; r.last = now
   })
   const up = (e) => {
     if (!down || (e.pointerId !== undefined && e.pointerId !== down.id)) return
@@ -286,8 +296,13 @@ function workFrame(now = performance.now()) {
     if (r.track.scrollLeft) r.track.scrollLeft = 0
     // à l'arrêt, la piste se cale doucement sur la carte la plus proche
     if (!r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
+    if (r.finite) {
+      // piste finie : la cible reste entre la première et la dernière carte (dépassement au doigt : voir pointermove)
+      const max = (r.n - 1) * r.step
+      r.target = Math.min(max, Math.max(0, r.target))
+    }
     if (!r.isDown()) r.x += (r.target - r.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.11))
-    const k = mod(r.x, r.setW)
+    const k = r.finite ? r.x : mod(r.x, r.setW)
     r.strip.style.transform = `translate3d(${(-(r.start + k)).toFixed(2)}px, 0, 0)`
   }
 }
@@ -316,7 +331,7 @@ function scrollEffects() {
   root.classList.toggle('edge-bottom-off', scrollY < 40 || scrollY + vh > document.documentElement.scrollHeight - 120)
   // accueil épinglé : avancée hp (0 à 1) ; le mot se trace puis se remplit, puis la présentation s'allume
   const hr = hero?.getBoundingClientRect()
-  const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
+  const hp = hr ? heroP(Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh)))) : 1   // + partie jouée seule après l'intro (hero-scene.js)
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
     const on = Math.round(k(0.5, 0.72) * heroWords.length)   // après le logo (0 à 0,45) et le nom (0,3 à 0,58)
@@ -382,19 +397,23 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 // de la page est inerte (ni clic, ni focus, ni défilement par le focus) ; la page reste en haut.
 const introLocked = !!document.querySelector('.hero') && !reduced && !ficheOf()
 const inertEls = [...document.body.children].filter((e) => !e.matches('.loader, canvas, script, .bg-canvas, .gl-canvas'))
-const locked = () => root.classList.contains('intro-lock')
+let unblock = () => {}
 if (introLocked) {
   root.classList.add('intro-lock'); inertEls.forEach((e) => { e.inert = true })
-  const block = (e) => { if (locked() && e.cancelable) e.preventDefault() }
+  // écouteurs bloquants : retirés dès la fin de l'intro (un écouteur non passif ralentit tout défilement)
+  const block = (e) => { if (e.cancelable) e.preventDefault() }
+  const pin = () => { if (scrollX || scrollY) scrollTo(0, 0) }
   addEventListener('wheel', block, { passive: false, capture: true })
   addEventListener('touchmove', block, { passive: false, capture: true })
-  addEventListener('scroll', () => { if (locked() && (scrollX || scrollY)) scrollTo(0, 0) }, { passive: true })
-} else root.classList.add('intro-done')
+  addEventListener('scroll', pin, { passive: true })
+  unblock = () => { removeEventListener('wheel', block, { capture: true }); removeEventListener('touchmove', block, { capture: true }); removeEventListener('scroll', pin) }
+} else { root.classList.add('intro-done'); startHeroScene(true) }
 const endIntro = () => {
   if (root.classList.contains('intro-done')) return
-  inertEls.forEach((e) => { e.inert = false })
+  inertEls.forEach((e) => { e.inert = false }); unblock()
   scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })
   root.classList.remove('intro-lock'); root.classList.add('intro-done')
+  startHeroScene()   // le logo rejoint sa place, le nom se trace, la présentation s'allume
   if (!ficheOf()) lenis?.start()
 }
 const heroImg = document.querySelector('.hero__view img')

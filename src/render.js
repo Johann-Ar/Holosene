@@ -94,7 +94,7 @@ export function render(lang) {
   <section class="fiche" id="p-${p.slug}" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="p-${p.slug}-t" tabindex="-1">
     <header class="fiche__head wrap"><div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(5)}</div>
       <div><p class="lbl">${esc(t(p.milieu))} · ${esc(p.year)}</p><h2 class="disp" id="p-${p.slug}-t">${esc(p.title)}</h2></div>
-      <a class="fiche__close" href="#${p.research ? 'recherche' : 'projet'}-${p.slug}">${esc(t(ui.close))}</a>
+      <div class="fiche__tools"><button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg></button><a class="fiche__close" href="#${p.research ? 'recherche' : 'projet'}-${p.slug}">${esc(t(ui.close))}</a></div>
     </header>
     <div class="fiche__row">
       <div class="fiche__col">${sect(s.intent, p.intent)}${sect(s.context, p.context)}${sect(s.capture, p.capture)}${sect(s.processing, p.processing)}</div>

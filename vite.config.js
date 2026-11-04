@@ -72,10 +72,10 @@ function themeHead() {
     name: 'theme-head',
     transformIndexHtml(html) {
       const { colors } = JSON.parse(readFileSync(resolve('design/logo-kit/tokens/iris.json'), 'utf8'))
-      const meta = `<meta name="theme-color" content="${colors.bgDark}" media="(prefers-color-scheme: dark)" />
-  <meta name="theme-color" content="${colors.bgLight}" media="(prefers-color-scheme: light)" />`
-      // mode forcé par le bouton, appliqué avant le premier rendu (pas de flash) ; sinon le CSS suit l'appareil
-      const boot = `<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}try{history.scrollRestoration='manual';var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(location.hash&&(!/^#p-/.test(location.hash)||(n&&n.type==='reload')))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours l'accueil, en haut (ni position mémorisée, ni ancre, ni fiche ouverte) ; un lien direct vers une fiche #p-… l'ouvre toujours
+      // site en clair (les fiches projet, en sombre, sont des calques dans la page)
+      const meta = `<meta name="theme-color" content="${colors.bgLight}" />`
+      // par défaut en clair (data-theme="light" dans le HTML) ; le mode choisi au bouton, mémorisé, vaut pour tout le site
+      const boot = `<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;document.documentElement.classList.add('theme-chosen')}}catch(e){}try{history.scrollRestoration='manual';var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(location.hash&&(!/^#p-/.test(location.hash)||(n&&n.type==='reload')))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours l'accueil, en haut (ni position mémorisée, ni ancre, ni fiche ouverte) ; un lien direct vers une fiche #p-… l'ouvre toujours
       return html.replace('</head>', `  ${meta}\n  ${boot}\n</head>`)
     },
   }

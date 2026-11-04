@@ -10,7 +10,7 @@
 :root { --fs-body: 1.1875rem; --fs-small: 0.9375rem; --fs-text: clamp(1.125rem, 1.45vw, 1.35rem);   /* texte courant : un seul style (À propos, présentation, sous-titres, genres) */ --iris: var(--iris-conic); --edge-l: max(var(--edge), env(safe-area-inset-left, 0px)); --edge-r: max(var(--edge), env(safe-area-inset-right, 0px)); }
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
-html { background: var(--bg); -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scrollbar-width: none; }
+html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scrollbar-width: none; }
 html::-webkit-scrollbar { display: none; }
 html.lenis, html.lenis body { height: auto; } .lenis.lenis-smooth { scroll-behavior: auto !important; } .lenis.lenis-stopped { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -91,14 +91,15 @@ a { color: inherit; }
 /* grand écran : le flou de la barre s'éteint sur une plus grande hauteur (aucune limite basse visible) */
 @media (min-width: 769px) { .topbar__glass { height: calc(100% + 120px); } }
 .brand__mark { height: 42px; width: auto; }
+.theme-toggle { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--ink); border-radius: 50%; background: none; color: inherit; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
+.theme-toggle svg { width: 16px; height: 16px; }
+.theme-toggle:hover, .theme-toggle:focus-visible { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 1px var(--ink); }
+.fiche__tools { display: flex; align-items: center; gap: 12px; flex: none; }
 .topbar__nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 34px); font-size: 17px; }
 .topbar__nav a { text-decoration: none; }
 .topbar__nav a:not(.lang) { position: relative; }
 .topbar__nav a:not(.lang)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1.5px; border-radius: 99px; background: var(--iris-line); clip-path: inset(0 100% 0 0 round 99px); transition: clip-path var(--dur-slow) var(--ease-flow); }
 .topbar__nav a:not(.lang):hover::after, .topbar__nav a:not(.lang):focus-visible::after { clip-path: inset(0 0 0 0 round 99px); }
-.theme-toggle { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid var(--ink); border-radius: 50%; background: none; color: inherit; cursor: pointer; transition: background var(--dur-fast), color var(--dur-fast); }
-.theme-toggle svg { width: 16px; height: 16px; }
-.theme-toggle:hover, .theme-toggle:focus-visible { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 1px var(--ink); }
 .topbar .lang { font: 500 var(--fs-small) var(--font-text); letter-spacing: 0.02em; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 6px 10px; }
 @media (max-width: 640px) { .topbar__nav a[href="#recherche"] { display: none; } .topbar__nav { gap: 14px; font-size: 15px; } .brand__mark { height: 34px; } }
 /* mobile : Projets et À propos à gauche (Contact est dans À propos), logo au centre, mode et langue à droite */
@@ -152,16 +153,12 @@ a { color: inherit; }
   .theme-toggle::before, .topbar .lang::before { content: ''; position: absolute; inset: -7px -4px; }
 }
 
-/* téléphone : barre du haut réduite à langue (à gauche), logo (au centre), clair/sombre (à droite) */
+/* téléphone : barre du haut réduite à clair/sombre (bord gauche), logo (au centre), langue (bord droit) */
 @media (max-width: 640px) {
   .topbar__nav { display: none; }
   .topbar__tools { flex: 1; justify-content: space-between; }
-  .topbar .lang { order: -1; }
 }
-/* mobile : vignettes un peu plus petites, centrées dans l'écran */
 @media (max-width: 760px) {
-  .card { width: 76vw; }
-  .work__track.wrap { padding-left: 12vw; padding-right: 12vw; }
   /* pied de page : centré, plus petit */
   .foot { flex-direction: column; justify-content: center; gap: 8px; text-align: center; }
   .foot .lbl { font-size: 13px; }
@@ -182,6 +179,7 @@ a { color: inherit; }
 main { position: relative; }   /* pas de contexte d'empilement : le mot de l'accueil peut passer sous le logo WebGL */
 .foot, main > section:not(.hero) { position: relative; z-index: 1; }
 [data-gl] { position: relative; overflow: hidden; display: block; }
+.gl-card { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }   /* écran tactile : image propre de la vignette (gl.js) */
 [data-gl] > img, [data-gl] > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity var(--dur-slow); }
 .has-gl [data-gl] > img, .has-gl [data-gl] > video { opacity: 0; }
 
@@ -207,7 +205,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 }
 
 /* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
-.hero { position: relative; height: 280svh; }   /* scène épinglée : le défilement anime le monogramme, puis le mot et la présentation */
+.hero { position: relative; height: 150svh; }   /* scène épinglée : nom et présentation se jouent seuls après l'intro (hero-scene.js) ; le défilement fait partir le logo vers la barre */
 .hero__pin { position: sticky; top: 0; height: 100svh; min-height: 560px; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .hero { height: 100svh; } }
 .hero__view { position: absolute; inset: 0; }
@@ -299,6 +297,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .work__track:focus-visible { outline: none; }
 .work__track::-webkit-scrollbar { display: none; }
 .card { flex: 0 0 auto; width: min(84vw, 40vw + 40px, 72svh);   /* la section (titre + piste + noms) tient en un écran */ scroll-snap-align: start; display: grid; gap: 22px; align-content: start; }
+.card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }   /* appui long : ni menu, ni sélection (la vignette passe en couleur) */
 .card__media { aspect-ratio: 16 / 10; border-radius: 26px; background: var(--card-bg); }
 .card__media > img { border-radius: 26px; }
 .has-gl .card__media { background: none; }
@@ -312,7 +311,17 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .work__nav svg { display: block; transition: transform var(--dur-base) var(--ease-flow); }
 .work__nav[data-dir="1"]:hover svg { transform: translateX(2px); }
 .work__nav[data-dir="-1"]:hover svg { transform: translateX(-2px); }
-@media (max-width: 760px) { .card { width: 84vw; } }
+/* mobile : vignettes plus petites (62 % de l'écran), exactement centrées, voisines visibles de chaque côté (≈ 60 px) ;
+   piste finie (pas de copies, pas de boucle) ; titre centré, sous-titre plus petit et plus gris */
+@media (max-width: 760px) {
+  .card { width: 62vw; gap: 14px; }
+  .work__strip { gap: 14px; }
+  .work__track.wrap { padding-left: 19vw; padding-right: 19vw; }
+  .card--copy { display: none; }
+  .card__line, .card__line a, .card__line > span { justify-items: center; text-align: center; }
+  .card__name { font-size: 1.3rem; }
+  .card__genre { font-size: 0.8125rem; line-height: 1.4; color: var(--ink-64); }
+}
 
 /* survol : une ligne irisée fine se trace autour du cadre (pastilles, flèches), puis reste jusqu'à la sortie */
 @property --frame-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
@@ -363,7 +372,14 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* transitions des fiches : un rideau entre par la droite, puis le contenu arrive en séquence ;
    d'un projet à l'autre, l'ancien contenu glisse à gauche sous le nouveau rideau ; à la fermeture, le rideau se retire */
 .fiche:target, .fiche.is-leaving { display: block; }
-.fiche:target { animation: curtain-in 0.95s var(--ease-flow) both; }
+/* ouverture : le bord gauche de la fiche n'est jamais net pendant qu'il avance ; c'est une bande en dégradé d'opacité
+   (18 vw), doublée d'un flou, qui glisse de droite à gauche ; à la fin (is-in, main.js), plus de masque ni de flou */
+@property --cut { syntax: '<length-percentage>'; inherits: true; initial-value: 0%; }
+.fiche:target:not(.is-in) { animation: curtain-in 0.95s var(--ease-flow) both;
+  -webkit-mask: linear-gradient(90deg, transparent calc(var(--cut) - 18vw), #000 var(--cut)); mask: linear-gradient(90deg, transparent calc(var(--cut) - 18vw), #000 var(--cut)); }
+.fiche:target:not(.is-in)::before { content: ''; position: fixed; top: 0; bottom: 0; left: calc(var(--cut) - 18vw); width: 18vw; z-index: 60; pointer-events: none;
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); }
 .fiche:target .fiche__head > *, .fiche:target .fiche__col, .fiche:target .fiche__media > *, .fiche:target .fiche__next { animation: rise 0.9s var(--ease-flow) both; }
 .fiche:target .fiche__head > * { animation-delay: 0.3s; }
 .fiche:target .fiche__col { animation-delay: 0.42s; }
@@ -376,7 +392,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche.is-under { z-index: 49; pointer-events: none; }
 .fiche.is-under .fiche__head, .fiche.is-under .fiche__row { animation: slide-away 0.6s var(--ease-in-out) forwards; }
 .fiche.is-closing { z-index: 51; pointer-events: none; animation: fiche-close 0.6s var(--ease-flow) forwards; }
-@keyframes curtain-in { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+@keyframes curtain-in { from { --cut: calc(100% + 18vw); } to { --cut: 0%; } }
 @keyframes fiche-close { to { opacity: 0; transform: translateX(48px); } }
 @keyframes rise { from { opacity: 0; transform: translateX(56px); } }
 @keyframes slide-away { to { opacity: 0; transform: translateX(-64px); } }
@@ -385,7 +401,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .fiche.is-leaving { display: none; }
 }
 /* en-tête : catégorie, titre et Fermer restent visibles, comme la barre de menu */
-.fiche__head { position: sticky; top: 0; z-index: 3; display: flex; justify-content: space-between; align-items: end; gap: 20px; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 18px; background: linear-gradient(color-mix(in srgb, var(--bg) 96%, transparent) 70%, color-mix(in srgb, var(--bg) 0%, transparent)); }
+.fiche__head { position: sticky; top: 0; z-index: 3; display: flex; justify-content: space-between; align-items: end; gap: 20px; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 12px; background: linear-gradient(color-mix(in srgb, var(--bg) 96%, transparent) 70%, color-mix(in srgb, var(--bg) 0%, transparent)); }
 .fiche__head > div { display: grid; gap: 8px; min-width: 0; }
 .fiche__head h2 { font-size: clamp(1.7rem, 3.4vw, 3rem); }
 .fiche__close { flex: none; font: 400 var(--fs-small) var(--font-text); color: var(--c-white); text-decoration: none; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 16px; }
@@ -425,17 +441,15 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   /* titre de la fiche : même barre que l'accueil. Clair : flou progressif et voile blanc (topbar__glass) ; sombre :
      dégradé couvrant du fond, qui se prolonge sous le titre */
   .fiche__head { background: none; }
-  .fiche__head::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 48px); z-index: -1; pointer-events: none;
-    background: linear-gradient(180deg, var(--bg) calc(100% - 48px), color-mix(in srgb, var(--bg) 70%, transparent) calc(100% - 30px), color-mix(in srgb, var(--bg) 0%, transparent) 100%); }   /* titre sur fond plein, fondu dessous */
-  .fiche__head .topbar__glass { top: 100%; height: 64px; }   /* clair : flou progressif sous le titre */
+  .fiche__head::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 18px); z-index: -1; pointer-events: none;
+    background: linear-gradient(180deg, var(--bg) calc(100% - 18px), color-mix(in srgb, var(--bg) 0%, transparent) 100%); }   /* titre sur fond plein, fondu dessous */
+  .fiche__head .topbar__glass { top: 100%; height: 20px; }   /* clair : flou progressif sous le titre */
   /* titres des rubriques nettement distincts du texte courant */
   .fiche__part { gap: 10px; }
   .fiche__part > h3.lbl { font: 600 1.2rem/1.25 var(--font-display); font-stretch: var(--display-stretch); letter-spacing: var(--display-track); color: var(--ink); }
 }
-/* barre de titre des fiches : le flou n'existe qu'en clair et sur mobile (comme la barre de l'accueil) */
+/* barre de titre des fiches (sombres) : dégradé du fond, sans le flou de la barre claire */
 :root .fiche__head .topbar__glass { display: none; }
-@media (max-width: 768px) and (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .fiche__head .topbar__glass { display: block; } }
-@media (max-width: 768px) { :root[data-theme="light"] .fiche__head .topbar__glass { display: block; } }
 
 /* pages annexes */
 .legal { padding-block: 120px var(--sp-8); max-width: 820px; display: grid; gap: 14px; }

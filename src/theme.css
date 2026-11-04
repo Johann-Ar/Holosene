@@ -22,7 +22,12 @@
 :root[data-theme="light"] { color-scheme: light; --bg: var(--bg-light); --ink: var(--bg-dark); }
 :root[data-theme="dark"] { color-scheme: dark; --bg: var(--bg-dark); --ink: white; }
 
-:root {
+/* par défaut, l'accueil est en clair et les fiches projet en sombre (calque fixe au-dessus de la page), dès leur
+   ouverture, sans transition. Dès que le visiteur choisit un mode (bouton, theme-chosen), il vaut pour tout le site. */
+:root:not(.theme-chosen) .fiche { color-scheme: dark; --bg: var(--bg-dark); --ink: white; }
+
+/* neutres recalculés là où --bg / --ink changent : la page et les fiches */
+:root, .fiche {
   /* neutres dérivés (contrastes vérifiés : texte secondaire ≥ 4,5:1 sur --bg dans les deux modes) */
   --ink-86: color-mix(in srgb, var(--ink) 93%, var(--bg));   /* texte courant (à peine atténué) */
   --ink-64: color-mix(in srgb, var(--ink) 76%, var(--bg));   /* texte secondaire, étiquettes */

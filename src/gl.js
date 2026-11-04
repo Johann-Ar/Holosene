@@ -9,6 +9,7 @@ import { GLASS_GLSL } from './glass.js'
 import KIT_IRIS from '../design/logo-kit/src/iris.glsl?raw'
 import KIT from '../design/logo-kit/tokens/iris.json'
 import { IRIS } from './iris-config.js'
+import { heroP } from './hero-scene.js'
 import { FLOW } from './flow.js'
 
 // roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
@@ -285,17 +286,23 @@ void main() {
     float bend = W * 1.15 * tan(th - tr);                             // déviation (px)
     vec3 g = at(p - n * bend);                                        // une seule lecture : aucune image dédoublée
     vec2 cp = p - uRes * 0.5;
-    vec3 ic = irisAt(uIrisMix.y * (atan(cp.x, -cp.y) / 6.28318) * uIrisMix.z + uIrisMix.x + t * 0.6);
+    // couleurs du bord mêlées : moyenne de trois lectures voisines sur la roue (passages plus fondus d'une teinte à l'autre)
+    float ia = uIrisMix.y * (atan(cp.x, -cp.y) / 6.28318) * uIrisMix.z + uIrisMix.x + t * 0.6;
+    vec3 ic = (irisAt(ia - 0.07) + irisAt(ia) * 2.0 + irisAt(ia + 0.07)) * 0.25;
     // fond clair : couleurs de la roue plus franches (écart à leur gris de même luminance accentué, jamais plus sombres)
     ic = clamp(mix(vec3(dot(ic, vec3(0.2126, 0.7152, 0.0722))), ic, 1.0 + 0.35 * uVivid), 0.0, 1.0);
     vec3 tint = mix(vec3(1.0), ic, uGlass);
     // la couleur n'est plus appliquée à l'image (sinon une image claire se colore sur toute l'épaisseur du verre) :
     // elle n'est portée que par la lumière du verre, d'une largeur fixe, identique sur image claire ou sombre
     // l'image sous le verre est aussi teintée, plus fort vers l'arête (décroissance rapide : reste fin sur image claire)
-    g = g * mix(vec3(1.0), tint * 1.15, 0.9 * pow(s1, 1.1)) + tint * 0.14 * s1 * uGlass;
+    // la couleur décroît de façon exponentielle depuis l'arête : très colorée au ras du bord, vite plus légère vers
+    // l'intérieur (épaisseur de couleur fondue)
+    float dEdge = max(0.0, -sd);
+    float cx = exp(-dEdge / 7.0);
+    g = g * mix(vec3(1.0), tint * 1.15, 0.95 * cx) + tint * 0.16 * cx * uGlass;
     float rim = exp(-abs(sd + 1.5) / 1.6);
     // entre-deux : une bande irisée de largeur fixe (≈ 9 px depuis l'arête), même sur image claire
-    float band9 = 1.0 - smoothstep(4.0, 11.0, -sd);
+    float band9 = exp(-dEdge / 4.0);   // bande irisée au ras de l'arête, décroissance exponentielle
     g = mix(g, g * tint * 1.15 + tint * 0.12, band9 * 0.45 * uGlass);
     g *= 0.62 + 0.38 * smoothstep(0.0, 0.75, t);       // le verre assombrit un peu (visible sur les images claires)
     vec2 L = normalize(vec2(-0.65, -0.76));
@@ -373,10 +380,19 @@ export function createGL(canvas, { reduced }) {
   const ptr = { x: -1e4, y: -1e4, t: -1e9, touch: false }
   const move = (x, y, touch) => { ptr.x = x; ptr.y = y; ptr.t = performance.now(); ptr.touch = touch }
   addEventListener('pointermove', (e) => move(e.clientX, e.clientY, e.pointerType === 'touch'), { passive: true })
+  // au doigt : tant qu'on appuie sur une vignette (toucher, appui long), elle passe en couleur comme au survol ;
+  // un défilement ou un glissement (pointercancel) l'arrête
+  addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') { move(e.clientX, e.clientY, true); ptr.down = true } }, { passive: true })
+  for (const t of ['pointerup', 'pointercancel']) addEventListener(t, (e) => { if (e.pointerType === 'touch') ptr.down = false }, { passive: true })
   addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY, true) }, { passive: true })
   addEventListener('touchstart', (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY, true) }, { passive: true })
   document.documentElement.addEventListener('pointerleave', () => { ptr.t = -1e9 })
 
+  // écran tactile : défilement natif du téléphone (en avance d'une image sur le dessin). Les vignettes n'y sont pas
+  // dessinées sur la toile fixe (elles traîneraient d'une image derrière la page) mais copiées dans leur propre image,
+  // dans la page ; le logo de l'accueil, fixe pendant sa scène, reste sur la toile
+  const detached = matchMedia('(hover: none) and (pointer: coarse)').matches
+  let order = null
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
     const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0, color: el.hasAttribute('data-color'), text: el.dataset.text || '', textTex: null, textKey: '',
       mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
@@ -520,7 +536,8 @@ export function createGL(canvas, { reduced }) {
     const hide = sc > 0.02 && hoverDevice && !ptr.touch && !onCtl   // tant que le « o » est visible, sauf sur un bouton
     if (hide !== lens.hidden) { document.documentElement.classList.toggle('lens-on', hide); lens.hidden = hide }
 
-    for (const v of views) {
+    order ??= detached ? [...views.filter((v) => !v.mark), ...views.filter((v) => v.mark)] : views   // tactile : vignettes d'abord, logo ensuite
+    for (const v of order) {
       const b = v.el.getBoundingClientRect()
       if (!v.ready || b.bottom < 0 || b.top > H || b.right < 0 || b.left > W || b.width < 2) continue
       const cr = v.clip?.getBoundingClientRect()
@@ -533,12 +550,13 @@ export function createGL(canvas, { reduced }) {
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
       const reveal = 1   // vignettes : trame toujours complète (plus d'apparition ni de disparition en noir)
       if (v.mark) { maskFor(v); if (!v.maskB) continue; flowNeeded = true }
-      const hov = !v.mark && hoverDevice && still && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
+      const hov = !v.mark && ((hoverDevice && still) || (ptr.touch && ptr.down)) && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
 
       const pw = Math.round(w * dpr), ph = Math.round(h * dpr)
       const glassy = v.radius > 0
-      let x0 = Math.round(b.left * dpr), y0 = Math.round((H - b.bottom) * dpr)
+      const own = detached && !v.mark   // vignette dessinée dans sa propre image (écran tactile), voir plus bas
+      let x0 = own ? 0 : Math.round(b.left * dpr), y0 = own ? 0 : Math.round((H - b.bottom) * dpr)
       const sx = x0, sy = y0
       gl.useProgram(prog)
       if (glassy) {
@@ -558,7 +576,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform2f(U.uCanvas, canvas.width, canvas.height)
       gl.uniform2f(U.uRes, w, h); gl.uniform2f(U.uOrigin, x0, y0); gl.uniform2f(U.uImg, v.img[0], v.img[1])
       gl.uniform1f(U.uEdgeFloor, theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5 ? 1 : 0.12)   // clair : pas d'effacement (flou CSS aux bords)
-      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : v.cell * Math.min(1, Math.max(0.55, W / 1100)) * cellScale   /* trame proportionnelle à la largeur d'écran (mobile : 0,55) */)
+      gl.uniform1f(U.uDpr, dpr); gl.uniform1f(U.uCell, v.mark ? 6 : v.cell * (W >= 769 ? 1 / 1.15 : 1) * Math.min(1, Math.max(0.55, W / 1100)) * cellScale   /* PC : un cran plus fin (÷ 1,15) ; trame proportionnelle à la largeur d'écran (mobile : 0,55) */)
       gl.uniform1f(U.uReveal, reveal); gl.uniform1f(U.uFade, v.fade ? 1 : 0); gl.uniform1f(U.uHasMask, v.mark ? 1 : 0)
       gl.uniform1f(U.uFloor, v.mark ? 0.6 : 0); gl.uniform1f(U.uRadius, glassy ? 1 : 0)
       // texte de la vignette (unité 3) ; sans texte, l'unité est vidée : elle ne doit jamais désigner la texture dans
@@ -575,7 +593,7 @@ export function createGL(canvas, { reduced }) {
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) {
         const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
-        const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
+        const p = heroP(Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H))))   // même avancée que le texte (hero-scene.js)
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
         // animations réduites : pas de scène de défilement, le logo est d'emblée à sa place (au-dessus du nom)
         // place du petit logo de la barre ; le logo y arrive quand la vue a remonté de (hauteur du logo posé − barre)
@@ -610,6 +628,14 @@ export function createGL(canvas, { reduced }) {
         if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 28 : 120, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
+      }
+      if (own) {
+        // écran tactile : la vignette, dessinée dans le coin de la toile, est copiée dans sa propre image, placée dans la
+        // page : elle défile avec la page (défilement natif du téléphone), sans aucun décalage ; le coin est ensuite effacé
+        if (!v.cv) { v.cv = Object.assign(document.createElement('canvas'), { className: 'gl-card' }); v.cv.setAttribute('aria-hidden', 'true'); v.el.append(v.cv); v.cx = v.cv.getContext('2d') }
+        if (v.cv.width !== pw || v.cv.height !== ph) { v.cv.width = pw; v.cv.height = ph } else v.cx.clearRect(0, 0, pw, ph)
+        v.cx.drawImage(canvas, 0, canvas.height - ph, pw, ph, 0, 0, pw, ph)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.scissor(0, 0, pw, ph); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
       }
     }
     FLOW.glNeeds = flowNeeded   // ni logo ni lentille à l'écran : le flux se met en pause
