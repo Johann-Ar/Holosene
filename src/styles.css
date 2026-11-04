@@ -72,8 +72,8 @@ a { color: inherit; }
 .topbar__glass i:nth-child(5) { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); -webkit-mask: linear-gradient(to top, transparent 80%, #000 100%); mask: linear-gradient(to top, transparent 80%, #000 100%); }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .topbar__glass { display: block; } }
 :root[data-theme="light"] .topbar__glass { display: block; }
-.brand__mark { height: 32px; width: auto; }
-.topbar__nav { display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); font-size: 14px; }
+.brand__mark { height: 42px; width: auto; }
+.topbar__nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 34px); font-size: 17px; }
 .topbar__nav a { text-decoration: none; }
 .topbar__nav a:not(.lang) { position: relative; }
 .topbar__nav a:not(.lang)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1.5px; border-radius: 99px; background: var(--iris-line); clip-path: inset(0 100% 0 0 round 99px); transition: clip-path var(--dur-slow) var(--ease-flow); }
@@ -82,7 +82,7 @@ a { color: inherit; }
 .theme-toggle svg { width: 16px; height: 16px; }
 .theme-toggle:hover, .theme-toggle:focus-visible { background: var(--ink); color: var(--bg); box-shadow: 0 0 0 1px var(--ink); }
 .topbar .lang { font: 500 var(--fs-small) var(--font-text); letter-spacing: 0.02em; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 6px 10px; }
-@media (max-width: 640px) { .topbar__nav a[href="#recherche"] { display: none; } .topbar__nav { gap: 12px; font-size: 13px; } .brand__mark { height: 28px; } }
+@media (max-width: 640px) { .topbar__nav a[href="#recherche"] { display: none; } .topbar__nav { gap: 14px; font-size: 15px; } .brand__mark { height: 34px; } }
 /* mobile : Projets et À propos à gauche (Contact est dans À propos), logo au centre, mode et langue à droite */
 @media (max-width: 640px) { .topbar__nav a[href="#contact"] { display: none; } }
 
@@ -298,6 +298,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .socials a::before, .foot a::before { content: ''; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; border-radius: 99px; background: var(--iris-line); opacity: 0; z-index: 1; transition: opacity var(--dur-base) var(--ease-flow); }
 .socials a:hover::before, .socials a:focus-visible::before, .foot a:hover::before, .foot a:focus-visible::before { opacity: 1; }
 .socials a:hover::after, .foot a:hover::after { opacity: 0; }
+.foot .lbl { font: 400 var(--fs-small)/1.45 var(--font-text); color: var(--c-grey-text); }   /* pied de page : taille d'avant (petite) */
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 28px calc(28px + env(safe-area-inset-bottom, 0px)); }
 
 /* fiches projet : ouvertes par l'ancre (:target), sans JavaScript ; le script ajoute focus, Échap et le défilement */

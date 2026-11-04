@@ -32,13 +32,6 @@
   --ink-6: color-mix(in srgb, var(--ink) 6%, var(--bg));     /* surfaces */
   /* vignettes : tuiles sombres dans les deux modes (les images y sont rendues en points clairs) */
   --card-bg: var(--bg-dark);
-}
-/* mode clair : tuiles d'un gris anthracite (#383838 = uBg 0,22 de gl.js), noir et blanc plus clair */
-:root { --card-bg: #383838; }
-@media (prefers-color-scheme: dark) { :root { --card-bg: var(--bg-dark); } }
-:root[data-theme="light"] { --card-bg: #383838; }
-:root[data-theme="dark"] { --card-bg: var(--bg-dark); }
-:root {
   /* anciens noms de brand/tokens.css (encore utilisés par les styles du site) : redirigés vers le thème */
   --c-black-deep: var(--bg);
   --c-black: var(--bg);
