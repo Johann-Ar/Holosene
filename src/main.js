@@ -657,3 +657,8 @@ addEventListener('popstate', () => { if (location.pathname !== shownPath) locati
     root.classList.add('cta-idle-off'); clearTimeout(t)
     t = setTimeout(() => root.classList.remove('cta-idle-off'), 2600)
   }, { passive: true }) }
+
+/* Touche F maintenue : en haut, la même bande que celle du bas, à la place du voile clair (styles.css, .f-band) */
+addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('f-band') })
+addEventListener('keyup', (e) => { if (e.code === 'KeyF') root.classList.remove('f-band') })
+addEventListener('blur', () => root.classList.remove('f-band'))

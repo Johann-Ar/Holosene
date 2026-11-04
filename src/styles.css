@@ -662,7 +662,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* survol et appui des boutons : une lueur blanche légère autour des lettres (tant que dure le survol ou l'appui) */
 .topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle, .fiche__open, .legal a:not(.btn) { --hl-blur: 0px; }
 .topbar__nav a:not(.lang):hover, .socials a:hover, .foot a:hover, .mail:hover, .fiche__close:hover, .topbar .lang:hover, .btn--light:hover, .theme-toggle:hover, .fiche__open:hover, .legal a:not(.btn):hover,
-.topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { text-shadow: 0 0 6px rgb(255 255 255 / 0.32), 0 0 16px rgb(255 255 255 / 0.18); }   /* lueur blanche, légère, autour des lettres (pas de flou) */
+.topbar__nav a:not(.lang):active, .socials a:active, .foot a:active, .mail:active, .fiche__close:active, .topbar .lang:active, .btn--light:active, .theme-toggle:active, .fiche__open:active { text-shadow: 0 0 2.5px color-mix(in srgb, currentColor 55%, transparent), 0 0 7px rgb(255 255 255 / 0.28), 0 0 16px rgb(255 255 255 / 0.15); }   /* entre-deux : un soupçon de flou des lettres et une lueur blanche douce */
 @media (hover: none) { .topbar__nav a:not(.lang):hover:not(:active), .socials a:hover:not(:active), .foot a:hover:not(:active), .mail:hover:not(:active), .fiche__close:hover:not(:active), .topbar .lang:hover:not(:active), .btn--light:hover:not(:active), .theme-toggle:hover:not(:active), .fiche__open:hover:not(:active) { text-shadow: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .cta-idle-off .hero__cta { opacity: 1 !important; visibility: visible; filter: none; } }
 
@@ -679,3 +679,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
    la langue de la page (même balisage dans les deux langues : changement de langue sans rechargement) */
 .topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: var(--c-grey-text); transition: color var(--hl-dur) var(--hl-ease); }
 .topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: inherit; }
+
+/* touche F maintenue (main.js) : en haut, exactement la bande du bas (hauteur, flou, fondu), à la place du voile clair */
+.f-band .topbar__glass { display: none !important; }
+.f-band body > .edge--top { visibility: visible; height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+  -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
+:root[data-theme="light"].f-band body > .edge--top { opacity: 1; background: none; }
