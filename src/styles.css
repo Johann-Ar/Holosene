@@ -619,3 +619,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* Copier l'adresse : sans fond ni contour au repos ; au survol, le surlignage */
 .btn--light.copy { color: var(--ink) !important; background: linear-gradient(var(--ink), var(--ink)) no-repeat left / 0% 100% !important; }
 .btn--light.copy:hover, .btn--light.copy:focus-visible, .btn--light.copy:active { color: var(--bg) !important; background-size: 100% 100% !important; }
+
+/* liens du menu du haut : même typo que EN / Sombre (capitales grasses) */
+.topbar__nav a:not(.lang) { font: 800 var(--fs-small)/1.5 var(--font-text) !important; text-transform: uppercase; letter-spacing: 0.02em; }
