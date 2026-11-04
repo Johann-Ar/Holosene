@@ -2,8 +2,8 @@
  * Bandes de flou CSS (haut et bas de l'écran, barre du haut, côtés des pistes, haut des fiches) : même grain et même
  * colorisation que le bord des vignettes (WebGL), avec les mêmes teintes vivantes (fx-config.js, hueAt).
  * - Chaque bande reçoit un calque .fx : un dégradé dont les couleurs sont lues dans le fond, aux endroits que couvre
- *   la bande (elles défilent donc avec le fond), fondu en « écran » (clair : les sombres se teintent, les blancs restent blancs)
- *   ou en « produit » (sombre : les clairs se teintent, le noir reste noir), et le grain (texture en tuile).
+ *   la bande (elles défilent donc avec le fond), fondu en « éclaircir » (clair : seuls les sombres se teintent, les blancs restent blancs)
+ *   ou en « assombrir » (sombre : les clairs se teintent, le noir reste noir), et le grain (texture en tuile).
  * - Côtés des pistes : leur fondu vertical est le complément exact de celui des bandes haut et bas ; dans les coins, les
  *   deux se relaient au lieu de se superposer (un seul flou continu).
  * Les couleurs sont recalculées à chaque défilement et environ 8 fois par seconde, seulement sur ces calques.

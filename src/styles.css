@@ -543,9 +543,13 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .work__track { --fade: var(--band); }
 }
 /* calque de grain et de couleur : les couleurs viennent du fond, aux endroits couverts par la bande (fx-css.js) */
-.fx { position: absolute; inset: 0; pointer-events: none; opacity: var(--fx-a, 0); mix-blend-mode: screen; }   /* dégradé posé par fx-css.js (couleurs du fond) */
-:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { mix-blend-mode: multiply; }
-.fx::after { content: ''; position: absolute; inset: 0; background: url('/media/grain.png'); mix-blend-mode: soft-light; opacity: 0.7; }
+/* clair : « éclaircir » ne change que ce qui est plus sombre que la teinte (les formes sombres) ; le fond clair reste
+   intact. Sombre : « assombrir », l'inverse (seules les formes claires se teintent, le noir reste noir). */
+.fx { position: absolute; inset: 0; pointer-events: none; opacity: var(--fx-a, 0); mix-blend-mode: lighten; }   /* dégradé posé par fx-css.js (couleurs du fond) */
+:root[data-theme="dark"] .fx, :root:not(.theme-chosen) .fiche .fx { mix-blend-mode: darken; }
+/* grain : seulement dans les sombres en clair (et les clairs en sombre), comme dans le WebGL */
+.fx::after { content: ''; position: absolute; inset: 0; background: url('/media/grain.png'); mix-blend-mode: lighten; opacity: 0.5; filter: brightness(0.55); }
+:root[data-theme="dark"] .fx::after, :root:not(.theme-chosen) .fiche .fx::after { mix-blend-mode: darken; filter: brightness(1.6); }
 .edge--top .fx, .topbar__glass .fx { -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
 .edge--bottom .fx { -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
 
