@@ -7,7 +7,7 @@
  * Désactiver un effet : mettre sa valeur à 0. Tout couper : ?fx=0 dans l'adresse (comparaison avant / après).
  */
 export const FX = {
-  colorStrength: 1,     // force de la colorisation dans le flou (0 : aucune ; 1 : pleine au ras du bord)
+  colorStrength: 0.65,  // force de la colorisation dans le flou (0 : aucune ; 1 : pleine au ras du bord)
   aberration: 0.003,    // franges magenta / cyan, en fraction de la largeur de la vignette (0 : aucune ; jamais sur mobile)
   grain: 0.05,          // grain argentique (0 : aucun) ; thème sombre : × 0,7
   grainChroma: 0.35,    // part colorée du grain

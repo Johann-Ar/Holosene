@@ -7,18 +7,19 @@
 @font-face { font-family: 'Outfit'; src: url('/fonts/outfit-variable.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }   /* texte courant (SIL OFL 1.1) */
 /* texte courant : Futura Bold, pour toutes les graisses (police du système : Mac, iPhone, iPad ; non embarquée, sous
    licence). Sans Futura sur l'appareil (Windows, Android), le texte reste en Outfit. */
-@font-face { font-family: 'Texte Futura'; src: local('Futura-Bold'), local('Futura Bold'), local('FuturaPT-Bold'), local('Futura PT Bold'), local('Futura Std Bold'); font-weight: 100 900; font-style: normal; }
+@font-face { font-family: 'Texte Futura'; src: local('Futura-Medium'), local('Futura Medium'), local('FuturaPT-Medium'), local('Futura PT Medium'), local('Futura Std Medium'); font-weight: 100 599; font-style: normal; }   /* texte courant : Medium, plus fin */
+@font-face { font-family: 'Texte Futura'; src: local('Futura-Bold'), local('Futura Bold'), local('FuturaPT-Bold'), local('Futura PT Bold'), local('Futura Std Bold'); font-weight: 600 900; font-style: normal; }   /* gras, titres, étiquettes : Bold */
 /* titres : Futura Bold aussi (même police que le texte courant), approche resserrée à peine */
 /* textes secondaires discrets : police extra-condensée ; Franklin Gothic Condensed et Univers Condensed étant sous licence,
    on prend la condensée déjà présente sur l'appareil : Franklin Gothic Medium Cond (Windows), Futura Condensed (Mac,
    iPhone, iPad), Roboto Condensed (Android), à défaut Arial Narrow */
 @font-face { font-family: 'Texte Condense'; src: local('FranklinGothic-MediumCond'), local('Franklin Gothic Medium Cond'), local('Futura-CondensedMedium'), local('Futura Condensed Medium'), local('RobotoCondensed-Regular'), local('Roboto Condensed'), local('AvenirNextCondensed-Medium'), local('ArialNarrow'); font-weight: 100 900; font-style: normal; }
 :root { --font-text: 'Texte Futura', 'Outfit', 'Helvetica Neue', Arial, sans-serif;
-  --font-display: 'Texte Futura', 'Archivo', 'Helvetica Neue', Arial, sans-serif; --display-track: -0.015em;
+  --font-display: 'Texte Futura', 'Archivo', 'Helvetica Neue', Arial, sans-serif; --display-track: -0.015em; --display-weight: 700;
   --font-cond: 'Texte Condense', 'Arial Narrow', sans-serif-condensed, sans-serif; }
 @font-face { font-family: 'IBM Plex Mono'; src: url('/fonts/ibm-plex-mono-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 
-:root { --fs-body: 1.1875rem; --fs-small: 0.9375rem; --fs-text: clamp(1.125rem, 1.45vw, 1.35rem);   /* texte courant : un seul style (À propos, présentation, sous-titres, genres) */ --iris: var(--iris-conic); --edge-l: max(var(--edge), env(safe-area-inset-left, 0px)); --edge-r: max(var(--edge), env(safe-area-inset-right, 0px)); }
+:root { --fs-body: 1.1875rem; --fs-small: 0.9375rem; --fs-text: clamp(1.05rem, 1.3vw, 1.25rem);   /* texte courant : un seul style (À propos, présentation, sous-titres, genres) */ --iris: var(--iris-conic); --edge-l: max(var(--edge), env(safe-area-inset-left, 0px)); --edge-r: max(var(--edge), env(safe-area-inset-right, 0px)); }
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
 html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scrollbar-width: none; }
@@ -114,7 +115,7 @@ a { color: inherit; }
 .topbar__nav a:not(.lang) { position: relative; }
 .topbar__nav a:not(.lang)::after { content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1.5px; border-radius: 99px; background: var(--iris-line); clip-path: inset(0 100% 0 0 round 99px); transition: clip-path var(--dur-slow) var(--ease-flow); }
 .topbar__nav a:not(.lang):hover::after, .topbar__nav a:not(.lang):focus-visible::after { clip-path: inset(0 0 0 0 round 99px); }
-.topbar .lang { font: 500 var(--fs-small) var(--font-text); letter-spacing: 0.02em; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 6px 10px; }
+.topbar .lang { text-decoration: none; font: 500 var(--fs-small) var(--font-text); letter-spacing: 0.02em; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 6px 10px; }
 @media (max-width: 640px) { .topbar__nav { gap: 14px; font-size: 15px; } .brand__mark { height: 34px; } }
 /* mobile : Projets et À propos à gauche (Contact est dans À propos), logo au centre, mode et langue à droite */
 @media (max-width: 640px) { .topbar__nav a[href="#contact"] { display: none; } }
