@@ -163,9 +163,9 @@ vec3 withLens(vec2 q, vec3 base) {
     vec2 lp = q - uLens.xy;
     float d = length(lp);
     if (d < uLensO + 2.0) {
-      // seul effet de la lentille : au bord intérieur, sur une bande contre l'anneau (45 % extérieurs du rayon), l'image
+      // seul effet de la lentille : au bord intérieur, sur une bande contre l'anneau (37 % extérieurs du rayon), l'image
       // est tirée vers le centre ; le centre reste net et non déformé (pas de fisheye)
-      float k = smoothstep(0.55, 1.0, d / R);
+      float k = smoothstep(0.63, 1.0, d / R);
       float bend = 0.36 * k * k;
       vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
       vec3 orig = vec3(0.0);
