@@ -34,7 +34,7 @@ if (import.meta.env.DEV && new URLSearchParams(location.search).get('debug') ===
 const heroSlot = document.querySelector('.hero__slot')
 if (!heroSlot) root.classList.add('brand-on', 'bar-on')
 // avec WebGL, c'est gl.js qui l'affiche, quand le gros logo l'a rejoint ; sans WebGL : dès que le gros logo est sorti
-else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl')) { root.classList.toggle('brand-on', !e.isIntersecting); if (!e.isIntersecting) root.classList.add('bar-on') } }).observe(heroSlot)
+else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl') && root.classList.contains('intro-done')) { root.classList.toggle('brand-on', !e.isIntersecting); if (!e.isIntersecting) root.classList.add('bar-on') } }).observe(heroSlot)
 
 /* Thème : celui de l'appareil (prefers-color-scheme, clair par défaut). Le bouton force l'autre mode (data-theme sur
    <html>, mémorisé ; le script inline de <head> l'applique avant le premier rendu). La barre du navigateur suit. */
@@ -133,7 +133,7 @@ function syncFiche() {
     fiches.find((x) => x.f === open)?.reset()
     open.focus({ preventScroll: true })
   } else {
-    lenis?.start()
+    if (!root.classList.contains('intro-lock')) lenis?.start()   // pendant l'intro, la page reste figée (endIntro relance)
     const back = /^#(projet|recherche)-/.test(location.hash) && document.querySelector(location.hash)
     if (back) {
       showCard(back)
@@ -374,21 +374,44 @@ lenis?.stop(); scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true
 // accueil : la page reste bloquée (molette, doigt, clavier, barre de défilement) pendant le chargeur et l'arrivée du
 // logo ; elle ne se libère qu'à la fin de l'animation (intro-done), et la flèche apparaît juste après (CSS)
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
-const introLocked = !!document.querySelector('.hero') && !reduced
-if (introLocked) root.classList.add('intro-lock'); else root.classList.add('intro-done')
-const endIntro = () => { root.classList.remove('intro-lock'); root.classList.add('intro-done'); if (!ficheOf()) { if (introLocked) lenis?.scrollTo(0, { immediate: true, force: true }); lenis?.start() } }
+// Trois phases, strictement :
+//   1. chargement : seul le chargeur est visible ; il attend que toute la page soit chargée (polices, images, WebGL) ;
+//   2. animation du logo (le chargeur passe le relais au « o ») : seuls le fond et le gros logo sont visibles ;
+//   3. fin de l'animation (intro-done) : la flèche apparaît, la page se libère.
+// Pendant 1 et 2 : rien n'est possible. Défilement bloqué (molette, doigt, clavier, barre, focus), et tout le contenu
+// de la page est inerte (ni clic, ni focus, ni défilement par le focus) ; la page reste en haut.
+const introLocked = !!document.querySelector('.hero') && !reduced && !ficheOf()
+const inertEls = [...document.body.children].filter((e) => !e.matches('.loader, canvas, script, .bg-canvas, .gl-canvas'))
+const locked = () => root.classList.contains('intro-lock')
+if (introLocked) {
+  root.classList.add('intro-lock'); inertEls.forEach((e) => { e.inert = true })
+  const block = (e) => { if (locked() && e.cancelable) e.preventDefault() }
+  addEventListener('wheel', block, { passive: false, capture: true })
+  addEventListener('touchmove', block, { passive: false, capture: true })
+  addEventListener('scroll', () => { if (locked() && (scrollX || scrollY)) scrollTo(0, 0) }, { passive: true })
+} else root.classList.add('intro-done')
+const endIntro = () => {
+  if (root.classList.contains('intro-done')) return
+  inertEls.forEach((e) => { e.inert = false })
+  scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })
+  root.classList.remove('intro-lock'); root.classList.add('intro-done')
+  if (!ficheOf()) lenis?.start()
+}
 const heroImg = document.querySelector('.hero__view img')
 Promise.race([
   Promise.all([
     document.fonts?.ready,
     heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
     new Promise((r) => setTimeout(r, reduced ? 0 : 1000)),
+    // toute la page (images des vignettes comprises) : rien ne se charge plus pendant l'animation du logo
+    document.readyState === 'complete' ? null : new Promise((r) => addEventListener('load', r, { once: true })),
     new Promise((r) => setTimeout(() => (gl?.ready || Promise.resolve()).then(r))),   // logo WebGL prêt (gl créé plus bas)
   ]),
-  new Promise((r) => setTimeout(r, 6000)),
+  new Promise((r) => setTimeout(r, 8000)),   // au plus 8 s (connexion lente)
 ]).then(() => finishLoader(() => {
   root.classList.add('is-loaded')
   // fiche ouverte par le lien : rien à attendre ; sinon, fin de l'arrivée du logo (croissance puis glissement)
+  // l'animation du logo dure croissance + glissement ; la page ne se libère qu'à la fin
   if (!introLocked || ficheOf()) endIntro(); else setTimeout(endIntro, IRIS.intro.grow + IRIS.intro.shift)
 }))
 

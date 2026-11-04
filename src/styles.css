@@ -237,11 +237,11 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__cta svg { width: 40px; height: 40px; animation: nudge 1.8s var(--ease-in-out) infinite; }   /* agrandi */
 /* accueil : rien d'autre que le fond, le gros logo et la présentation tant que l'écran ne descend pas */
 .js:not(.hero-done) .edge { opacity: 0; visibility: hidden; }
-/* barre du haut : juste après que le gros logo a pris sa place de petit logo (bar-on, posée une fois pour toutes) */
-.js:not(.bar-on) .topbar { opacity: 0; visibility: hidden; }
+.js:not(.intro-done) .topbar { opacity: 0; visibility: hidden; }   /* barre du haut : dès la fin de l'animation d'apparition du logo */
+.js:not(.intro-done) .topbar * { visibility: hidden !important; }   /* aucun élément de la barre (petit logo compris) pendant l'intro */
 /* flèche : un court instant après la fin de l'arrivée du logo (intro-done, main.js) */
 .js:not(.intro-done) .hero__cta { opacity: 0; visibility: hidden; }
-.intro-done .hero__cta { transition-delay: 0.35s; }
+.intro-done .hero__cta { transition-delay: 0.1s; }
 /* pendant le chargeur et l'arrivée du logo : aucun défilement possible (molette, doigt, barre) */
 .intro-lock, .intro-lock body { overflow: hidden; overscroll-behavior: none; }
 .intro-lock body { touch-action: none; }

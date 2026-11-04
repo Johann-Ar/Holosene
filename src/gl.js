@@ -585,7 +585,8 @@ export function createGL(canvas, { reduced }) {
           const by = br.top + br.height / 2, m = Math.min(1, Math.max(0, -b.top / Math.max(1, slot.y - by)))
           dock = { x: br.left + br.width / 2 - b.left, y: by - b.top, h: br.height, m }
           // arrivé : le petit logo de la barre (identique) prend le relais
-          if ((m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked); if (docked) document.documentElement.classList.add('bar-on') }
+          // pas avant la fin de l'animation d'accueil (le petit logo et la barre n'existent pas encore)
+          if (document.documentElement.classList.contains('intro-done') && (m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked); if (docked) document.documentElement.classList.add('bar-on') }
         }
         const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
         gl.uniform3f(U.uInk, ...theme.ink)
