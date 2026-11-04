@@ -357,13 +357,13 @@ if (loaderO) {
   }
 }
 /* Écran de chargement : polices, image de l'accueil, au moins 1 s ; au plus 6 s. Le défilement est bloqué pendant ce temps. */
-lenis?.stop(); scrollTo(0, 0)
+lenis?.stop(); scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })   // Lenis aussi : pas de retour à l'ancienne position au déblocage
 // accueil : la page reste bloquée (molette, doigt, clavier, barre de défilement) pendant le chargeur et l'arrivée du
 // logo ; elle ne se libère qu'à la fin de l'animation (intro-done), et la flèche apparaît juste après (CSS)
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 const introLocked = !!document.querySelector('.hero') && !reduced
 if (introLocked) root.classList.add('intro-lock'); else root.classList.add('intro-done')
-const endIntro = () => { root.classList.remove('intro-lock'); root.classList.add('intro-done'); if (!ficheOf()) lenis?.start() }
+const endIntro = () => { root.classList.remove('intro-lock'); root.classList.add('intro-done'); if (!ficheOf()) { if (introLocked) lenis?.scrollTo(0, { immediate: true, force: true }); lenis?.start() } }
 const heroImg = document.querySelector('.hero__view img')
 Promise.race([
   Promise.all([
