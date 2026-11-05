@@ -52,7 +52,7 @@ uniform float uFloor;   // taille minimale des points dans le masque
 uniform float uRadius;  // coins arrondis (0 : aucun)
 uniform vec3 uLens;     // centre (px CSS), rayon intérieur
 uniform float uLensO;   // rayon extérieur de l'anneau
-uniform float uSoft;    // touche J maintenue : largeur (px) du fondu intérieur de l'anneau ; la loupe se resserre d'autant
+uniform float uSoft;    // largeur (px) du fondu intérieur de l'anneau ; la loupe se resserre d'autant
 uniform float uGlass;   // survol d'une carte : bord de verre (0 à 1)
 uniform vec4 uClip;     // piste horizontale : bords gauche et droit (px, dans la vue), largeur du fondu
 uniform float uCardBg;  // gris du fond des cartes
@@ -170,7 +170,7 @@ vec3 withLens(vec2 q, vec3 base) {
     vec2 lp = q - uLens.xy;
     float d = length(lp);
     if (d < uLensO + 2.0) {
-      // touche J (uSoft = largeur du fondu de l'anneau, px) : la loupe se resserre d'autant (rayon Re) et garde tout son
+      // uSoft = largeur du fondu intérieur de l'anneau (px) : la loupe se resserre d'autant (rayon Re) et garde tout son
       // effet à l'intérieur ; la bande entre Re et l'anneau est à part : le fondu de l'anneau s'y pose sans rien recouvrir
       // de la loupe (on y prolonge simplement le bord de la loupe, le long du rayon)
       float Re = R - uSoft, dd = min(d, Re);
@@ -197,7 +197,7 @@ vec3 withLens(vec2 q, vec3 base) {
       // angle (la même que l'anneau juste à côté : la teinte semble rayonner de l'anneau)
       float kt = smoothstep(0.3, 1.0, r); kt *= kt;
       orig = mix(orig, flowColor(lp), 0.14 * kt);
-      orig += vec3(0.18) * exp(-(Re - dd) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0) * (1.0 - smoothstep(Re, Re + 2.0, d)) * (1.0 - clamp(uSoft / 4.0, 0.0, 1.0));   // reflet du bord : effacé avec J (aucune limite visible)
+      orig += vec3(0.18) * exp(-(Re - dd) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0) * (1.0 - smoothstep(Re, Re + 2.0, d)) * (1.0 - clamp(uSoft / 4.0, 0.0, 1.0));   // reflet du bord : effacé (aucune limite visible sous le fondu)
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       col = mix(col, orig, inner);
       // l'anneau est dessiné après toutes les vues, dans sa propre passe (RING) : jamais coupé par le bord d'une vignette
@@ -417,12 +417,12 @@ const RING = `precision highp float;
 uniform sampler2D uFlow;
 uniform vec4 uRing;     // centre (px CSS, depuis le haut à gauche), rayon intérieur, rayon extérieur
 uniform vec2 uView;     // hauteur de la toile (px écran), dpr
-uniform float uSoft;    // touche J maintenue (0 à 1) : bord intérieur en dégradé de flou (largeur en px : uSoft)
+uniform float uSoft;    // largeur (px) du dégradé de flou du bord intérieur
 vec3 flowColor(vec2 p) { float u = fract((degrees(atan(p.y, p.x)) + 90.0 - 180.0) / 360.0); return texture2D(uFlow, vec2(u, 0.5)).rgb; }
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uView.x - gl_FragCoord.y) / uView.y;
   vec2 lp = p - uRing.xy; float d = length(lp), aw = 1.0 / uView.y;
-  // bord intérieur : net au repos ; touche J : il s'étire vers le centre en un dégradé doux (courbe en S, sans limite
+  // bord intérieur : il s'étire vers le centre en un dégradé doux (courbe en S, sans limite
   // visible), les couleurs de l'anneau se fondent dans la loupe
   float wIn = aw * 0.5 + uSoft;
   float inner = smoothstep(uRing.z - wIn, uRing.z + aw * 0.5, d);
@@ -646,14 +646,10 @@ export function createGL(canvas, { reduced }) {
   resize(); addEventListener('resize', resize)
 
   // une seule lentille pour toute la page : elle suit le pointeur de près (sans dépassement), apparaît sur les cartes
-  // fondu intérieur de l'anneau : à mi-chemin par défaut (SOFT_REST), complet avec la touche J maintenue
-  const SOFT_REST = 0.5
-  const lens = { x: 0, y: 0, s: 0, init: false, soft: SOFT_REST, softT: SOFT_REST }
-  const SOFT_W = 0.22   // touche J : largeur du fondu intérieur de l'anneau, en part du rayon de la loupe
-  // touche J maintenue : le bord intérieur de l'anneau se fond complètement dans la loupe (transition douce dans les deux sens)
-  addEventListener('keydown', (e) => { if (e.code === 'KeyJ' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) lens.softT = 1 })
-  addEventListener('keyup', (e) => { if (e.code === 'KeyJ') lens.softT = SOFT_REST })
-  addEventListener('blur', () => { lens.softT = SOFT_REST })
+  const lens = { x: 0, y: 0, s: 0, init: false }
+  // fondu intérieur de l'anneau (choix de Johann, voir CLAUDE.md) : largeur en part du rayon de la loupe ; la loupe se
+  // resserre d'autant et garde tout son effet à l'intérieur
+  const SOFT_W = 0.11
   const hoverDevice = matchMedia('(hover: hover)').matches
   // suivi amorti ; à moins de 1e-4 de la cible (invisible), la valeur s'y pose : une scène immobile est vraiment immobile
   const follow = (a, b, tau, dt) => { const v = a + (b - a) * (1 - Math.exp(-dt / tau)); return Math.abs(b - v) < 1e-4 ? b : v }
@@ -727,7 +723,6 @@ export function createGL(canvas, { reduced }) {
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
     const sc = lens.s < 0.005 ? 0 : 1 - Math.pow(1 - lens.s, 2)
-    lens.soft = reduced ? lens.softT : follow(lens.soft, lens.softT, 0.14, dt)
     // le « o » remplace le curseur : flèche masquée partout tant que le « o » est affiché (souris uniquement)
     const hide = sc > 0.02 && hoverDevice && !ptr.touch && !onCtl   // tant que le « o » est visible, sauf sur un bouton
     if (hide !== lens.hidden) { document.documentElement.classList.toggle('lens-on', hide); lens.hidden = hide }
@@ -737,7 +732,7 @@ export function createGL(canvas, { reduced }) {
     // d'abord (phase 1, sans rien dessiner), puis comparées à celles de l'image précédente. Identiques : rien n'est
     // envoyé au GPU, la toile garde l'image déjà affichée (exactement la même). Sinon, dessin complet (phase 2).
     const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
-    const sig = [canvas.width, canvas.height, dpr, cellScale, FX.version, ...theme.bg, ...theme.ink, sc, lens.soft, sc > 0 ? lens.x : 0, sc > 0 ? lens.y : 0, views.indexOf(lens.view),
+    const sig = [canvas.width, canvas.height, dpr, cellScale, FX.version, ...theme.bg, ...theme.ink, sc, sc > 0 ? lens.x : 0, sc > 0 ? lens.y : 0, views.indexOf(lens.view),
       FX.colorStrength > 0 || FX.grain > 0 ? now : 0, Math.floor(scrollY / SEED_STEP)]
     const jobs = []
     for (const v of order) {
@@ -839,7 +834,7 @@ export function createGL(canvas, { reduced }) {
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 80, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
-      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uSoft, lens.soft * (Ri + 1) * sc * SOFT_W); gl.uniform1f(U.uGlass, v.glass)
+      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uSoft, (Ri + 1) * sc * SOFT_W); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) {
         gl.uniform3f(U.uInk, ...theme.ink)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
@@ -882,7 +877,7 @@ export function createGL(canvas, { reduced }) {
       gl.scissor(x0, y0, Math.ceil((ro + pad) * 2 * dpr), Math.ceil((ro + pad) * 2 * dpr))
       gl.useProgram(rProg)
       gl.uniform4f(RU.uRing, lens.x, lens.y, ri, ro); gl.uniform2f(RU.uView, canvas.height, dpr)
-      gl.uniform1f(RU.uSoft, lens.soft * (Ri + 1) * sc * SOFT_W)   // touche J : dégradé intérieur (même largeur que dans la vue)
+      gl.uniform1f(RU.uSoft, (Ri + 1) * sc * SOFT_W)   // fondu intérieur (même largeur que dans la vue)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       gl.useProgram(prog)
     }

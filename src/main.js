@@ -306,6 +306,18 @@ document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el))
    Pavé tactile (glissement latéral), doigt, souris (glisser), flèches et clavier ; douceur, inertie, et boucle sans fin :
    la position est ramenée dans un jeu de cartes (modulo), des copies couvrent les bords, sans saut visible. */
 const COPIES = 2
+// molette de souris ou pavé tactile ? Souris : crans (lignes, ou pas de mouvement latéral et un wheelDelta qui n'est pas
+// le triple exact de deltaY, signature des pavés tactiles de Mac). Un geste latéral récent signale un pavé tactile.
+let padT = -1e9, pageWheelT = -1e9
+const isMouseWheel = (e) => {
+  if (e.deltaX) padT = performance.now()
+  if (e.deltaMode === 1) return true
+  if (e.deltaX || performance.now() - padT < 600) return false
+  if (e.wheelDeltaY) return e.wheelDeltaY !== -3 * e.deltaY
+  return Number.isInteger(e.deltaY) && Math.abs(e.deltaY) >= 40
+}
+// défilement de la page à la molette (les gestes pris par une piste n'arrivent pas jusqu'ici)
+addEventListener('wheel', (e) => { if (e.deltaY) pageWheelT = performance.now(); if (e.deltaX) padT = performance.now() }, { passive: true })
 root.classList.add('is-rail')
 const mod = (a, n) => ((a % n) + n) % n
 const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
@@ -330,12 +342,15 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
   const nudge = (d) => { r.target = Math.round((r.target + d) / r.step) * r.step; r.last = performance.now() }
   pin.querySelectorAll('.work__nav').forEach((b) => b.addEventListener('click', () => nudge(r.step * +b.dataset.dir)))
   track.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); nudge(r.step * (e.key === 'ArrowRight' ? 1 : -1)) } })
-  // pavé tactile / molette latérale (ou Maj + molette)
+  // pavé tactile / molette latérale (ou Maj + molette) ; molette de souris (verticale) : fait défiler la piste quand on
+  // survole sa bande, sauf pendant un défilement de la page déjà en cours (la page continue, rien ne bloque en chemin)
   track.addEventListener('wheel', (e) => {
-    const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0
+    const now = performance.now()
+    let dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.shiftKey ? e.deltaY : 0
+    if (!dx && isMouseWheel(e) && now - pageWheelT > 350) dx = e.deltaY
     if (!dx) return
     e.preventDefault(); e.stopPropagation()
-    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = performance.now(); r.wheel = true; r.dir = Math.sign(dx)   // sens de l'élan (magnétisme)
+    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = now; r.wheel = true; r.dir = Math.sign(dx)   // sens de l'élan (magnétisme)
   }, { passive: false })
   // glisser (souris, doigt, stylet) ; le défilement vertical au doigt reste au navigateur (touch-action: pan-y)
   let down = null, moved = false
@@ -723,56 +738,6 @@ addEventListener('popstate', () => { if (location.pathname !== shownPath) locati
   }, { passive: true }) }
 
 
-/* Touche G maintenue : le voile de la barre du haut (même dégradé, même flou progressif : .topbar__glass et le fondu
-   .edge--top) n'est plus une bande sur toute la largeur. Il est découpé en languettes accrochées au bord haut de l'écran,
-   une derrière chaque élément de la barre (liens, logo, mode, langue) : bas arrondi en gélule, raccord arrondi avec le
-   haut de l'écran, bords fondus. Le découpage est un masque SVG (forme floutée), calculé à l'appui (styles.css, .g-tabs).
-   Rien n'est ajouté : c'est la barre actuelle, découpée. Le masque est posé sur chaque couche de flou (<i>) et sur le
-   voile blanc (::before, variable --g-mask), jamais sur le conteneur : un conteneur masqué ferait flouter aux couches
-   son propre voile blanc au lieu de la page (blanc doublé, plus fort que la barre). */
-{ const bar = document.querySelector('.topbar'), glass = bar?.querySelector('.topbar__glass')
-  const layers = [...(glass ? glass.querySelectorAll(':scope > i') : []), document.querySelector('body > .edge--top')].filter(Boolean)
-  const FILLET = 16, SOFT = 7   // raccord avec le haut de l'écran (px), fondu des bords (écart type du flou, px)
-  const tabsPath = (rects, H) => rects.map(({ x0, x1, yb }) => {
-    const r = Math.min((x1 - x0) / 2, Math.max(8, yb - FILLET) / 1.2), f = FILLET
-    return `M${x0 - f - 40} ${-40}H${x1 + f + 40}V0H${x1 + f}Q${x1} 0 ${x1} ${f}V${yb - r}A${r} ${r} 0 0 1 ${x1 - r} ${yb}H${x0 + r}A${r} ${r} 0 0 1 ${x0} ${yb - r}V${f}Q${x0} 0 ${x0 - f} 0H${x0 - f - 40}Z`
-  }).join('')
-  const place = () => {
-    const els = [...bar.querySelectorAll('.topbar__nav a, .brand, .theme-toggle, .lang')].filter((el) => el.offsetParent && (!el.matches('.brand') || root.classList.contains('brand-on')))
-    for (const layer of layers) {
-      const lr = layer.getBoundingClientRect(), W = Math.round(lr.width), H = Math.round(lr.height)
-      if (!W || !H) continue
-      const rects = els.map((el) => {
-        const r = el.getBoundingClientRect(), padX = el.matches('.brand') ? 20 : 24, padY = el.matches('.brand') ? 14 : 18
-        return { x0: r.left - lr.left - padX, x1: r.right - lr.left + padX, yb: r.bottom - lr.top + padY }
-      })
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><filter id="s" x="-10%" y="-60%" width="120%" height="220%"><feGaussianBlur stdDeviation="${SOFT}"/></filter><path filter="url(#s)" fill="#fff" d="${tabsPath(rects, H)}"/></svg>`
-      const url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
-      if (glass && layer.parentElement === glass) glass.style.setProperty('--g-mask', url)   // voile blanc (::before)
-      // masque d'origine du calque (fondu vertical du mode clair) conservé : les deux se multiplient
-      layer._mask ??= getComputedStyle(layer).maskImage || getComputedStyle(layer).webkitMaskImage || 'none'
-      const both = layer._mask && layer._mask !== 'none' ? `${url}, ${layer._mask}` : url
-      layer.style.setProperty('-webkit-mask-image', both); layer.style.setProperty('mask-image', both)
-      layer.style.setProperty('-webkit-mask-size', '100% 100%'); layer.style.setProperty('mask-size', '100% 100%')
-      layer.style.setProperty('-webkit-mask-repeat', 'no-repeat'); layer.style.setProperty('mask-repeat', 'no-repeat')
-      if (both !== url) { layer.style.setProperty('-webkit-mask-composite', 'source-in'); layer.style.setProperty('mask-composite', 'intersect') }
-    }
-  }
-  const clear = () => { glass?.style.removeProperty('--g-mask'); for (const l of layers) for (const k of ['-webkit-mask-image', 'mask-image', '-webkit-mask-size', 'mask-size', '-webkit-mask-repeat', 'mask-repeat', '-webkit-mask-composite', 'mask-composite']) l.style.removeProperty(k) }
-  const on = () => { if (!bar) return; clear(); layers.forEach((l) => { l._mask = undefined }); place(); root.classList.add('g-tabs') }
-  const off = () => { if (!root.classList.contains('g-tabs')) return; root.classList.remove('g-tabs'); clear() }
-  addEventListener('keydown', (e) => { if (e.code === 'KeyG' && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) on() })
-  addEventListener('keyup', (e) => { if (e.code === 'KeyG') off() })
-  addEventListener('blur', off)
-  addEventListener('resize', () => { if (root.classList.contains('g-tabs')) { clear(); place() } }) }
 
-/* Touche H maintenue : HOLOSENE à la place de JOHANN ARATA sur l'accueil (styles.css, .h-holo) */
-addEventListener('keydown', (e) => { if (e.code === 'KeyH' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('h-holo') })
-addEventListener('keyup', (e) => { if (e.code === 'KeyH') root.classList.remove('h-holo') })
-addEventListener('blur', () => root.classList.remove('h-holo'))
 
-/* Touche F maintenue : en bas, le même fondu que celui du haut, à la place de la bande floue (styles.css, .f-band) */
-addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('f-band') })
-addEventListener('keyup', (e) => { if (e.code === 'KeyF') root.classList.remove('f-band') })
-addEventListener('blur', () => root.classList.remove('f-band'))
 
