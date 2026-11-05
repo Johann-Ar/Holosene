@@ -52,7 +52,7 @@ uniform float uFloor;   // taille minimale des points dans le masque
 uniform float uRadius;  // coins arrondis (0 : aucun)
 uniform vec3 uLens;     // centre (px CSS), rayon intérieur
 uniform float uLensO;   // rayon extérieur de l'anneau
-uniform float uSoft;    // touche J maintenue (0 à 1) : bord intérieur de l'anneau fondu dans la loupe
+uniform float uSoft;    // touche J maintenue : largeur (px) du fondu intérieur de l'anneau ; la loupe se resserre d'autant
 uniform float uGlass;   // survol d'une carte : bord de verre (0 à 1)
 uniform vec4 uClip;     // piste horizontale : bords gauche et droit (px, dans la vue), largeur du fondu
 uniform float uCardBg;  // gris du fond des cartes
@@ -170,32 +170,34 @@ vec3 withLens(vec2 q, vec3 base) {
     vec2 lp = q - uLens.xy;
     float d = length(lp);
     if (d < uLensO + 2.0) {
+      // touche J (uSoft = largeur du fondu de l'anneau, px) : la loupe se resserre d'autant (rayon Re) et garde tout son
+      // effet à l'intérieur ; la bande entre Re et l'anneau est à part : le fondu de l'anneau s'y pose sans rien recouvrir
+      // de la loupe (on y prolonge simplement le bord de la loupe, le long du rayon)
+      float Re = R - uSoft, dd = min(d, Re);
+      vec2 dir = d > 0.001 ? lp / d : vec2(0.0), le = dir * dd;
       // seul effet de la lentille : au bord intérieur, sur une bande contre l'anneau (37 % extérieurs du rayon), l'image
       // est tirée vers le centre ; le centre reste net et non déformé (pas de fisheye)
-      float r = d / R, k = smoothstep(0.63, 1.0, r);
+      float r = dd / Re, k = smoothstep(0.63, 1.0, r);
       float bend = 0.36 * k * k;
       // fondu de flou en dégradé sur le pourtour intérieur : nul au centre, il croît sur le tiers extérieur jusqu'à
-      // ≈ 5 px contre l'anneau (8 échantillons en cercle + le centre : flou lisse, sans marches)
-      // touche J (uSoft) : flou plus fort et qui commence plus tôt, pour se fondre avec le bord intérieur de l'anneau
-      float kb = smoothstep(0.66 - 0.2 * uSoft, 1.0, r), bl = 0.6 + (4.6 + 5.4 * uSoft) * kb * kb;
+      // ≈ 5 px contre le bord (8 échantillons en cercle + le centre : flou lisse, sans marches)
+      float kb = smoothstep(0.66, 1.0, r), bl = 0.6 + 4.6 * kb * kb;
       vec2 c0 = uLens.xy;
       vec3 orig = vec3(0.0);
       for (int i = 0; i < 9; i++) {
         float an = float(i) * 0.785398;
         vec2 o = i == 8 ? vec2(0.0) : vec2(cos(an), sin(an)) * bl;
-        orig += vec3(texture2D(uTex, cover(c0 + lp * (1.0 - bend * 1.012) + o)).r,
-                     texture2D(uTex, cover(c0 + lp * (1.0 - bend) + o)).g,
-                     texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.988) + o)).b);
+        orig += vec3(texture2D(uTex, cover(c0 + le * (1.0 - bend * 1.012) + o)).r,
+                     texture2D(uTex, cover(c0 + le * (1.0 - bend) + o)).g,
+                     texture2D(uTex, cover(c0 + le * (1.0 - bend * 0.988) + o)).b);
       }
       orig /= 9.0;
-      if (uHasText > 0.5) orig = mix(orig, vec3(1.0), texture2D(uText, (c0 + lp * (1.0 - bend)) / uRes).a);   // le texte est grossi comme l'image
-      // légère teinte irisée en dégradé : rien au centre, au plus 14 % contre l'anneau, couleur de la roue « flux » du kit
-      // à cet angle (la même que l'anneau juste à côté : la teinte semble rayonner de l'anneau)
-      // touche J (uSoft) : la teinte monte jusqu'aux couleurs pleines de l'anneau à son bord, sans marche
+      if (uHasText > 0.5) orig = mix(orig, vec3(1.0), texture2D(uText, (c0 + le * (1.0 - bend)) / uRes).a);   // le texte est grossi comme l'image
+      // légère teinte irisée en dégradé : rien au centre, au plus 14 % au bord, couleur de la roue « flux » du kit à cet
+      // angle (la même que l'anneau juste à côté : la teinte semble rayonner de l'anneau)
       float kt = smoothstep(0.3, 1.0, r); kt *= kt;
-      orig = mix(orig, flowColor(lp), mix(0.14 * kt, 0.14 * kt + 0.5 * pow(smoothstep(0.55, 1.0, r), 2.0), uSoft));
-      vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
-      orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
+      orig = mix(orig, flowColor(lp), 0.14 * kt);
+      orig += vec3(0.18) * exp(-(Re - dd) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0) * (1.0 - smoothstep(Re, Re + 2.0, d)) * (1.0 - clamp(uSoft / 4.0, 0.0, 1.0));   // reflet du bord : effacé avec J (aucune limite visible)
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       col = mix(col, orig, inner);
       // l'anneau est dessiné après toutes les vues, dans sa propre passe (RING) : jamais coupé par le bord d'une vignette
@@ -645,6 +647,7 @@ export function createGL(canvas, { reduced }) {
 
   // une seule lentille pour toute la page : elle suit le pointeur de près (sans dépassement), apparaît sur les cartes
   const lens = { x: 0, y: 0, s: 0, init: false, soft: 0, softT: 0 }
+  const SOFT_W = 0.22   // touche J : largeur du fondu intérieur de l'anneau, en part du rayon de la loupe
   // touche J maintenue : le bord intérieur de l'anneau se fond dans la loupe (transition douce dans les deux sens)
   addEventListener('keydown', (e) => { if (e.code === 'KeyJ' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) lens.softT = 1 })
   addEventListener('keyup', (e) => { if (e.code === 'KeyJ') lens.softT = 0 })
@@ -834,7 +837,7 @@ export function createGL(canvas, { reduced }) {
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 80, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
-      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uSoft, lens.soft); gl.uniform1f(U.uGlass, v.glass)
+      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uSoft, lens.soft * (Ri + 1) * sc * SOFT_W); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) {
         gl.uniform3f(U.uInk, ...theme.ink)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
@@ -877,7 +880,7 @@ export function createGL(canvas, { reduced }) {
       gl.scissor(x0, y0, Math.ceil((ro + pad) * 2 * dpr), Math.ceil((ro + pad) * 2 * dpr))
       gl.useProgram(rProg)
       gl.uniform4f(RU.uRing, lens.x, lens.y, ri, ro); gl.uniform2f(RU.uView, canvas.height, dpr)
-      gl.uniform1f(RU.uSoft, lens.soft * ri * 0.4)   // touche J : dégradé intérieur sur 40 % du rayon
+      gl.uniform1f(RU.uSoft, lens.soft * (Ri + 1) * sc * SOFT_W)   // touche J : dégradé intérieur (même largeur que dans la vue)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       gl.useProgram(prog)
     }
