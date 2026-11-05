@@ -583,11 +583,13 @@ export function createGL(canvas, { reduced }) {
     // passe le relais) : au relais, le « o » ne glisse que vers la droite, sans descendre
     const cy0 = h / 2 - O_OFF[1] * big
     let cx = w / 2 + (slot.x - w / 2) * q, cy = cy0 + (slot.y - cy0) * q
-    // après la scène de l'accueil : en continuant de défiler, le logo rapetisse et rejoint le petit logo de la barre
-    // (dock : sa place, dans le repère de la vue, et l'avancée m de 0 à 1)
+    // après la scène de l'accueil : en continuant de défiler, le logo monte avec la page (il reste à sa place dans la
+    // composition : aucun mouvement propre vers le haut) ; m va de 0 à 1 exactement quand cette montée amène son centre
+    // à la hauteur du petit logo de la barre. Seules sa taille et sa position horizontale s'ajustent au fil du
+    // défilement, pour qu'il s'emboîte dans le petit logo au moment où il l'atteint (dock : repère de la vue)
     if (dock && dock.m > 0) {
       const d = io(dock.m)
-      cx += (dock.x - cx) * d; cy += (dock.y - cy) * d; size += (dock.h - size) * d
+      cx += (dock.x - cx) * d; size += (dock.h - size) * d
     }
     if (ms >= GROW + SHIFT) return [cx, cy, size, 0, 1]
     // croissance : décélération seule (le chargeur arrive en accélérant à la même vitesse : aucun arrêt au relais)
