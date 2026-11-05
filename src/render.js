@@ -195,8 +195,7 @@ export function render(lang) {
       <h2 class="lbl" id="contact-t" data-sw>${seq(t(ui.contact))}</h2>
       <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-sw data-sw-letters aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
       <div class="contact__row" data-reveal>
-        <button class="btn btn--light copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
-        <ul class="socials">${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
+        <ul class="socials"><li><a href="${root}${esc(site.cv)}" download="Johann-Arata-CV.pdf" type="application/pdf">${esc(t(ui.cv))} ↗</a></li>${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
       </div>
     </div>
   </section>
@@ -204,8 +203,7 @@ export function render(lang) {
 </main>
 
 <footer class="foot wrap">
-  ${logotypeSvg({ mot: 'holosene', className: 'foot__logo' })}
-  <p class="lbl">© ${new Date().getFullYear()} Holosene · Johann Arata</p>
+  ${logotypeSvg({ mot: 'johann-arata', className: 'foot__logo' })}
   <a class="lbl" href="${root}mentions-legales.html">${esc(t(ui.legal))}</a>
 </footer>
 

@@ -232,10 +232,15 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__line, .about p { text-align: center; letter-spacing: 0.005em; color: var(--ink-86); text-wrap: balance; }
 /* composition : logo, nom, présentation en une colonne centrée, espacements réguliers ; le logo WebGL vient se poser
    dans .hero__slot (gl.js lit sa position), l'image du monogramme y sert de repli sans WebGL */
-.hero__copy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 2.8svh, 30px); padding: 96px var(--edge-l) calc(14svh + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+/* le nom (JOHANN ARATA, ou HOLOSENE avec la touche H) est centré dans l'écran : trois rangées, la sienne au milieu
+   entre deux rangées égales (marges haut et bas égales) ; le logo et la présentation sont à la même distance de lui
+   (--hero-gap) */
+.hero__copy { --hero-gap: clamp(18px, 3.6svh, 40px); position: absolute; inset: 0; display: grid; grid-template-rows: 1fr auto 1fr; justify-items: center; row-gap: var(--hero-gap); padding: 96px var(--edge-l); pointer-events: none; }
+.hero__copy > .hero__slot { align-self: end; }
+.hero__copy > .hero__line { align-self: start; }
 /* proportions de la maquette d'accueil : logo ≈ 13 % de la hauteur de l'écran, nom ≈ 84 % de la largeur, logo → nom
    ≈ 4,3 % de la hauteur, nom → présentation ≈ 2,8 % */
-.hero__slot { height: clamp(82px, 13svh, 150px); aspect-ratio: 470 / 576; flex: none; margin-bottom: clamp(4px, 1.5svh, 14px); }
+.hero__slot { height: clamp(82px, 13svh, 150px); aspect-ratio: 470 / 576; flex: none; }
 .hero__mark { display: block; width: 100%; height: 100%; }
 .has-gl .hero__mark { visibility: hidden; }
 .hero__word { margin: 0; line-height: 0; }
@@ -260,7 +265,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__word .studio__word--stack { display: none; }
 /* mobile : « Arata » à la ligne sous « Johann » */
 @media (max-width: 760px) {
-  .hero__copy { gap: clamp(12px, 2.4svh, 24px); }
+  .hero__copy { --hero-gap: clamp(14px, 3svh, 28px); }
   .hero__slot { height: clamp(72px, 11svh, 110px); }
   .hero__word .studio__word--line { display: none; }
   .hero__word .studio__word--stack { display: block; width: min(68vw, 340px); }
@@ -650,7 +655,8 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .topbar .lang span { transition: color var(--hl-dur) var(--hl-ease), text-shadow var(--hl-dur) var(--hl-ease); }
 /* … et la langue non choisie et la barre ont en plus le léger flou et la lueur des lettres au survol (même ombre que
    .topbar .lang:hover, plus bas) ; la langue affichée reste nette */
-.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 48%, var(--bg));
+.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 48%, var(--bg)); font-weight: 500;   /* langue non choisie et « / » : graisse un peu plus fine (Futura Medium) */
+ 
   text-shadow: 0 0 2.5px color-mix(in srgb, currentColor 55%, transparent), 0 0 7px rgb(255 255 255 / 0.28), 0 0 16px rgb(255 255 255 / 0.15); }
 /* au survol : la langue vers laquelle on bascule en blanc plein ; la langue actuelle et la barre en gris */
 .topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: color-mix(in srgb, var(--bg) 52%, var(--ink)) !important; }
@@ -671,16 +677,23 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__word .hero__name.studio__word--line { --w: min(84vw, 1560px); }
 @media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { --w: min(92vw, 480px); } }
 /* touche H maintenue (main.js) : HOLOSENE (logotype vectorisé du pack) à la place de JOHANN ARATA, centré au même
-   endroit, à la même hauteur de lettres que JOHANN ARATA sur ordinateur ; rien d'autre ne bouge (visibilité seulement) */
+   endroit, à la taille de la maquette d'accueil (≈ 76 % de la largeur de l'écran, plus grand que JOHANN ARATA) ; rien
+   d'autre ne bouge (visibilité seulement) */
 .hero__word { position: relative; }
 .hero__word .hero__name.hero__name--holo { position: absolute; left: 50%; top: 50%; margin: 0; transform: translate(-50%, -50%); visibility: hidden;
-  --w: calc(min(84vw, 1560px) * 2028 / 3052); }
+  --w: min(76vw, 1400px); }
 @media (max-width: 760px) { .hero__word .hero__name.hero__name--holo { --w: min(92vw, 480px); } }
-.h-holo .hero__word .hero__name:not(.hero__name--holo) { visibility: hidden; }
-.h-holo .hero__word .hero__name.hero__name--holo { visibility: visible; }
+/* HOLOSENE est plus haut que JOHANN ARATA : pendant la touche H, c'est lui qui occupe la place dans la composition (mêmes
+   écarts avec le logo et la présentation ; le logo WebGL suit .hero__slot), JOHANN ARATA passe hors du flux, caché */
+.h-holo .hero__word .hero__name:not(.hero__name--holo) { visibility: hidden; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; }
+.h-holo .hero__word .hero__name.hero__name--holo { visibility: visible; position: relative; left: auto; top: auto; transform: none; margin: calc(var(--w) * -1 * var(--m)); }
 /* pied de page : HOLOSENE en signature ; apparaît lettre par lettre en arrivant à l'écran, puis vague au survol (main.js) */
-.foot .foot__logo { flex: none; width: auto; height: 26px; color: var(--ink); }
-@media (max-width: 760px) { .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
+/* pied de page : JOHANN ARATA (logotype vectorisé du pack) au centre, à la place du « © … » ; aucune animation, aucun
+   effet au survol ni au clic ; les mentions légales à droite. Sur mobile : l'un sous l'autre, centrés */
+.foot { display: grid; grid-template-columns: 1fr auto 1fr; }
+.foot .foot__logo { grid-column: 2; width: auto; height: 26px; color: var(--ink); pointer-events: none; }
+.foot > a.lbl { grid-column: 3; justify-self: end; }
+@media (max-width: 760px) { .foot { grid-template-columns: 1fr; justify-items: center; } .foot .foot__logo, .foot > a.lbl { grid-column: 1; justify-self: center; } .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
 /* touche F maintenue (main.js) : en bas, exactement le fondu du haut (même dégradé, même flou, même voile en clair, en
    miroir), à la place de la bande floue du bas */
 .f-band body > .edge--bottom { visibility: visible !important; clip-path: inset(0 0 var(--band-push, 0px) 0); height: 92px; background: linear-gradient(0deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%);

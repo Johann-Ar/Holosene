@@ -22,6 +22,8 @@ export const site = {
     'Holosene, portfolio de Johann Arata : captation du réel, nuages de points, Gaussian splatting et 3D temps réel.',
     'Holosene, Johann Arata’s portfolio: real-world capture, point clouds, Gaussian splatting and real-time 3D.',
   ),
+  // CV en PDF, téléchargé depuis le bouton « Curriculum vitae » du contact : déposer le fichier à cette adresse dans public/
+  cv: 'cv/johann-arata-cv.pdf',
   socials: [
     { label: 'GitHub', href: 'https://github.com/holosene' },
   ],
@@ -42,6 +44,7 @@ export const ui = {
   close: T('Fermer', 'Close'),
   specHead: T('Captation · traitement · rendu', 'Capture · processing · output'),
   copy: T('Copier l’adresse', 'Copy address'),
+  cv: T('Curriculum vitae', 'Curriculum vitae'),
   copied: T('Adresse copiée', 'Address copied'),
   legal: T('Mentions légales et confidentialité', 'Legal notice and privacy'),
   lensLabel: T('Le monogramme Holosene en trame de points : le S en blanc, le « o » irisé', 'The Holosene monogram as a dot screen: the S in white, the iridescent “o”'),
