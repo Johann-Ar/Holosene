@@ -205,7 +205,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .js [data-reveal], .js [data-reveal="line"] > span { transform: none !important; transition: opacity var(--dur-base); animation: none !important; }
   .js [data-reveal="clip"] { clip-path: none; }
   .js [data-words] .w { opacity: 1; filter: none; animation: none !important; }
-  .js [data-reveal], .js .hero__line .w, .hero .studio__word { filter: none !important; }
+  .js [data-reveal], .js .hero__line .w, .hero .studio__word, .hero__word { filter: none !important; }
 }
 
 /* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
@@ -656,11 +656,14 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
    à l'encre du thème ; apparaît en fondu, du flou au net, piloté par la scène de l'accueil (--draw, main.js), entièrement
    net avant que la présentation commence. Sur une ligne (ordinateur) ou JOHANN au-dessus de ARATA (mobile). */
 .hero__name { color: var(--ink); opacity: calc(1 - var(--draw, 0)); }
-.hero .studio__word.hero__name { height: auto; filter: blur(calc(var(--draw, 0) * 10px)); }
-/* en plus du fondu et du flou : les lettres apparaissent une à une, de gauche à droite, pendant cette même phase.
-   Avancée a = 1 − --draw (0 à 1) ; la lettre de rang --i (0 à 12, liaisons comprises) passe de 0 à 1 sur une fenêtre de
-   4 rangs : (a × 16 − i) / 4. La dernière est pleine exactement quand le nom devient net (a = 1). */
-.hero__name .lettre { opacity: clamp(0, (1 - var(--draw, 0)) * 4 - var(--i) * 0.25, 1); }
+.hero .studio__word.hero__name { height: auto; filter: none; }
+/* en plus du fondu et du flou : le nom se découvre d'un seul bloc, de gauche à droite (masque à bord doux), piloté par le
+   même --draw ; entièrement découvert exactement quand il devient net. Le flou est porté par le titre (.hero__word) :
+   il s'applique après le masque, le halo flou n'est donc jamais coupé aux bords du dessin. */
+.hero__word { filter: blur(calc(var(--draw, 0) * 10px)); }
+.hero__name { --wipe: calc((1 - var(--draw, 0)) * 125%);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--wipe) - 25%), transparent var(--wipe));
+  mask-image: linear-gradient(90deg, #000 calc(var(--wipe) - 25%), transparent var(--wipe)); }
 .hero__word .hero__name.studio__word--line { width: min(84vw, 1560px); }
 @media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { width: min(92vw, 480px); } }
 /* pied de page : HOLOSENE en signature ; apparaît lettre par lettre en arrivant à l'écran, puis vague au survol (main.js) */

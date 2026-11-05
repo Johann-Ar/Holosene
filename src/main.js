@@ -424,7 +424,7 @@ const hero = document.querySelector('.hero')
 let heroWords = [...document.querySelectorAll('.hero__line .w')]
 if (!heroWords.length) root.classList.add('hero-done')   // pages sans accueil : tout est visible d'emblée
 let heroOn = -1
-const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
+const wordsSvg = [...document.querySelectorAll('.hero .studio__word, .hero__word')]   // le titre porte le flou du nom
 // chaque moitié du logotype (HOLO / SENE) cadrée sur ses lettres
 // même hauteur de cadre pour les deux (celle de HOLO, avec ses capitales) : les lettres gardent la même échelle
 
