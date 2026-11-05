@@ -171,18 +171,25 @@ vec3 withLens(vec2 q, vec3 base) {
     if (d < uLensO + 2.0) {
       // seul effet de la lentille : au bord intérieur, sur une bande contre l'anneau (37 % extérieurs du rayon), l'image
       // est tirée vers le centre ; le centre reste net et non déformé (pas de fisheye)
-      float k = smoothstep(0.63, 1.0, d / R);
+      float r = d / R, k = smoothstep(0.63, 1.0, r);
       float bend = 0.36 * k * k;
-      vec2 c0 = uLens.xy, t1 = vec2(0.6, 0.0) * (1.0 + 3.0 * k), t2 = vec2(0.0, 0.6) * (1.0 + 3.0 * k);
+      // fondu de flou en dégradé sur le pourtour intérieur : nul au centre, il croît sur le tiers extérieur jusqu'à
+      // ≈ 5 px contre l'anneau (8 échantillons en cercle + le centre : flou lisse, sans marches)
+      float kb = smoothstep(0.66, 1.0, r), bl = 0.6 + 4.6 * kb * kb;
+      vec2 c0 = uLens.xy;
       vec3 orig = vec3(0.0);
-      for (int i = 0; i < 4; i++) {
-        vec2 o = (i == 0 ? t1 : i == 1 ? -t1 : i == 2 ? t2 : -t2);
+      for (int i = 0; i < 9; i++) {
+        float an = float(i) * 0.785398;
+        vec2 o = i == 8 ? vec2(0.0) : vec2(cos(an), sin(an)) * bl;
         orig += vec3(texture2D(uTex, cover(c0 + lp * (1.0 - bend * 1.012) + o)).r,
                      texture2D(uTex, cover(c0 + lp * (1.0 - bend) + o)).g,
                      texture2D(uTex, cover(c0 + lp * (1.0 - bend * 0.988) + o)).b);
       }
-      orig *= 0.25;
+      orig /= 9.0;
       if (uHasText > 0.5) orig = mix(orig, vec3(1.0), texture2D(uText, (c0 + lp * (1.0 - bend)) / uRes).a);   // le texte est grossi comme l'image
+      // légère teinte irisée en dégradé : rien au centre, au plus 14 % contre l'anneau, couleur de la roue « flux » du kit
+      // à cet angle (la même que l'anneau juste à côté : la teinte semble rayonner de l'anneau)
+      orig = mix(orig, flowColor(lp), 0.14 * smoothstep(0.3, 1.0, r) * smoothstep(0.3, 1.0, r));
       vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);

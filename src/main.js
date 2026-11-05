@@ -501,6 +501,9 @@ function scrollWords(vh) {
       for (let i = tail; i < swWords.length; i++) swT[i] = Math.min(swT[i], start + ((i - tail) / Math.max(1, n - 1)) * (end - start))
     }
     swOffT = swT.map((t) => t - (SW_OFF - SW_LINE) * vh)
+    // À propos et Contact : affichés d'emblée dès qu'ils sont à l'écran (pas d'apparition sur la ligne des 8/10) ; ils
+    // gardent seulement la disparition actuelle, en repassant sous la ligne des 96 %
+    swWords.forEach((w, i) => { if (w.closest('#a-propos')) swT[i] = swOffT[i] })
     swOn = swWords.map((w) => w.classList.contains('on'))
   }
   for (let i = 0; i < swWords.length; i++) {

@@ -305,7 +305,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
    bords latéraux fondus comme le haut et le bas des images */
 .work__pin { padding-block: var(--sp-5) var(--sp-5); }
 .work__track { --fade: 120px;   /* même largeur que le fondu du haut */ overflow-x: auto; scrollbar-width: none; padding-bottom: 8px;
-  -webkit-mask: linear-gradient(90deg, rgb(0 0 0 / var(--edge-floor)), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / var(--edge-floor))); mask: linear-gradient(90deg, rgb(0 0 0 / var(--edge-floor)), #000 var(--fade), #000 calc(100% - var(--fade)), rgb(0 0 0 / var(--edge-floor))); }
+  -webkit-mask: linear-gradient(90deg, rgb(0 0 0 / var(--edge-floor)), #000 min(var(--fade), var(--edge-l)), #000 calc(100% - var(--fade)), rgb(0 0 0 / var(--edge-floor))); mask: linear-gradient(90deg, rgb(0 0 0 / var(--edge-floor)), #000 min(var(--fade), var(--edge-l)), #000 calc(100% - var(--fade)), rgb(0 0 0 / var(--edge-floor))); }
 .work__strip { display: flex; gap: clamp(24px, 4vw, 64px); width: max-content; }
 /* avec le script : la piste est déplacée par le script (glisser, pavé tactile, flèches), en boucle */
 .is-rail .work__track { overflow: hidden; cursor: grab; touch-action: pan-y; }
@@ -526,7 +526,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   --vmask: linear-gradient(to bottom, transparent calc(0px - var(--pt, 0px)), #000 calc(var(--band) - var(--pt, 0px)), #000 calc(var(--vh, 100vh) - var(--band) - var(--pt, 0px)), transparent calc(var(--vh, 100vh) - var(--pt, 0px)));
   --emask: linear-gradient(to bottom, transparent, #000 80px, #000 calc(100% - 80px), transparent);   /* extrémités de la piste : fondu, jamais de marche */
   -webkit-mask: var(--hmask), var(--vmask), var(--emask); -webkit-mask-composite: source-in, source-in; mask: var(--hmask), var(--vmask), var(--emask); mask-composite: intersect, intersect; }
-.side--l { left: 0; --hmask: linear-gradient(90deg, #000, transparent); }
+.side--l { left: 0; width: min(var(--band), var(--edge-l)) !important; --hmask: linear-gradient(90deg, #000, transparent); }   /* à gauche : pas plus large que la marge devant la première vignette (au repos, aucune vignette n'est floutée ni fondue) */
 .side--r { right: 0; --hmask: linear-gradient(270deg, #000, transparent); }
 :root[data-theme="dark"] .side--l { background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 88%, transparent), transparent); }
 :root[data-theme="dark"] .side--r { background: linear-gradient(270deg, color-mix(in srgb, var(--bg) 88%, transparent), transparent); }
