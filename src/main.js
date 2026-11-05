@@ -40,10 +40,10 @@ if (!heroSlot) root.classList.add('brand-on', 'bar-on')
 // avec WebGL, c'est gl.js qui l'affiche, quand le gros logo l'a rejoint ; sans WebGL : dès que le gros logo est sorti
 else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl') && root.classList.contains('intro-done')) { root.classList.toggle('brand-on', !e.isIntersecting); if (!e.isIntersecting) root.classList.add('bar-on') } }).observe(heroSlot)
 
-/* Thème. Accueil en clair par défaut ; le bouton de la barre du haut l'inverse. Les fiches projet sont toujours en
-   sombre (theme.css), quel que soit le mode de l'accueil. */
+/* Thème. Accueil en clair par défaut ; le bouton de la barre du haut l'inverse. Les fiches projet suivent toujours le
+   mode de l'accueil. */
 const applyThemeColor = () => { const f = document.querySelector('.fiche.is-open'); const bg = getComputedStyle(f || root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
-const themeOf = (el) => (el.closest('.fiche') ? 'dark' : root.dataset.theme || 'light')   // fiches : toujours sombres
+const themeOf = () => root.dataset.theme || 'light'   // accueil et fiches : un seul mode
 const themeWord = () => (root.lang === 'en' ? { dark: 'Dark', light: 'Light' } : { dark: 'Sombre', light: 'Clair' })
 const labelThemes = () => document.querySelectorAll('.theme-toggle').forEach((b) => {
   const next = themeOf(b) === 'light' ? 'dark' : 'light'

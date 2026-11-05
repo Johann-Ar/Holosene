@@ -24,7 +24,7 @@ npm run todo      # liste des textes encore à fournir dans src/content.js
 - Chargeur : `src/loader.js` + `src/loader-draw.js`, dessiné dans un worker (`src/loader-worker.js`) pour rester
   fluide pendant la préparation de WebGL. Couleurs et proportions : `design/logo-kit` (voir `CLAUDE.md`).
 - Fiches projet : `#p-<slug>`, état piloté par `main.js` (classes `is-open`, `is-closing`…) ; sans JavaScript, `:target`.
-  Toujours en sombre.
+  Même mode (clair ou sombre) que l’accueil.
 - Langue : redirection vers `/en/` des navigateurs non francophones à la première visite, par le serveur
   (`vercel.json`, en-tête `Accept-Language`) ou à défaut par un script en tête de page ; le choix FR / EN est mémorisé
   (cookie `lang` et `localStorage`).

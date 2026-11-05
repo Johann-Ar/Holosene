@@ -15,9 +15,7 @@
 :root[data-theme="light"] { color-scheme: light; --bg: var(--bg-light); --ink: var(--bg-dark); }
 :root[data-theme="dark"] { color-scheme: dark; --bg: #0D0D0D; --ink: white; }   /* sombre : nettement plus noir que le #1E1E1E du kit */
 
-/* fiches projet : toujours en sombre (calque fixe au-dessus de la page), dès leur ouverture, sans transition, quel que
-   soit le mode de l'accueil */
-.fiche, .fiche-veil { color-scheme: dark; --bg: #0D0D0D; --ink: white; }
+/* fiches projet : même mode (clair ou sombre) que l'accueil, elles en héritent */
 
 /* neutres recalculés là où --bg / --ink changent : la page et les fiches */
 :root, .fiche {

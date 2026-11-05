@@ -208,6 +208,6 @@ export function render(lang) {
 
 ${projects.map(fiche).join('')}
 <div class="fiche-veil" aria-hidden="true"></div>
-<img class="fiche-brand" src="${root}media/monogram-iris-dark.svg" alt="" aria-hidden="true" width="470" height="576" draggable="false">
+<span class="fiche-brand" aria-hidden="true"><img class="only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576" draggable="false"><img class="only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576" draggable="false"></span>
 `
 }

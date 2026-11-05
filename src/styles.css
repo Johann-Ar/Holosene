@@ -400,15 +400,18 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche.is-closing .fiche__row, .fiche.is-closing .fiche__head { animation: content-out 0.5s var(--ease-flow) forwards; }
 .fiche-veil { display: none; position: fixed; top: 0; bottom: 0; left: 0; width: 18vw; z-index: 51; pointer-events: none; will-change: transform;
   background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 0%, transparent), var(--bg)); }
-/* logo du haut au-dessus des fiches : à la place exacte du petit logo de la barre (main.js le mesure), immobile ; version
-   sombre du kit (les fiches sont sombres). Fondu croisé avec le logo de la barre pendant que le rideau passe. */
-.fiche-brand { position: fixed; left: 50%; top: 22px; height: 48px; width: auto; z-index: 56; pointer-events: none; opacity: 0; visibility: hidden;
+/* logo du haut au-dessus des fiches : à la place exacte du petit logo de la barre (main.js le mesure), immobile ; même
+   version du kit que la barre (clair ou sombre, comme l'accueil). Fondu pendant que le rideau passe. */
+.fiche-brand { position: fixed; left: 50%; top: 22px; height: 48px; width: auto; z-index: 56; display: block; pointer-events: none; opacity: 0; visibility: hidden;
   transition: opacity 0.4s var(--ease-flow) 0.15s, visibility 0s linear 0.55s; }
 .fiche-open .fiche-brand { opacity: 1; visibility: visible; transition: opacity 0.45s var(--ease-flow) 0.25s, visibility 0s; }
+.fiche-brand img { display: block; width: 100%; height: 100%; }
 @media (prefers-reduced-motion: reduce) { .fiche-brand, .fiche-open .fiche-brand { transition: none; } }
 .fiche-veil.is-on { display: block; animation: veil-out 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
-@keyframes fiche-out { to { transform: translate3d(100vw, 0, 0); } }
-@keyframes veil-out { from { transform: translate3d(-18vw, 0, 0); } to { transform: translate3d(82vw, 0, 0); } }
+@keyframes fiche-out { to { transform: translate3d(118vw, 0, 0); } }
+/* fiche et voile vont 18 vw plus loin que le bord de l'écran, ensemble (même durée, même courbe : le voile reste collé au
+   bord de la fiche) : à la fin, le voile est entièrement hors de l'écran, il n'est jamais coupé net */
+@keyframes veil-out { from { transform: translate3d(-18vw, 0, 0); } to { transform: translate3d(100vw, 0, 0); } }
 @keyframes content-out { to { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .fiche-veil { display: none !important; } }
 @keyframes curtain-in { from { --cut: calc(100% + 18vw); } to { --cut: 0%; } }
@@ -420,8 +423,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 }
 /* barre de la fiche : Fermer, en haut à droite ; dessous, exactement le même fondu que la barre de l'accueil (même
    .edge--top et, en clair, même flou progressif .topbar__glass), selon le mode de la fiche */
-:root .fiche .topbar__glass { display: none !important; }   /* fiche toujours sombre : pas de voile blanc */
-:root[data-theme="light"] .fiche .edge { opacity: 1; -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask: none; mask: none; }   /* fiche toujours sombre : le fondu sombre de l'accueil */
 .fiche__head { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 12px; }
 .fiche__tools { display: flex; align-items: center; gap: 12px; flex: none; }
 .fiche__close { flex: none; font: 400 var(--fs-small) var(--font-text); color: var(--c-white); text-decoration: none; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 16px; }
