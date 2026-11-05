@@ -655,16 +655,15 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .topbar .lang span { transition: color var(--hl-dur) var(--hl-ease), text-shadow var(--hl-dur) var(--hl-ease); }
 /* … et la langue non choisie et la barre ont en plus le léger flou et la lueur des lettres au survol (même ombre que
    .topbar .lang:hover, plus bas) ; la langue affichée reste nette */
-.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 48%, var(--bg));
+.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 58%, var(--bg));   /* au repos : un peu plus foncé en clair, un peu plus clair en sombre (plus proche de l'encre) */
  
   text-shadow: 0 0 2.5px color-mix(in srgb, currentColor 55%, transparent), 0 0 7px rgb(255 255 255 / 0.28), 0 0 16px rgb(255 255 255 / 0.15); }
-/* au survol : la langue choisie en blanc (couleur du texte du bouton survolé) ; l'autre langue et la barre dans le gris
-   le plus clair (règles suivantes) ; même graisse partout */
-.topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: var(--bg) !important; }
-.topbar .lang:is(:hover, :focus-visible, :active) .lang__sep, :root[lang="fr"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__en, :root[lang="en"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__fr { color: color-mix(in srgb, var(--bg) 78%, var(--ink)) !important; }
-/* mode sombre : le bouton survolé est clair, « plus clair » veut dire vers l'encre (blanc) */
-:root[data-theme="dark"] .topbar .lang:is(:hover, :root[data-theme="dark"] :focus-visible, :root[data-theme="dark"] :active) .lang__sep, :root[data-theme="dark"][lang="fr"] .topbar .lang:is(:hover, :root[data-theme="dark"] :focus-visible, :root[data-theme="dark"] :active) .lang__en, :root[data-theme="dark"][lang="en"] .topbar .lang:is(:hover, :root[data-theme="dark"] :focus-visible, :root[data-theme="dark"] :active) .lang__fr { color: color-mix(in srgb, var(--bg) 30%, var(--ink)) !important; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .topbar .lang:is(:hover, :root:not([data-theme="light"]) :focus-visible, :root:not([data-theme="light"]) :active) .lang__sep, :root:not([data-theme="light"])[lang="fr"] .topbar .lang:is(:hover, :root:not([data-theme="light"]) :focus-visible, :root:not([data-theme="light"]) :active) .lang__en, :root:not([data-theme="light"])[lang="en"] .topbar .lang:is(:hover, :root:not([data-theme="light"]) :focus-visible, :root:not([data-theme="light"]) :active) .lang__fr { color: color-mix(in srgb, var(--bg) 30%, var(--ink)) !important; } }
+/* au survol, en clair comme en sombre : la langue non choisie (celle vers laquelle on bascule) en blanc (couleur du
+   texte du bouton survolé) ; la langue choisie et la barre dans le gris le plus clair ; même graisse partout */
+.topbar .lang:is(:hover, :focus-visible, :active) span { color: color-mix(in srgb, var(--bg) 78%, var(--ink)) !important; }
+:root[data-theme="dark"] .topbar .lang:is(:hover, :focus-visible, :active) span { color: color-mix(in srgb, var(--bg) 30%, var(--ink)) !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .topbar .lang:is(:hover, :focus-visible, :active) span { color: color-mix(in srgb, var(--bg) 30%, var(--ink)) !important; } }
+:root:root[lang="fr"] .topbar .lang:is(:hover, :focus-visible, :active) span.lang__en, :root:root[lang="en"] .topbar .lang:is(:hover, :focus-visible, :active) span.lang__fr { color: var(--bg) !important; }
 
 
 /* « JOHANN ARATA » : le logotype vectoriel du pack (public/logotypes/svg/johann-arata.svg, composant src/logotype-svg.js),
