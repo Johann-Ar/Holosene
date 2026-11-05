@@ -26,6 +26,12 @@ const MONO_VB = [146, 154, 470, 576], MONO_U = 1000 / MONO_VB[3]
 const MONO_W = MONO_VB[2] * MONO_U                                                        // ≈ 816
 const MONO_O = [(KIT.ring.center[0] - MONO_VB[0]) * MONO_U, (KIT.ring.center[1] - MONO_VB[1]) * MONO_U]   // centre du « o »
 
+const O_OFF = [(MONO_O[0] - MONO_W / 2) / 1000, (MONO_O[1] - 500) / 1000], O_R = KIT.ring.outerRadius * MONO_U / 1000
+const bigOf = (w, h) => Math.min(h * 0.46, w * (w < 760 ? 0.5 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil
+const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * 0.62)   // rayon du « o » au relais avec le chargeur (px)
+/** Rayon du « o » au relais avec le chargeur (px CSS) : connu avant même de créer le contexte WebGL. */
+export const loaderRadius = () => handoffR(innerWidth, innerHeight)
+
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`
 
 
@@ -181,11 +187,7 @@ vec3 withLens(vec2 q, vec3 base) {
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       col = mix(col, orig, inner);
-      // anneau fin (de R − 1 à uLensO), couleurs du kit ; bord anticrénelé sur un pixel d'écran exact (1 / dpr : pas de
-      // dérivées dans cette branche, où elles ne sont pas fiables)
-      float aw = 1.0 / uDpr;
-      float ring = smoothstep(uLensO + aw * 0.5, uLensO - aw * 0.5, d) * smoothstep(R - 1.0 - aw * 0.5, R - 1.0 + aw * 0.5, d);
-      col = mix(col, flowColor(lp), ring);
+      // l'anneau est dessiné après toutes les vues, dans sa propre passe (RING) : jamais coupé par le bord d'une vignette
     }
   }
   return col;
@@ -216,7 +218,7 @@ void main() {
   }
   vec4 h = halftoneS(hp, suck);
   vec3 col = h.rgb; float a = h.a;
-  col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
+  col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLens.z) a = 1.0;
 
 
   // bords latéraux fondus de la piste (vues sans verre ; sinon la passe « verre » s'en charge)
@@ -396,6 +398,20 @@ void main() {
   gl_FragColor = vec4(col * a, a);
 }`
 
+// Anneau de la lentille : une passe à part, sur toute la toile, par-dessus les vues (il n'est jamais coupé par le bord
+// d'une vignette ni par son verre). Couleurs : roue « flux » du kit (même texture que le « o » du logo).
+const RING = `precision highp float;
+uniform sampler2D uFlow;
+uniform vec4 uRing;     // centre (px CSS, depuis le haut à gauche), rayon intérieur, rayon extérieur
+uniform vec2 uView;     // hauteur de la toile (px écran), dpr
+vec3 flowColor(vec2 p) { float u = fract((degrees(atan(p.y, p.x)) + 90.0 - 180.0) / 360.0); return texture2D(uFlow, vec2(u, 0.5)).rgb; }
+void main() {
+  vec2 p = vec2(gl_FragCoord.x, uView.x - gl_FragCoord.y) / uView.y;
+  vec2 lp = p - uRing.xy; float d = length(lp), aw = 1.0 / uView.y;
+  float ring = smoothstep(uRing.w + aw * 0.5, uRing.w - aw * 0.5, d) * smoothstep(uRing.z - aw * 0.5, uRing.z + aw * 0.5, d);
+  gl_FragColor = vec4(flowColor(lp) * ring, ring);
+}`
+
 export function createGL(canvas, { reduced }) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
   if (!gl) return null
@@ -438,6 +454,12 @@ export function createGL(canvas, { reduced }) {
   gl.attachShader(gProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(gProg, sh(gl.FRAGMENT_SHADER, GLASS)); gl.bindAttribLocation(gProg, 0, 'a'); gl.linkProgram(gProg)
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
   const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg', 'uBgB', 'uBgScroll']) GU[n] = gl.getUniformLocation(gProg, n)
+  // passe de l'anneau de la lentille
+  const rProg = gl.createProgram()
+  gl.attachShader(rProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(rProg, sh(gl.FRAGMENT_SHADER, RING)); gl.bindAttribLocation(rProg, 0, 'a'); gl.linkProgram(rProg)
+  if (!gl.getProgramParameter(rProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(rProg))
+  const RU = { uFlow: gl.getUniformLocation(rProg, 'uFlow'), uRing: gl.getUniformLocation(rProg, 'uRing'), uView: gl.getUniformLocation(rProg, 'uView') }
+  gl.useProgram(rProg); gl.uniform1i(RU.uFlow, 6); gl.useProgram(prog)
   // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
   // défilement pour la graine du grain), aucune allocation par image
   // teintes : 4 positions sur la roue, tirées au hasard à chaque chargement (un quart de tour d'écart environ, pour rester
@@ -486,6 +508,12 @@ export function createGL(canvas, { reduced }) {
   const ptr = { x: -1e4, y: -1e4, t: -1e9, touch: false }
   const move = (x, y, touch) => { ptr.x = x; ptr.y = y; ptr.t = performance.now(); ptr.touch = touch }
   addEventListener('pointermove', (e) => move(e.clientX, e.clientY, e.pointerType === 'touch'), { passive: true })
+  // curseur immobile pendant que la page défile : la molette (ou le pavé tactile) et les changements de survol donnent
+  // aussi sa position, sans compter comme un mouvement (ptr.t) ; le « o » apparaît dès qu'une vignette passe dessous,
+  // même si la souris n'a pas bougé depuis le chargement
+  const at = (e) => { if (e.pointerType !== 'touch' && !ptr.touch) { ptr.x = e.clientX; ptr.y = e.clientY } }
+  addEventListener('wheel', at, { passive: true })
+  addEventListener('pointerover', at, { passive: true })
   // au doigt : tant qu'on appuie sur une vignette (toucher, appui long), elle passe en couleur comme au survol ;
   // un défilement ou un glissement (pointercancel) l'arrête
   addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') { move(e.clientX, e.clientY, true); ptr.down = true } }, { passive: true })
@@ -499,12 +527,20 @@ export function createGL(canvas, { reduced }) {
   // dans la page ; le logo de l'accueil, fixe pendant sa scène, reste sur la toile
   const detached = matchMedia('(hover: none) and (pointer: coarse)').matches
   let order = null
+  const pending = []
+  const sendNext = () => {
+    if (!pending.length || (!pending[0].mark && document.documentElement.classList.contains('intro-lock'))) return
+    const v = pending.shift(), src = v.src
+    upload(v.tex, src); v.img = [src.videoWidth || src.naturalWidth, src.videoHeight || src.naturalHeight]; v.ready = v.img[0] > 0
+  }
   const views = [...document.querySelectorAll('[data-gl]')].map((el) => {
     const v = { el, tex: newTex(), img: null, video: el.querySelector('video'), ready: false, seen: 0, glass: 0, color: el.hasAttribute('data-color'), text: el.dataset.text || '', textTex: null, textKey: '',
       mark: el.dataset.gl === 'mark', cell: +el.dataset.cell || 7,
       radius: +el.dataset.radius || 0, clip: el.closest('[data-clip]'), fade: el.dataset.gl === 'panel', mask: null, maskKey: '' }
     const src = v.video || el.querySelector('img')
-    const done = () => { upload(v.tex, src); v.img = [src.videoWidth || src.naturalWidth, src.videoHeight || src.naturalHeight]; v.ready = v.img[0] > 0 }
+    // envoi au GPU : en file, une image par image affichée (pas de saccade), le logo de l'accueil d'abord ; pendant le
+    // chargeur et l'intro, seul le logo (les vignettes, plus bas, attendent la fin de l'intro)
+    const done = () => { v.src = src; if (v.mark) pending.unshift(v); else pending.push(v) }
     if (v.video) v.video.addEventListener('loadeddata', done, { once: true })
     else if (src.complete && src.naturalWidth) done()
     else { src.loading = 'eager'; src.addEventListener('load', done, { once: true }) }
@@ -534,10 +570,7 @@ export function createGL(canvas, { reduced }) {
    *  du chargeur (rayon handoffR, centre de la fenêtre), à la vitesse où celui-ci grandissait, et continue de grandir sur
    *  place en ralentissant ; puis, seulement quand le S apparaît, le monogramme glisse jusqu'à sa position.
    *  Ensuite le défilement p le ramène à sa place dans la composition (au-dessus du nom). Renvoie aussi l'apparition du S. */
-  const O_OFF = [(MONO_O[0] - MONO_W / 2) / 1000, (MONO_O[1] - 500) / 1000], O_R = KIT.ring.outerRadius * MONO_U / 1000
   const GROW = IRIS.intro.grow, SHIFT = IRIS.intro.shift
-  const bigOf = (w, h) => Math.min(h * 0.46, w * (w < 760 ? 0.5 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil
-  const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * 0.62)   // rayon du « o » au relais avec le chargeur (px)
   function markXf(w, h, p, ms, slot, oc, dock) {
     const k = (a, b) => Math.min(1, Math.max(0, (p - a) / (b - a))), e = (x) => 1 - Math.pow(1 - x, 3)
     const io = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - Math.pow(2 - 2 * x, 3) / 2)
@@ -594,7 +627,8 @@ export function createGL(canvas, { reduced }) {
   // une seule lentille pour toute la page : elle suit le pointeur de près (sans dépassement), apparaît sur les cartes
   const lens = { x: 0, y: 0, s: 0, init: false }
   const hoverDevice = matchMedia('(hover: hover)').matches
-  const follow = (a, b, tau, dt) => a + (b - a) * (1 - Math.exp(-dt / tau))
+  // suivi amorti ; à moins de 1e-4 de la cible (invisible), la valeur s'y pose : une scène immobile est vraiment immobile
+  const follow = (a, b, tau, dt) => { const v = a + (b - a) * (1 - Math.exp(-dt / tau)); return Math.abs(b - v) < 1e-4 ? b : v }
 
   let last = performance.now(), time = 0
   // ?debug=perf : temps GPU par image (moyenne de 60 images), et temps JavaScript ; ?fx=0 coupe les zones floues
@@ -618,25 +652,19 @@ export function createGL(canvas, { reduced }) {
       perfJs.length = 0; perfGpu.length = 0
     }
   }
-  let halSent = -1
+  let halSent = -1, lastSig = null
   function draw(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
-    gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
-    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
-    // roue « flux » : nouvelle texture calculée pour cette image (flow.js) → envoyée au GPU
-    // (rattachée à l'unité 6 à chaque image, puis l'unité 0 redevient active : une texture créée ensuite ne doit pas
-    // prendre la place de celle du flux)
-    gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, flowTex)
-    if (FLOW.version !== flowVer) { flowVer = FLOW.version; gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, FLOW.size, 1, gl.RGBA, gl.UNSIGNED_BYTE, FLOW.lut) }
-    gl.activeTexture(gl.TEXTURE0)
+    sendNext()
     let flowNeeded = lens.s > 0.01
     if (document.documentElement.classList.contains('fiche-open')) {
-      // fiche projet ouverte : le curseur reste toujours visible
+      // fiche projet ouverte : le curseur reste toujours visible ; la toile, cachée par la fiche, est vidée une fois
       if (lens.hidden) { document.documentElement.classList.remove('lens-on'); lens.hidden = false }
       lens.s = 0
       FLOW.glNeeds = false
+      if (lastSig !== null) { gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); lastSig = null }
       return
     }
     // la lentille : visible quand le pointeur est sur une carte (pas sur l'accueil)
@@ -650,7 +678,13 @@ export function createGL(canvas, { reduced }) {
     }
     // sur un bouton ou un lien d'interface (flèches de la piste, barre du haut…) : pas de lentille, le curseur reste visible
     const onCtl = !!over && !!document.elementFromPoint(ptr.x, ptr.y)?.closest('button, .btn, .work__nav, .topbar, [role="button"]')
-    if (over) lens.view = over
+    // entre deux vignettes de la même piste (l'espace qui les sépare) : le « o » reste affiché un instant, il ne
+    // clignote pas en passant de l'une à l'autre
+    if (over) { lens.view = over; lens.overT = now }
+    else if (lens.view && now - (lens.overT || -1e9) < 160) {
+      const cr = lens.view.clip?.getBoundingClientRect(), b = lens.view.el.getBoundingClientRect()
+      if (cr && ptr.x > cr.left && ptr.x < cr.right && ptr.y >= b.top && ptr.y <= b.bottom) over = lens.view
+    }
     // pendant le défilement (et 200 ms après), pas de survol : les vignettes qui passent sous un curseur immobile ne
     // s'allument pas l'une après l'autre (clignotement)
     // (seul un vrai mouvement compte : la fin du défilement doux, au sous-pixel, ne bloque plus la lentille) ;
@@ -670,24 +704,76 @@ export function createGL(canvas, { reduced }) {
     if (hide !== lens.hidden) { document.documentElement.classList.toggle('lens-on', hide); lens.hidden = hide }
 
     order ??= detached ? [...views.filter((v) => !v.mark), ...views.filter((v) => v.mark)] : views   // tactile : vignettes d'abord, logo ensuite
+    // Une image n'est redessinée que si quelque chose a changé : toutes les valeurs qui décident du dessin sont relevées
+    // d'abord (phase 1, sans rien dessiner), puis comparées à celles de l'image précédente. Identiques : rien n'est
+    // envoyé au GPU, la toile garde l'image déjà affichée (exactement la même). Sinon, dessin complet (phase 2).
+    const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
+    const sig = [canvas.width, canvas.height, dpr, cellScale, FX.version, ...theme.bg, ...theme.ink, sc, sc > 0 ? lens.x : 0, sc > 0 ? lens.y : 0, views.indexOf(lens.view),
+      FX.colorStrength > 0 || FX.grain > 0 ? now : 0, Math.floor(scrollY / SEED_STEP)]
+    const jobs = []
     for (const v of order) {
       const b = v.el.getBoundingClientRect()
       if (!v.ready || b.bottom < 0 || b.top > H || b.right < 0 || b.left > W || b.width < 2) continue
       const cr = v.clip?.getBoundingClientRect()
       if (cr && (b.right < cr.left || b.left > cr.right)) continue
-      if (v.video && !v.video.paused && v.video.readyState >= 2) upload(v.tex, v.video)
+      if (v.video && !v.video.paused && v.video.readyState >= 2) { upload(v.tex, v.video); sig.push(NaN) }   // nouvelle image de la vidéo : toujours redessiner
       if (!v.seen) { if (!document.documentElement.classList.contains('is-loaded')) continue; v.seen = now }
       const w = b.width, h = b.height
       // apparition : les points poussent, puis rétrécissent quand la vue sort de l'écran
       const intro = reduced ? 1 : Math.min(1, (now - v.seen) / 1600)
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
       const reveal = 1   // vignettes : trame toujours complète (plus d'apparition ni de disparition en noir)
-      if (v.mark) { maskFor(v); if (!v.maskB) continue; flowNeeded = true }
+      if (v.mark) { maskFor(v); if (!v.maskB) continue }
       const hov = !v.mark && ((hoverDevice && still) || (ptr.touch && ptr.down)) && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
+      let xf = null
+      if (v.mark) {
+        const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
+        const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
+        const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
+        // animations réduites : pas de scène de défilement, le logo est d'emblée à sa place (au-dessus du nom)
+        // place du petit logo de la barre ; le logo y arrive quand la vue a remonté de (hauteur du logo posé − barre)
+        const br = brandMark?.getBoundingClientRect()
+        let dock = null
+        if (br?.height) {
+          const by = br.top + br.height / 2, m = Math.min(1, Math.max(0, -b.top / Math.max(1, slot.y - by)))
+          dock = { x: br.left + br.width / 2 - b.left, y: by - b.top, h: br.height, m }
+          // arrivé : le petit logo de la barre (identique) prend le relais
+          // pas avant la fin de l'animation d'accueil (le petit logo et la barre n'existent pas encore)
+          if (document.documentElement.classList.contains('intro-done') && (m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked); if (docked) document.documentElement.classList.add('bar-on') }
+        }
+        // posé dans la barre : le petit logo de la barre (image du kit, au-dessus de la toile) a pris le relais au même pixel ;
+        // le logo WebGL, entièrement caché dessous, n'est plus dessiné (ni le flux de sa roue calculé)
+        if (docked && document.documentElement.classList.contains('brand-on')) { FLOW.hoverTarget = 0; continue }
+        flowNeeded = true
+        xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
+        // survol du « o » (souris) : la couleur sous le curseur s'élargit (flow.js) ; position du curseur sur la roue, dans la
+        // même convention que flowColor (u : 0 en bas, sens horaire)
+        { const oR = O_R * xf[2] * 1.3, ox = b.left + xf[0] + O_OFF[0] * xf[2], oy = b.top + xf[1] + O_OFF[1] * xf[2]
+          const dx = ptr.x - ox, dy = ptr.y - oy
+          FLOW.hoverTarget = hoverDevice && !ptr.touch && !reduced && Math.hypot(dx, dy) < oR ? 1 : 0
+          if (FLOW.hoverTarget) FLOW.hoverU = (((Math.atan2(dy, dx) * 180 / Math.PI + 90 - 180) / 360) % 1 + 1) % 1 }
+      }
+      if (v.text) sig.push(`${Math.round(w)}x${Math.round(h)}@${dpr}:${document.fonts?.status}`)
+      sig.push(views.indexOf(v), b.left, b.top, w, h, cr ? cr.left : 0, cr ? cr.right : 0, v.glass, v.color ? 1 : 0, ...(xf || []))
+      jobs.push({ v, b, cr, w, h, reveal, xf, glassy: v.radius > 0 })
+    }
+    if (flowNeeded || sc > 0) sig.push(FLOW.version)   // roue « flux » : logo de l'accueil et anneau de la lentille
+    const same = lastSig && lastSig.length === sig.length && sig.every((x, k) => x === lastSig[k])
+    lastSig = sig
+    FLOW.glNeeds = flowNeeded   // ni logo ni lentille à l'écran : le flux se met en pause
+    if (same) return
 
+    gl.viewport(0, 0, canvas.width, canvas.height); gl.scissor(0, 0, canvas.width, canvas.height)
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
+    // roue « flux » : nouvelle texture calculée pour cette image (flow.js) → envoyée au GPU
+    // (rattachée à l'unité 6, puis l'unité 0 redevient active : une texture créée ensuite ne doit pas prendre la place
+    // de celle du flux)
+    gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, flowTex)
+    if (FLOW.version !== flowVer) { flowVer = FLOW.version; gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, FLOW.size, 1, gl.RGBA, gl.UNSIGNED_BYTE, FLOW.lut) }
+    gl.activeTexture(gl.TEXTURE0)
+    for (const { v, b, cr, w, h, reveal, xf, glassy } of jobs) {
       const pw = Math.round(w * dpr), ph = Math.round(h * dpr)
-      const glassy = v.radius > 0
       const own = detached && !v.mark   // vignette dessinée dans sa propre image (écran tactile), voir plus bas
       let x0 = own ? 0 : Math.round(b.left * dpr), y0 = own ? 0 : Math.round((H - b.bottom) * dpr)
       const sx = x0, sy = y0
@@ -726,27 +812,6 @@ export function createGL(canvas, { reduced }) {
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) {
-        const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
-        const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
-        const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
-        // animations réduites : pas de scène de défilement, le logo est d'emblée à sa place (au-dessus du nom)
-        // place du petit logo de la barre ; le logo y arrive quand la vue a remonté de (hauteur du logo posé − barre)
-        const br = brandMark?.getBoundingClientRect()
-        let dock = null
-        if (br?.height) {
-          const by = br.top + br.height / 2, m = Math.min(1, Math.max(0, -b.top / Math.max(1, slot.y - by)))
-          dock = { x: br.left + br.width / 2 - b.left, y: by - b.top, h: br.height, m }
-          // arrivé : le petit logo de la barre (identique) prend le relais
-          // pas avant la fin de l'animation d'accueil (le petit logo et la barre n'existent pas encore)
-          if (document.documentElement.classList.contains('intro-done') && (m >= 1) !== docked) { docked = m >= 1; document.documentElement.classList.toggle('brand-on', docked); if (docked) document.documentElement.classList.add('bar-on') }
-        }
-        const xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
-        // survol du « o » (souris) : la couleur sous le curseur s'élargit (flow.js) ; position du curseur sur la roue, dans la
-        // même convention que flowColor (u : 0 en bas, sens horaire)
-        { const oR = O_R * xf[2] * 1.3, ox = b.left + xf[0] + O_OFF[0] * xf[2], oy = b.top + xf[1] + O_OFF[1] * xf[2]
-          const dx = ptr.x - ox, dy = ptr.y - oy
-          FLOW.hoverTarget = hoverDevice && !ptr.touch && !reduced && Math.hypot(dx, dy) < oR ? 1 : 0
-          if (FLOW.hoverTarget) FLOW.hoverU = (((Math.atan2(dy, dx) * 180 / Math.PI + 90 - 180) / 360) % 1 + 1) % 1 }
         gl.uniform3f(U.uInk, ...theme.ink)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
       }
@@ -760,7 +825,6 @@ export function createGL(canvas, { reduced }) {
         gl.uniform1i(GU.uFbo, 2); gl.uniform2f(GU.uFboSize, fboW, fboH)
         gl.uniform2f(GU.uRes, w, h); gl.uniform2f(GU.uOrigin, sx, sy); gl.uniform1f(GU.uDpr, dpr)
         // irisé du verre : une seule intensité (pas de changement au survol) ; plus présent sur fond clair
-        const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
         gl.uniform1f(GU.uRadius, v.radius); gl.uniform1f(GU.uGlass, v.glass * (light ? 0.95 : 0.6));   // bord neutre au repos, irisé au survol
         gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
@@ -780,7 +844,18 @@ export function createGL(canvas, { reduced }) {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.scissor(0, 0, pw, ph); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
       }
     }
-    FLOW.glNeeds = flowNeeded   // ni logo ni lentille à l'écran : le flux se met en pause
+    if (sc > 0 && lens.view && !detached) {
+      // anneau de la lentille, par-dessus tout, sur la toile entière (rien ne le coupe)
+      const ri = (Ri + 1) * sc - 1, ro = Ro * sc, pad = 2
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.viewport(0, 0, canvas.width, canvas.height)
+      const x0 = Math.max(0, Math.floor((lens.x - ro - pad) * dpr)), y0 = Math.max(0, Math.floor((H - lens.y - ro - pad) * dpr))
+      gl.scissor(x0, y0, Math.ceil((ro + pad) * 2 * dpr), Math.ceil((ro + pad) * 2 * dpr))
+      gl.useProgram(rProg)
+      gl.uniform4f(RU.uRing, lens.x, lens.y, ri, ro); gl.uniform2f(RU.uView, canvas.height, dpr)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+      gl.useProgram(prog)
+    }
   }
   document.documentElement.classList.add('has-gl')
   // le logo de l'accueil est prêt (champ de distance chargé dès le départ) : le chargeur attend ce moment, sans quoi le

@@ -2,12 +2,12 @@ import 'virtual:iris.css'
 import './styles.css'
 import { FLOW, updateFlow } from './flow.js'
 import Lenis from 'lenis'
-import { createGL } from './gl.js'
+import { createGL, loaderRadius } from './gl.js'
 import { createBackdrop } from './backdrop.js'
 import { IRIS } from './iris-config.js'
 import { startFxCss } from './fx-css.js'
 import { swapLanguage } from './lang-swap.js'
-import loaderArcUrl from './media/loader-arc.png'
+import { createLoader } from './loader.js'
 
 const root = document.documentElement
 root.classList.add('js')
@@ -22,13 +22,14 @@ const q = new URLSearchParams(location.search).get('dev')
 if (q !== null) store.set('dev', q === '0' ? null : '1')
 root.classList.toggle('is-dev', import.meta.env.DEV || store.get('dev') === '1')
 
-/* Langue : à la première visite de la page française, un navigateur non francophone va vers /en/. */
+/* Langue : le choix du visiteur est mémorisé (localStorage pour le script de <head>, cookie pour le serveur, voir
+   vercel.json) ; la redirection d'un navigateur non francophone vers /en/ se fait avant tout chargement (vite.config.js). */
 const langLink = document.querySelector('.topbar .lang')
-langLink?.addEventListener('click', () => store.set('lang', langLink.getAttribute('hreflang')))
-
-if (root.lang === 'fr' && !store.get('lang') && document.querySelector('.hero') && !(navigator.language || 'fr').toLowerCase().startsWith('fr')) {
-  location.replace('en/' + location.hash)
-}
+langLink?.addEventListener('click', () => {
+  const l = langLink.getAttribute('hreflang')
+  store.set('lang', l)
+  document.cookie = `lang=${l}; path=/; max-age=31536000; samesite=lax`
+})
 
 /* Réglages Iris en direct (?debug=iris) : en développement seulement, absent du site publié */
 if (import.meta.env.DEV && new URLSearchParams(location.search).get('debug') === 'iris') import('./iris-debug.js').then((m) => m.mountIrisDebug())
@@ -39,10 +40,10 @@ if (!heroSlot) root.classList.add('brand-on', 'bar-on')
 // avec WebGL, c'est gl.js qui l'affiche, quand le gros logo l'a rejoint ; sans WebGL : dès que le gros logo est sorti
 else new IntersectionObserver(([e]) => { if (!root.classList.contains('has-gl') && root.classList.contains('intro-done')) { root.classList.toggle('brand-on', !e.isIntersecting); if (!e.isIntersecting) root.classList.add('bar-on') } }).observe(heroSlot)
 
-/* Thème. Sans choix du visiteur : accueil en clair, fiches projet en sombre (CSS). Le bouton (barre du haut ou barre
-   d'une fiche) inverse le mode de la partie où l'on est, et ce mode vaut ensuite pour tout le site (mémorisé). */
-const applyThemeColor = () => { const bg = getComputedStyle(root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
-const themeOf = (el) => (!root.classList.contains('theme-chosen') && el.closest('.fiche') ? 'dark' : root.dataset.theme || 'light')
+/* Thème. Accueil en clair par défaut ; le bouton de la barre du haut l'inverse. Les fiches projet sont toujours en
+   sombre (theme.css), quel que soit le mode de l'accueil. */
+const applyThemeColor = () => { const f = document.querySelector('.fiche.is-open'); const bg = getComputedStyle(f || root).getPropertyValue('--bg').trim(); document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', bg)) }
+const themeOf = (el) => (el.closest('.fiche') ? 'dark' : root.dataset.theme || 'light')   // fiches : toujours sombres
 const themeWord = () => (root.lang === 'en' ? { dark: 'Dark', light: 'Light' } : { dark: 'Sombre', light: 'Clair' })
 const labelThemes = () => document.querySelectorAll('.theme-toggle').forEach((b) => {
   const next = themeOf(b) === 'light' ? 'dark' : 'light'
@@ -81,7 +82,8 @@ document.querySelectorAll('.copy').forEach((b) => {
 // un geste qui commence à l'horizontale appartient aux pistes : il ne fait pas défiler la page.
 let touchAxis = null
 addEventListener('touchstart', () => { touchAxis = null }, { passive: true, capture: true })
-const lenis = reduced ? null : new Lenis({ lerp: 0.1, wheelMultiplier: 0.9, gestureOrientation: 'both',   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
+const lenis = reduced ? null : new Lenis({ lerp: 0.1, overscroll: false,   // aux extrémités de la page : aucun défilement natif ni rebond
+  wheelMultiplier: 0.9, gestureOrientation: 'both',   // glisser à l'horizontale (pavé tactile) fait défiler la page comme à la verticale
   syncTouch: false,   // au doigt : défilement natif du téléphone (inertie, rebonds, vitesse : ceux du système)
   virtualScroll: (data) => {
     const { deltaX, deltaY, event } = data
@@ -147,29 +149,50 @@ document.addEventListener('click', (e) => {
   lenis ? lenis.scrollTo(id === 'top' ? 0 : el, { duration, easing: ease, force: true, lock: true }) : el.scrollIntoView({ behavior: 'smooth' })
 })
 
-/* Fiches projet : ouvertes par l'ancre #p-<slug> ; focus, Échap, focus piégé, défilement de la page bloqué. */
-let lastFocus = null, prevFiche = null
+/* Fiches projet. L'adresse (#p-<slug>) dit quelle fiche est ouverte ; l'état affiché est porté par des classes posées
+   ici (is-open, is-entering, is-under, is-closing), jamais par :target : history.pushState ne met pas :target à jour,
+   une fiche fermée par le bouton restait donc ciblée (elle se rouvrait, puis plus rien ne répondait). Sans JavaScript,
+   :target ouvre la fiche (styles.css). Focus, Échap, focus piégé, défilement de la page bloqué. */
+let lastFocus = null, current = null
 const veil = document.querySelector('.fiche-veil')
+const ficheBrand = document.querySelector('.fiche-brand')
 const ficheOf = () => (/^#p-/.test(location.hash) ? document.getElementById(location.hash.slice(1)) : null)
-function leave(el, kind, ms) {
-  el.classList.add('is-leaving', kind)
-  setTimeout(() => el.classList.remove('is-leaving', kind), ms)
+// classes d'animation temporaires : retirées après la durée de leur animation (styles.css), une minuterie par classe
+const FICHE_MS = { 'is-entering': 1000, 'is-under': 1000, 'is-closing': 900, 'is-on': 850 }
+const phaseTimers = new WeakMap()
+function phase(el, cls) {
+  const t = phaseTimers.get(el) || {}; phaseTimers.set(el, t)
+  clearTimeout(t[cls])
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls)   // l'animation repart toujours du début
+  t[cls] = setTimeout(() => el.classList.remove(cls), reduced ? 0 : FICHE_MS[cls])
 }
+function unphase(el, ...list) { const t = phaseTimers.get(el) || {}; for (const c of list) { clearTimeout(t[c]); el.classList.remove(c) } }
+// logo du haut, au-dessus des fiches : exactement à la place du petit logo de la barre (mesuré, même s'il est caché)
+function placeFicheBrand() {
+  if (!ficheBrand) return
+  // deux images (clair / sombre), une seule affichée : celle qui a une taille
+  const r = [...document.querySelectorAll('.topbar .brand__mark')].map((m) => m.getBoundingClientRect()).find((b) => b.height)
+  if (!r?.height) return
+  Object.assign(ficheBrand.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' })
+}
+addEventListener('resize', () => { if (current) placeFicheBrand() })
 function syncFiche() {
   const open = ficheOf()
-  // transitions : d'un projet à l'autre, l'ancien glisse sous le nouveau rideau ; à la fermeture, le rideau se retire
-  if (prevFiche && prevFiche !== open && !reduced) leave(prevFiche, open ? 'is-under' : 'is-closing', open ? 1000 : 900)
-  // fermeture : le voile en dégradé glisse avec le bord gauche de la fiche
-  if (prevFiche && !open && !reduced && veil) { veil.classList.remove('is-on'); void veil.offsetWidth; veil.classList.add('is-on'); setTimeout(() => veil.classList.remove('is-on'), 850) }
-  prevFiche = open
+  if (open === current) return
+  const prev = current
+  current = open
+  if (prev) {
+    // d'un projet à l'autre, l'ancien glisse sous le nouveau rideau ; à la fermeture, il se retire vers la droite
+    prev.classList.remove('is-open'); unphase(prev, 'is-entering')
+    phase(prev, open ? 'is-under' : 'is-closing')
+    if (!open && veil && !reduced) phase(veil, 'is-on')   // le voile en dégradé glisse avec le bord gauche de la fiche
+  }
   root.classList.toggle('fiche-open', !!open)
   document.body.style.overflow = open ? 'hidden' : ''
   if (open) {
-    // ouverture en fondu (CSS) ; une fois arrivée, la fiche n'a plus ni masque ni flou
-    open.classList.remove('is-in')
-    const arrived = (e) => { if (e.target === open && e.animationName === 'curtain-in') { open.classList.add('is-in'); open.removeEventListener('animationend', arrived) } }
-    open.addEventListener('animationend', arrived)
-    setTimeout(() => open.classList.add('is-in'), reduced ? 0 : 1000)   // sécurité si l'événement de fin manque
+    unphase(open, 'is-closing', 'is-under')
+    open.classList.add('is-open'); phase(open, 'is-entering')
+    placeFicheBrand()
     lenis?.stop()
     lastFocus ??= document.activeElement
     open.scrollTop = 0
@@ -193,14 +216,16 @@ function syncFiche() {
     }
     if (lastFocus) { lastFocus.focus?.({ preventScroll: true }); lastFocus = null }
   }
+  applyThemeColor()
 }
 addEventListener('hashchange', syncFiche)
 // Fermer : l'adresse prend l'ancre de la vignette sans que le navigateur fasse défiler la page jusqu'à elle (la page,
-// immobile sous la fiche, ne saute plus pendant que la fiche glisse) ; la fiche se ferme comme sur un changement d'ancre
+// immobile sous la fiche, ne saute pas pendant que la fiche glisse) ; la fiche se ferme comme sur un changement d'ancre
 document.addEventListener('click', (e) => {
   const a = e.target.closest('.fiche__close')
-  if (!a || e.metaKey || e.ctrlKey) return
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return
   e.preventDefault()
+  if (!current) return
   history.pushState(null, '', a.getAttribute('href'))
   syncFiche()
 })
@@ -500,47 +525,44 @@ function scrollEffects() {
 }
 if (reduced) { root.classList.add('hero-done', 'bar-on'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
-/* Chargeur : le « o » du logo-kit. Un arc tourne sur la roue fixe du kit (il en dévoile les couleurs à leur angle exact) ;
-   son opacité va de 0 à la queue à 1 à la tête (arrondie). En fin de chargement, l'anneau se complète (fondu de l'anneau
-   plein) et grandit en accélérant (60 % → 100 % du rayon du relais) ; le « o » du logo prend le relais au même pixel et à
-   la même vitesse, avec la même roue (le flux démarre de 0 à ce moment-là, flow.js), puis ralentit.
-   Tout est en animations CSS de transformation et d'opacité, exécutées par le compositeur du navigateur : le chargeur
-   reste fluide même quand la page prépare WebGL (compilation, envoi des images) sur le fil principal. */
-const loaderEl = document.querySelector('.loader'), loaderO = document.querySelector('.loader__o')
-let finishLoader = (done) => done(), sizeLoader = () => {}
-if (loaderO) {
-  FLOW.t0 = Infinity   // flux à l'arrêt (roue du kit) jusqu'au relais
-  let R1 = 44
-  // rayon du relais selon l'écran (fixé par le logo WebGL, 44 px au plus) : appelé juste après la création de gl
-  sizeLoader = () => { const it = gl?.intro?.(); if (it) { R1 = it.r0; loaderO.style.setProperty('--r1', R1 + 'px') } }
-  finishLoader = (done) => {
-    // durée de la croissance : l'anneau finit à la vitesse initiale de la croissance du logo (v = 3 (r1 − r0) / grow)
-    const it = gl?.intro?.(), R0 = R1 * 0.6
-    const growD = it ? Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(3 * (it.r1 - it.r0) / it.grow, 1e-3))) : 400
-    loaderO.style.setProperty('--grow', growD + 'ms')
-    loaderEl.classList.add('loader--closing')
-    // la tête rattrape la queue : l'arc s'arrête, un secteur net grandit depuis la tête jusqu'à la queue (rotations seules)
-    const rotOf = (sel) => loaderEl.querySelector(sel)?.getAnimations().find((a) => a.animationName === 'spin')   // la rotation (pas la transition d'opacité)
-    const spinA = rotOf('.loader__spin'), wheelA = rotOf('.loader__wheel')
-    if (spinA && !reduced) {
-      const dur = spinA.effect.getTiming().duration, rot = ((spinA.currentTime % dur) / dur) * 360
-      spinA.pause(); wheelA?.pause()
-      const ARC = 306, OVER = 8, GAP = 360 - ARC + OVER * 2   // tête de l'arc à 306° de la queue ; léger recouvrement aux deux bouts
-      const phi = rot + ARC - OVER, ease = 'cubic-bezier(0.45, 0, 0.25, 1)', opt = { duration: 640, easing: ease, fill: 'forwards' }
-      loaderEl.querySelector('.loader__fill').style.transform = `rotate(${phi}deg)`
-      loaderEl.querySelector('.loader__rot').animate([{ transform: 'rotate(-180deg)' }, { transform: `rotate(${-180 + GAP}deg)` }], opt)
-      loaderEl.querySelector('.loader__fillring').animate([{ transform: `rotate(${-(phi - 180)}deg)` }, { transform: `rotate(${-(phi - 180 + GAP)}deg)` }], opt)
-    }
-    setTimeout(() => { FLOW.t0 = performance.now(); done() }, reduced ? 0 : 1300)
-  }
+/* Chargeur : le « o » du logo-kit (loader.js, loader-draw.js), dessiné hors du fil principal quand le navigateur le
+   permet. En fin de chargement, la tête rejoint la queue, l'anneau se complète et grandit en accélérant (60 % → 100 % du
+   rayon du relais) ; le « o » du logo WebGL prend le relais au même pixel et à la même vitesse, avec la même roue (le flux
+   démarre de 0 à ce moment-là, flow.js), puis ralentit. */
+const loaderEl = document.querySelector('.loader')
+// rayon du relais selon l'écran (celui du « o » du logo WebGL, 44 px au plus), connu dès maintenant : le chargeur démarre
+// à sa taille définitive, avant la préparation de WebGL
+let R1 = loaderRadius()
+const loader = createLoader(loaderEl?.querySelector('.loader__c'), { reduced, r1: R1 })
+if (loaderEl) FLOW.t0 = Infinity   // flux à l'arrêt (roue du kit) jusqu'au relais
+addEventListener('resize', () => { if (!root.classList.contains('is-loaded')) loader.setRadius(R1 = loaderRadius()) })
+const finishLoader = (done) => {
+  if (!loaderEl) return done()
+  // durée de la croissance : l'anneau finit à la vitesse initiale de la croissance du logo (v = 3 (r1 − r0) / grow)
+  const it = gl?.intro?.(), R0 = R1 * 0.6
+  const growD = it ? Math.min(900, Math.max(200, 2 * (R1 - R0) / Math.max(3 * (it.r1 - it.r0) / it.grow, 1e-3))) : 400
+  loaderEl.classList.add('loader--closing')   // le fond du chargeur s'efface (styles.css)
+  loader.finish(growD).then(() => { FLOW.t0 = performance.now(); done() })
 }
-/* Écran de chargement : polices, image de l'accueil, au moins 1 s ; au plus 6 s. Le défilement est bloqué pendant ce temps. */
+/* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
+// créés juste après la première image affichée : la compilation des shaders bloque le fil principal, le chargeur doit
+// déjà être à l'écran (il tourne ensuite dans son worker, sans dépendre du fil principal)
+let gl = null, backdrop = null
+const glMade = new Promise((done) => requestAnimationFrame(() => setTimeout(() => {
+  try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (err) { console.warn(err) }
+  // fond : formes colorées derrière une plaque dépolie, qui défilent avec la page et réagissent au curseur
+  try { backdrop = createBackdrop(document.querySelector('.bg-canvas'), { reduced }) } catch (err) { console.warn(err) }
+  done(gl)
+})))
+/* Écran de chargement : n'attend que l'essentiel (polices, image de l'accueil, logo WebGL prêt), au moins 0,9 s depuis
+   l'ouverture de la page (le chargeur ne fait pas qu'apparaître et disparaître), au plus 5 s. Les images des vignettes
+   continuent de se charger ensuite (plus bas dans la page, envoyées au GPU après l'intro, gl.js). */
 lenis?.stop(); scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })   // Lenis aussi : pas de retour à l'ancienne position au déblocage
 // accueil : la page reste bloquée (molette, doigt, clavier, barre de défilement) pendant le chargeur et l'arrivée du
 // logo ; elle ne se libère qu'à la fin de l'animation (intro-done), et la flèche apparaît juste après (CSS)
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
 // Trois phases, strictement :
-//   1. chargement : seul le chargeur est visible ; il attend que toute la page soit chargée (polices, images, WebGL) ;
+//   1. chargement : seul le chargeur est visible ; il attend l'essentiel (polices, image de l'accueil, logo WebGL) ;
 //   2. animation du logo (le chargeur passe le relais au « o ») : seuls le fond et le gros logo sont visibles ;
 //   3. fin de l'animation (intro-done) : la flèche apparaît, la page se libère.
 // Pendant 1 et 2 : rien n'est possible. Défilement bloqué (molette, doigt, clavier, barre, focus), et tout le contenu
@@ -576,12 +598,10 @@ Promise.race([
   Promise.all([
     document.fonts?.ready,
     heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
-    new Promise((r) => setTimeout(r, reduced || backTo ? 0 : 1000)),
-    // toute la page (images des vignettes comprises) : rien ne se charge plus pendant l'animation du logo
-    document.readyState === 'complete' ? null : new Promise((r) => addEventListener('load', r, { once: true })),
-    new Promise((r) => setTimeout(() => (gl?.ready || Promise.resolve()).then(r))),   // logo WebGL prêt (gl créé plus bas)
+    new Promise((r) => setTimeout(r, reduced || backTo ? 0 : Math.max(0, 900 - performance.now()))),
+    glMade.then((g) => g?.ready),   // logo WebGL prêt
   ]),
-  new Promise((r) => setTimeout(r, 8000)),   // au plus 8 s (connexion lente)
+  new Promise((r) => setTimeout(r, 5000)),   // au plus 5 s (connexion lente)
 ]).then(() => finishLoader(() => {
   root.classList.add('is-loaded')
   // fiche ouverte par le lien : rien à attendre ; sinon, fin de l'arrivée du logo (croissance puis glissement)
@@ -591,19 +611,8 @@ Promise.race([
   if (backTo) { const go = () => { const el = document.getElementById(backTo); if (!el) return; const y = el.getBoundingClientRect().top + scrollY - innerHeight * 0.15; if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else scrollTo(0, y) }; go(); setTimeout(go, 300) }
 }))
 
-/* WebGL : trame de points et lentille. Sans WebGL, les images restent visibles. */
-let gl = null
-try { gl = createGL(document.querySelector('.gl-canvas'), { reduced }) } catch (err) { console.warn(err) }
 startFxCss()   // grain des bandes de flou CSS
-sizeLoader()
-// le chargeur ne s'affiche qu'une fois à sa taille définitive (image suivante, taille appliquée), en fondu
-// … et une fois le masque de l'arc décodé (sinon le chargeur serait un instant invisible)
-{ const im = new Image(); im.src = loaderArcUrl
-  const ready = () => requestAnimationFrame(() => requestAnimationFrame(() => loaderEl?.classList.add('is-ready')))
-  ;(im.decode ? im.decode() : Promise.resolve()).then(ready, ready) }
-// fond : formes colorées derrière une plaque dépolie, qui défilent avec la page et réagissent au curseur
-let backdrop = null
-try { backdrop = createBackdrop(document.querySelector('.bg-canvas'), { reduced }) } catch (err) { console.warn(err) }
+
 
 function loop(t) {
   lenis?.raf(t)
@@ -659,7 +668,7 @@ document.addEventListener('click', async (e) => {
         }
       },
       onDone: () => {
-        try { store.set('lang', root.lang) } catch {}
+        try { store.set('lang', root.lang); document.cookie = `lang=${root.lang}; path=/; max-age=31536000; samesite=lax` } catch {}
         history.pushState(null, '', url); shownPath = location.pathname
         labelThemes()
         dispatchEvent(new Event('resize'))   // largeurs des textes changées : pistes, WebGL et fond se remesurent

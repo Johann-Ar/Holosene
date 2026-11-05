@@ -45,7 +45,11 @@ function prerender() {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="${SITE_URL}share.png" />
   <script type="application/ld+json">${JSON.stringify(ld)}</script>`
-      return html.replace(`<!--HEAD:${lang}-->`, head).replace(`<!--APP:${lang}-->`, render(lang))
+      // langue : un navigateur non francophone, à sa première visite de l'accueil français, part vers /en/ avant que quoi
+      // que ce soit d'autre se charge (le serveur le fait déjà quand il le peut : vercel.json) ; un choix fait au
+      // bouton FR / EN est respecté
+      const langBoot = lang === 'fr' ? `<script>try{var l=localStorage.getItem('lang');if(!l&&!/(^|; )lang=/.test(document.cookie)&&!/^fr\\b/i.test(navigator.language||'fr'))location.replace('en/'+location.hash)}catch(e){}</script>\n  ` : ''
+      return html.replace(`<!--HEAD:${lang}-->`, langBoot + head).replace(`<!--APP:${lang}-->`, render(lang))
     },
   }
 }
@@ -81,7 +85,21 @@ function themeHead() {
   }
 }
 
-/** 404 : GitHub Pages la sert à n'importe quelle adresse, ses liens doivent donc être absolus. */
+/** robots.txt et sitemap.xml (adresse publique SITE_URL, deux langues). */
+function seoFiles() {
+  return {
+    name: 'seo-files',
+    closeBundle() {
+      const day = new Date().toISOString().slice(0, 10)
+      const alt = `<xhtml:link rel="alternate" hreflang="fr" href="${SITE_URL}"/><xhtml:link rel="alternate" hreflang="en" href="${SITE_URL}en/"/><xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}"/>`
+      const url = (loc) => `  <url><loc>${loc}</loc><lastmod>${day}</lastmod>${alt}</url>`
+      writeFileSync(resolve('dist/sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${url(SITE_URL)}\n${url(SITE_URL + 'en/')}\n</urlset>\n`)
+      writeFileSync(resolve('dist/robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}sitemap.xml\n`)
+    },
+  }
+}
+
+/** 404 : l'hébergeur la sert à n'importe quelle adresse, ses liens doivent donc être absolus. */
 function absolute404() {
   const basePath = new URL(SITE_URL).pathname
   return {
@@ -96,7 +114,7 @@ function absolute404() {
 
 export default defineConfig({
   base: './',
-  plugins: [prerender(), irisCss(), themeHead(), absolute404()],
+  plugins: [prerender(), irisCss(), themeHead(), absolute404(), seoFiles()],
   build: {
     target: 'es2022',
     rollupOptions: {

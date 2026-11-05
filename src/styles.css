@@ -22,6 +22,7 @@
 :root { --fs-body: 1.1875rem; --fs-small: 0.9375rem; --fs-text: clamp(1.05rem, 1.3vw, 1.25rem);   /* texte courant : un seul style (À propos, présentation, sous-titres, genres) */ --iris: var(--iris-conic); --edge-l: max(var(--edge), env(safe-area-inset-left, 0px)); --edge-r: max(var(--edge), env(safe-area-inset-right, 0px)); }
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
+html, body { overscroll-behavior: none; }   /* pas de rebond élastique en haut ni en bas de page (la page et la toile WebGL fixe se décalaient) */
 html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scrollbar-width: none; }
 html::-webkit-scrollbar { display: none; }
 html.lenis, html.lenis body { height: auto; } .lenis.lenis-smooth { scroll-behavior: auto !important; } .lenis.lenis-stopped { overflow: hidden; }
@@ -53,41 +54,11 @@ a { color: inherit; }
 .js .loader::before { content: ''; position: absolute; inset: 0; background: var(--bg); transition: opacity 0.6s var(--ease-flow); }
 .js .loader--closing::before { opacity: 0; }
 .is-loaded .loader { visibility: hidden; }
-/* l'anneau : rayon du relais --r1 (main.js), 60 % pendant le chargement ; anneau du kit (intérieur 0,514 × extérieur),
-   roue fixe du kit (--iris-conic). Animations de transformation et d'opacité seulement : fluides même si la page calcule. */
-.loader__o { --r1: 44px; opacity: 0; filter: blur(18px); transition: opacity 0.35s var(--ease-flow), filter 1.2s var(--ease-flow); position: relative; width: calc(var(--r1) * 2); height: calc(var(--r1) * 2); transform: scale(0.6); }
-.loader__ring { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic);
-  -webkit-mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%);
-          mask: radial-gradient(circle closest-side, transparent calc(51.4% - 0.6px), #000 calc(51.4% + 0.6px), #000 calc(100% - 0.8px), transparent 100%); }
-/* l'arc (0,85 tour) tourne à 0,9 tour/s ; la roue qu'il dévoile tourne en sens inverse : ses couleurs restent fixes.
-   Opacité 0 à la queue → 1 à la tête (courbe u^1,6), tête arrondie (disque au bout, à 306°). */
-.loader__arc { position: absolute; inset: 0; animation: spin 1.111s linear infinite;
-  -webkit-mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(rgb(0 0 0 / 0.000) 0.00%, rgb(0 0 0 / 0.036) 10.62%, rgb(0 0 0 / 0.109) 21.25%, rgb(0 0 0 / 0.208) 31.88%, rgb(0 0 0 / 0.330) 42.50%, rgb(0 0 0 / 0.471) 53.12%, rgb(0 0 0 / 0.631) 63.75%, rgb(0 0 0 / 0.808) 74.38%, rgb(0 0 0 / 1.000) 85.00%, transparent 85.01%);
-          mask: radial-gradient(circle at 19.38% 27.75%, #000 calc(var(--r1) * 0.243 - 0.6px), transparent calc(var(--r1) * 0.243 + 0.6px)), conic-gradient(rgb(0 0 0 / 0.000) 0.00%, rgb(0 0 0 / 0.036) 10.62%, rgb(0 0 0 / 0.109) 21.25%, rgb(0 0 0 / 0.208) 31.88%, rgb(0 0 0 / 0.330) 42.50%, rgb(0 0 0 / 0.471) 53.12%, rgb(0 0 0 / 0.631) 63.75%, rgb(0 0 0 / 0.808) 74.38%, rgb(0 0 0 / 1.000) 85.00%, transparent 85.01%); }
-/* cadre agrandi autour de chaque tranche (le flou n'est jamais coupé net par le bord de son cadre, même en rotation) :
-   l'arc occupe 150 % du cadre du « o », la tranche y est replacée à la taille exacte de l'anneau (1/6 de marge) */
-.loader__arc { inset: -25% !important; will-change: transform; }
-.loader__band { position: absolute; inset: 16.6667%; }
-.loader__band > .loader__ring { animation: spin 1.111s linear infinite reverse; }
-/* fermeture (1,3 s) : l'anneau se complète, puis grandit en accélérant (t²) jusqu'au rayon du relais */
-.loader__full { opacity: 0; }
-/* fermeture : l'anneau complet (mêmes couleurs aux mêmes endroits que l'arc) vient remplir le vide de l'arc, net ; le
-   halo de la queue s'éteint juste après ; puis l'anneau grandit jusqu'au relais avec le logo */
-.loader--closing .loader__full { opacity: 1; transition: opacity 0.25s cubic-bezier(0.33, 0, 0.2, 1) 0.68s; }   /* après le remplissage par la tête */
-/* fermeture : l'arc s'arrête et c'est la tête qui avance jusqu'à la queue (secteur net qui grandit depuis la tête, sens
-   horaire : une moitié qui tourne dans une moitié découpée ; la roue reste fixe par contre-rotation) ; animations de
-   rotation seulement (main.js), faites par la carte graphique */
-.loader__fill { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
-.loader--closing .loader__fill { opacity: 1; }
-.loader__half { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; overflow: hidden; }
-.loader__rot { position: absolute; left: -100%; top: 0; width: 200%; height: 100%; transform: rotate(-180deg); }
-.loader__halfin { position: absolute; left: 50%; top: 0; width: 50%; height: 100%; overflow: hidden; }
-.loader__fillring { left: -100% !important; width: 200%; right: auto !important; }
-.loader--closing .loader__spin { opacity: 0; transition: opacity 0.3s cubic-bezier(0.33, 0, 0.2, 1) 0.72s; }
-.loader--closing .loader__o { transform: scale(1); transition: transform var(--grow, 400ms) cubic-bezier(0.333, 0, 0.667, 0.333) calc(1300ms - var(--grow, 400ms)); }
-/* l'anneau n'apparaît qu'une fois à sa vraie taille (is-ready, main.js), en fondu : aucun saut de taille */
-.loader.is-ready .loader__o { opacity: 1; filter: none; }   /* apparition : fondu et flou, comme les autres éléments */
-@media (prefers-reduced-motion: reduce) { .loader__arc, .loader__band > .loader__ring { animation: none; } }
+/* l'anneau : dessiné dans une toile (loader-draw.js), à sa taille définitive dès la première image ; il apparaît en fondu
+   et flou, comme les autres éléments (animation CSS : elle ne dépend pas du fil principal, occupé par WebGL) */
+.loader__c { display: block; animation: loader-in 1.2s var(--ease-flow) 0.08s both; }
+@keyframes loader-in { from { opacity: 0; filter: blur(18px); } 30% { opacity: 1; } to { opacity: 1; filter: none; } }
+@media (prefers-reduced-motion: reduce) { .loader__c { animation: none; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .skip { position: fixed; left: 12px; top: 12px; z-index: 100; padding: 10px 14px; background: var(--c-white); color: var(--c-black); border-radius: var(--radius-s); transform: translateY(-200%); }
 .skip:focus-visible { transform: none; }
@@ -242,7 +213,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 @media (prefers-reduced-motion: reduce) { .hero { height: 100svh; } }
 .hero__view { position: absolute; inset: 0; }
 .hero__view > img { opacity: 0 !important; }
-.hero__bottom { position: absolute; left: 0; right: 0; bottom: calc(30px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; gap: 16px; }
 
 /* gabarit commun À propos / Projets / Contact : libellé à gauche, grand texte à droite */
 .row { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; }
@@ -312,13 +282,12 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .sec-head h2 { font-size: clamp(2.2rem, 3.9vw, 3.6rem); }
 .sec-head .sec-head__sub { max-width: 64ch; }
 @media (max-width: 760px) { .sec-head { margin-inline: auto; justify-items: center; text-align: center; } }   /* mobile : en-têtes de sections centrés */   /* même couple que les cartes : titre d'affichage + ligne « // » en libellé */
-.work__index a { text-decoration: none; }
 /* survol de l'adresse du contact : trait irisé aux bouts arrondis, qui se déroule sous les jambages */
 .mail > span { position: relative; display: inline-block; }
 .mail > span::after { content: ''; position: absolute; left: 0; right: 0; bottom: -0.16em; height: max(2px, 0.05em); border-radius: 99px; background: var(--iris-line);
   clip-path: inset(0 100% 0 0 round 99px); transition: clip-path var(--dur-slow) var(--ease-flow); pointer-events: none; }
 .mail:hover > span::after, .mail:focus-visible > span::after { clip-path: inset(0 0 0 0 round 99px); }
-.work__index a, .fiche__next { text-decoration: none; }
+.fiche__next { text-decoration: none; }
 /* piste horizontale indépendante : glisser à deux doigts (pavé tactile), au doigt, à la souris ou avec les flèches ;
    bords latéraux fondus comme le haut et le bas des images */
 .work__pin { padding-block: var(--sp-5) var(--sp-5); }
@@ -341,7 +310,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* mêmes styles que le reste du site : nom en caractère d'affichage, genre en libellé */
 .card__name { font-size: clamp(1.4rem, 2.2vw, 2rem); transition: opacity var(--dur-base); }
 .card__genre { transition: opacity var(--dur-base); }
-.work__bar { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: var(--sp-5); }
 .work__nav { display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border-radius: 50%; border: 1px solid var(--ink); background: var(--bg); color: var(--ink); cursor: pointer; }
 .work__nav svg { display: block; transition: transform var(--dur-base) var(--ease-flow); }
 .work__nav[data-dir="1"]:hover svg { transform: translateX(2px); }
@@ -364,24 +332,12 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 }
 
 /* survol : une ligne irisée fine se trace autour du cadre (pastilles, flèches), puis reste jusqu'à la sortie */
-@property --frame-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 :root { --iris-wheel: var(--iris-conic); }
-.no-frame::after {
-  content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; padding: 1.5px; pointer-events: none; opacity: 0;
-  background: var(--iris-wheel);
-  -webkit-mask: conic-gradient(#000 var(--frame-a), transparent 0), linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: source-in, xor;
-  mask: conic-gradient(#000 var(--frame-a), transparent 0), linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: intersect, exclude;
-  transition: --frame-a 0.3s var(--ease-flow), opacity 0.2s var(--ease-flow); }
-.no-frame::after { inset: -1px; }
-.no-frame:hover::after { --frame-a: 360deg; opacity: 0.9; transition: --frame-a 0.8s var(--ease-flow), opacity 0.15s; }
 .topbar .lang, .fiche__close, .work__nav { position: relative; transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast), box-shadow var(--dur-fast); }
 /* pastilles et flèches : contour fin à l'encre (noir en clair, blanc en sombre) ; au survol, fond à l'encre et contour
    épaissi (ombre portée de 1 px : aucune variation de taille) */
 .topbar .lang:hover, .topbar .lang:focus-visible, .fiche__close:hover, .fiche__close:focus-visible, .work__nav:hover, .work__nav:focus-visible { background: var(--ink); color: var(--bg); border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
 .fiche__media figure { position: relative; }
-@media (prefers-reduced-motion: reduce) { .no-frame::after { transition: opacity 0.2s; } }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
 .work--research { padding-top: var(--sp-6); }
@@ -406,32 +362,33 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .foot .lbl { font: 400 var(--fs-small)/1.45 var(--font-text); color: var(--c-grey-text); }   /* pied de page : taille d'avant (petite) */
 .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-block: 28px calc(28px + env(safe-area-inset-bottom, 0px)); }
 
-/* fiches projet : ouvertes par l'ancre (:target), sans JavaScript ; le script ajoute focus, Échap et le défilement */
+/* fiches projet : ouvertes par main.js (is-open) ; sans JavaScript, par l'ancre (:target) */
 .fiche { position: fixed; inset: 0; z-index: 50; color: var(--ink-86); background: var(--c-black-deep); overflow-y: auto; overscroll-behavior: contain; display: none; scrollbar-width: none; }
 .fiche::-webkit-scrollbar { display: none; }
 /* transitions des fiches : un rideau entre par la droite, puis le contenu arrive en séquence ;
    d'un projet à l'autre, l'ancien contenu glisse à gauche sous le nouveau rideau ; à la fermeture, le rideau se retire */
-.fiche:target, .fiche.is-leaving { display: block; }
+/* JavaScript : classes posées par main.js ; sans JavaScript : :target */
+.fiche.is-open, .fiche.is-under, .fiche.is-closing, html:not(.js) .fiche:target { display: block; }
 /* ouverture : le bord gauche de la fiche n'est jamais net pendant qu'il avance ; c'est une bande en dégradé d'opacité
-   (18 vw), doublée d'un flou, qui glisse de droite à gauche ; à la fin (is-in, main.js), plus de masque ni de flou */
+   (18 vw), doublée d'un flou, qui glisse de droite à gauche ; à la fin (is-entering retiré, main.js), plus de masque ni de flou */
 @property --cut { syntax: '<length-percentage>'; inherits: true; initial-value: 0%; }
-.fiche:target:not(.is-in) { animation: curtain-in 0.95s var(--ease-flow) both;
+.fiche.is-entering { animation: curtain-in 0.95s var(--ease-flow) both;
   -webkit-mask: linear-gradient(90deg, transparent calc(var(--cut) - 18vw), #000 var(--cut)); mask: linear-gradient(90deg, transparent calc(var(--cut) - 18vw), #000 var(--cut)); }
-.fiche:target:not(.is-in)::before { content: ''; position: fixed; top: 0; bottom: 0; left: calc(var(--cut) - 18vw); width: 18vw; z-index: 60; pointer-events: none;
+.fiche.is-entering::before { content: ''; position: fixed; top: 0; bottom: 0; left: calc(var(--cut) - 18vw); width: 18vw; z-index: 60; pointer-events: none;
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   -webkit-mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); mask: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent); }
 /* arrivée en cascade (courbe de la référence) : barre, titre, texte paragraphe par paragraphe, fiche technique, lien ;
    les images glissent de 100 px en fondu */
 .fiche { --ease-case: cubic-bezier(0.75, 0, 0.25, 1); }
-.fiche:target .fiche__head > *, .fiche:target .fiche__title, .fiche:target .fiche__body p, .fiche:target .fiche__infos, .fiche:target .fiche__open { animation: rise-y 0.8s var(--ease-case) both; }
-.fiche:target .fiche__head > * { animation-delay: 0.35s; }
-.fiche:target .fiche__title { animation-delay: 0.45s; }
-.fiche:target .fiche__body p:nth-child(1) { animation-delay: 0.6s; }
-.fiche:target .fiche__body p:nth-child(2) { animation-delay: 0.65s; }
-.fiche:target .fiche__body p:nth-child(3) { animation-delay: 0.7s; }
-.fiche:target .fiche__infos { animation-delay: 0.8s; }
-.fiche:target .fiche__open { animation-delay: 0.9s; }
-.fiche:target .fiche__media, .fiche:target .fiche__next { animation: gallery-in 1s var(--ease-case) 0.55s both; }
+.fiche.is-open .fiche__head > *, .fiche.is-open .fiche__title, .fiche.is-open .fiche__body p, .fiche.is-open .fiche__infos, .fiche.is-open .fiche__open { animation: rise-y 0.8s var(--ease-case) both; }
+.fiche.is-open .fiche__head > * { animation-delay: 0.35s; }
+.fiche.is-open .fiche__title { animation-delay: 0.45s; }
+.fiche.is-open .fiche__body p:nth-child(1) { animation-delay: 0.6s; }
+.fiche.is-open .fiche__body p:nth-child(2) { animation-delay: 0.65s; }
+.fiche.is-open .fiche__body p:nth-child(3) { animation-delay: 0.7s; }
+.fiche.is-open .fiche__infos { animation-delay: 0.8s; }
+.fiche.is-open .fiche__open { animation-delay: 0.9s; }
+.fiche.is-open .fiche__media, .fiche.is-open .fiche__next { animation: gallery-in 1s var(--ease-case) 0.55s both; }
 @keyframes rise-y { from { opacity: 0; filter: blur(6px); transform: translateY(0.5rem); } }
 @keyframes gallery-in { from { opacity: 0; filter: blur(8px); transform: translateX(100px); } }
 .fiche.is-under { z-index: 49; pointer-events: none; }
@@ -443,6 +400,12 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche.is-closing .fiche__row, .fiche.is-closing .fiche__head { animation: content-out 0.5s var(--ease-flow) forwards; }
 .fiche-veil { display: none; position: fixed; top: 0; bottom: 0; left: 0; width: 18vw; z-index: 51; pointer-events: none; will-change: transform;
   background: linear-gradient(90deg, color-mix(in srgb, var(--bg) 0%, transparent), var(--bg)); }
+/* logo du haut au-dessus des fiches : à la place exacte du petit logo de la barre (main.js le mesure), immobile ; version
+   sombre du kit (les fiches sont sombres). Fondu croisé avec le logo de la barre pendant que le rideau passe. */
+.fiche-brand { position: fixed; left: 50%; top: 22px; height: 48px; width: auto; z-index: 56; pointer-events: none; opacity: 0; visibility: hidden;
+  transition: opacity 0.4s var(--ease-flow) 0.15s, visibility 0s linear 0.55s; }
+.fiche-open .fiche-brand { opacity: 1; visibility: visible; transition: opacity 0.45s var(--ease-flow) 0.25s, visibility 0s; }
+@media (prefers-reduced-motion: reduce) { .fiche-brand, .fiche-open .fiche-brand { transition: none; } }
 .fiche-veil.is-on { display: block; animation: veil-out 0.75s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
 @keyframes fiche-out { to { transform: translate3d(100vw, 0, 0); } }
 @keyframes veil-out { from { transform: translate3d(-18vw, 0, 0); } to { transform: translate3d(82vw, 0, 0); } }
@@ -452,13 +415,13 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 @keyframes rise { from { opacity: 0; transform: translateX(56px); } }
 @keyframes slide-away { to { opacity: 0; transform: translateX(-64px); } }
 @media (prefers-reduced-motion: reduce) {
-  .fiche:target, .fiche:target *, .fiche.is-under *, .fiche.is-closing, .fiche.is-closing * { animation: none !important; }
-  .fiche.is-leaving { display: none; }
+  .fiche.is-open, .fiche.is-open *, .fiche.is-under *, .fiche.is-closing, .fiche.is-closing * { animation: none !important; }
+  .fiche.is-under, .fiche.is-closing { display: none; }
 }
 /* barre de la fiche : Fermer, en haut à droite ; dessous, exactement le même fondu que la barre de l'accueil (même
    .edge--top et, en clair, même flou progressif .topbar__glass), selon le mode de la fiche */
-:root:not(.theme-chosen) .fiche .topbar__glass { display: none; }   /* fiche sombre par défaut : pas de voile blanc */
-:root[data-theme="light"]:not(.theme-chosen) .fiche .edge { opacity: 1; -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask: none; mask: none; }   /* fiche sombre par défaut : le fondu sombre de l'accueil */
+:root .fiche .topbar__glass { display: none !important; }   /* fiche toujours sombre : pas de voile blanc */
+:root[data-theme="light"] .fiche .edge { opacity: 1; -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask: none; mask: none; }   /* fiche toujours sombre : le fondu sombre de l'accueil */
 .fiche__head { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; padding-block: calc(22px + env(safe-area-inset-top, 0px)) 12px; }
 .fiche__tools { display: flex; align-items: center; gap: 12px; flex: none; }
 .fiche__close { flex: none; font: 400 var(--fs-small) var(--font-text); color: var(--c-white); text-decoration: none; border: 1px solid var(--ink); border-radius: var(--radius-pill); padding: 10px 16px; }
@@ -514,6 +477,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .fiche__mini { display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 1.35rem; line-height: 1.2;
     opacity: 0; transform: translateY(6px); transition: opacity 0.35s var(--ease-flow), transform 0.35s var(--ease-flow); }
   .fiche.is-titled .fiche__mini { opacity: 1; transform: none; }
+  .fiche__mini { max-width: calc(50% - 44px); }   /* le logo du haut reste au centre, libre */
 }
 
 /* pages annexes */
@@ -616,9 +580,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .btn--light.copy { color: #1E1E1E !important; background: linear-gradient(#1E1E1E, #1E1E1E) no-repeat left / 0% 100%, #fff !important; }
 .btn--light.copy:hover, .btn--light.copy:focus-visible, .btn--light.copy:active { color: #fff !important; background-size: 100% 100%, auto !important; }
 
-/* chargeur : plus l'arc s'amenuise vers sa queue, plus il est flou (cinq tranches qui se fondent l'une dans l'autre, de
-   la tête nette au bout très flou) ; chaque tranche est d'abord découpée (.loader__band), puis floutée (.loader__arc) : aucun
-   bord net (aucun contour net à peine visible) */
 /* bouton clair / sombre : texte, comme EN / FR (le mode vers lequel on bascule) */
 .theme-toggle { width: auto !important; height: auto !important; font: 800 var(--fs-small)/1.5 var(--font-text); text-transform: uppercase; letter-spacing: 0.02em; padding: 0.12em 0.32em !important; }
 
@@ -675,18 +636,13 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 @media (hover: none) { .topbar__nav a:not(.lang):hover:not(:active), .socials a:hover:not(:active), .foot a:hover:not(:active), .mail:hover:not(:active), .fiche__close:hover:not(:active), .topbar .lang:hover:not(:active), .btn--light:hover:not(:active), .theme-toggle:hover:not(:active), .fiche__open:hover:not(:active) { text-shadow: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .cta-idle-off .hero__cta { opacity: 1 !important; visibility: visible; filter: none; } }
 
-/* chargeur : un seul calque. Le masque de l'arc (src/media/loader-arc.png, calculé pixel par pixel : tête nette au bout
-   arrondi, bords de plus en plus doux vers la queue) tourne ; dessous, la roue du kit tourne en sens inverse : ses
-   couleurs restent fixes, l'arc les dévoile. Seulement des rotations, faites par la carte graphique : fluide même
-   pendant que la page se prépare. Le cadre déborde (150 %) pour que le flou de la queue ne soit jamais coupé. */
-.loader__spin { position: absolute; inset: -25%; animation: spin 1.35s linear infinite; will-change: transform;
-  -webkit-mask: url('./media/loader-arc.png') center / 100% 100% no-repeat; mask: url('./media/loader-arc.png') center / 100% 100% no-repeat; }
-.loader__wheel { position: absolute; inset: 0; border-radius: 50%; background: var(--iris-conic); animation: spin 1.35s linear infinite reverse; }   /* un peu plus lent */
-@media (prefers-reduced-motion: reduce) { .loader__spin, .loader__wheel { animation: none; } }
-
 /* FR/EN : la langue affichée à l'encre, la barre et l'autre langue en gris (comme les mentions légales) ; le gris suit
    la langue de la page (même balisage dans les deux langues : changement de langue sans rechargement) */
-.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 48%, var(--bg)); transition: color var(--hl-dur) var(--hl-ease); }
+.topbar .lang span { transition: color var(--hl-dur) var(--hl-ease), text-shadow var(--hl-dur) var(--hl-ease); }
+/* … et la langue non choisie et la barre ont en plus le léger flou et la lueur des lettres au survol (même ombre que
+   .topbar .lang:hover, plus bas) ; la langue affichée reste nette */
+.topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 48%, var(--bg));
+  text-shadow: 0 0 2.5px color-mix(in srgb, currentColor 55%, transparent), 0 0 7px rgb(255 255 255 / 0.28), 0 0 16px rgb(255 255 255 / 0.15); }
 /* au survol : la langue vers laquelle on bascule en blanc plein ; la langue actuelle et la barre en gris */
 .topbar .lang:hover span, .topbar .lang:focus-visible span, .topbar .lang:active span { color: color-mix(in srgb, var(--bg) 52%, var(--ink)) !important; }
 :root[lang="fr"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__en, :root[lang="en"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__fr { color: var(--bg) !important; }

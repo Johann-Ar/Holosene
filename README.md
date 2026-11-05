@@ -11,19 +11,28 @@ Site du studio Holosene (Johann Arata) : captation, reconstruction, 3D temps ré
 ```sh
 npm install
 npm run dev       # http://localhost:5173 — les mentions « à compléter » sont visibles
-npm run build     # dist/
+npm run build     # dist/ (pages pré-rendues, robots.txt, sitemap.xml)
 npm run preview
+npm run todo      # liste des textes encore à fournir dans src/content.js
 ```
 
 - Tout le contenu est dans `src/content.js` (FR/EN). Ce qui manque est marqué `TODO(...)` : invisible en ligne,
-  visible avec `?dev` dans l’adresse (`?dev=0` pour revenir).
-- Les pages sont générées à la compilation (`vite.config.js`) : le contenu est lisible sans JavaScript.
-- Ouverture : nuage de points Three.js chargé à la demande ; image fixe si « réduire les animations » est activé.
-- Fiches projet : `#p-<slug>` (fonctionne sans JavaScript).
-- Aucun cookie, aucun traceur. Seul `localStorage` retient la langue choisie.
+  visible avec `?dev` dans l’adresse (`?dev=0` pour revenir) ; `npm run todo` en donne la liste.
+- Les pages sont générées à la compilation (`vite.config.js`, gabarit `src/render.js`) : le contenu est lisible sans JavaScript.
+- Rendu : WebGL maison, sans bibliothèque 3D (`src/gl.js` : trame de points, vignettes en verre, lentille « o » ;
+  `src/backdrop.js` : fond). Une image identique à la précédente n’est pas redessinée.
+- Chargeur : `src/loader.js` + `src/loader-draw.js`, dessiné dans un worker (`src/loader-worker.js`) pour rester
+  fluide pendant la préparation de WebGL. Couleurs et proportions : `design/logo-kit` (voir `CLAUDE.md`).
+- Fiches projet : `#p-<slug>`, état piloté par `main.js` (classes `is-open`, `is-closing`…) ; sans JavaScript, `:target`.
+  Toujours en sombre.
+- Langue : redirection vers `/en/` des navigateurs non francophones à la première visite, par le serveur
+  (`vercel.json`, en-tête `Accept-Language`) ou à défaut par un script en tête de page ; le choix FR / EN est mémorisé
+  (cookie `lang` et `localStorage`).
+- Aucun traceur. Stockage local : la langue choisie.
 
 ## Publication
 
-`.github/workflows/deploy.yml` publie sur GitHub Pages **uniquement depuis `main`**.
-Rien n’est publié tant que la branche de travail n’est pas fusionnée, avec l’accord de Johann.
-Adresse prévue : https://holosene.vercel.app/ (`SITE_URL` à changer si un nom de domaine est choisi).
+Hébergement : **Vercel** (`vercel.json`), projet relié au dépôt : un aperçu par branche, la production depuis la
+branche par défaut. `SITE_URL` (variable d’environnement, par défaut https://holosene.vercel.app/) fixe l’adresse
+canonique, les liens `hreflang`, `robots.txt` et `sitemap.xml`.
+`.github/workflows/ci.yml` vérifie seulement que le site se compile (aucune publication depuis GitHub).

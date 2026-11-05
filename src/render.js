@@ -125,7 +125,8 @@ export function render(lang) {
 
   const selected = projects.filter((p) => !p.research)
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
-  // texte apparaissant mot à mot au défilement (même effet que la présentation de l'accueil) ; **gras** conservé ;
+  // texte apparaissant mot à mot au défilement (data-sw : main.js, scrollWords) ; tous les textes de l'accueil sauf les
+  // vignettes et les boutons (titres, sous-titres, À propos, Contact, adresse, pied de page) ; **gras** conservé ;
   // --i : rang du mot (décalage de l'apparition)
   const seq = (str) => { let bold = false, i = 0; return esc(str).split(' ').map((w) => {
     const open = w.startsWith('**'), close = w.replace(/^\*\*/, '').endsWith('**') || (open && w.length > 4 && w.endsWith('**'))
@@ -135,7 +136,7 @@ export function render(lang) {
     return out }).join(' ') }
   return `
 <a class="skip" href="#projets">${esc(t(ui.skip))}</a>
-<div class="loader" aria-hidden="true"><div class="loader__o"><div class="loader__spin"><i class="loader__wheel"></i></div><div class="loader__fill"><div class="loader__half"><div class="loader__rot"><div class="loader__halfin"><i class="loader__ring loader__fillring"></i></div></div></div></div><i class="loader__ring loader__full"></i></div></div>
+<div class="loader" aria-hidden="true"><canvas class="loader__c"></canvas></div>
 <canvas class="bg-canvas" aria-hidden="true"></canvas>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
@@ -171,7 +172,7 @@ export function render(lang) {
 
   <section class="work" id="projets" aria-labelledby="proj-t">
     <header class="sec-head wrap">
-      <h2 class="disp" id="proj-t">${lang === 'fr' ? 'Projets choisis' : 'Selected work'}</h2>
+      <h2 class="disp" id="proj-t" data-sw>${seq(lang === 'fr' ? 'Projets choisis' : 'Selected work')}</h2>
       <p class="lbl sec-head__sub" data-sw>${seq(t(workIntro))}</p>
     </header>
     ${rail(selected.map((p, i) => card({ id: `projet-${p.slug}`, href: `#p-${p.slug}`, image: p.cover, title: p.title, genre: t(p.genre), credit: p.coverCredit && t(p.coverCredit) })), lang === 'fr' ? 'Projets, défilement horizontal' : 'Projects, horizontal scroll')}
@@ -179,19 +180,19 @@ export function render(lang) {
 
   <section class="work work--research" id="recherche" aria-labelledby="research-t">
     <header class="sec-head wrap">
-      <h2 class="disp" id="research-t">${esc(t(ui.research))}</h2>
+      <h2 class="disp" id="research-t" data-sw>${seq(t(ui.research))}</h2>
       <p class="lbl sec-head__sub" data-sw>${seq(t(research.intro))}</p>
     </header>
     ${rail(research.items.map((r, i) => card({ id: `recherche-${r.slug || i + 1}`, href: r.href, image: t(r.image), text: r.label && t(r.label), badge: r.when && t(r.when), title: t(r.title), genre: t(r.kind), todo: r.todo })), lang === 'fr' ? 'Recherche, défilement horizontal' : 'Research, horizontal scroll')}
   </section>
 
   <section class="about wrap" id="a-propos" aria-labelledby="about-t">
-    <h2 class="lbl" id="about-t" data-reveal>${esc(t(ui.studio))}</h2>
+    <h2 class="lbl" id="about-t" data-sw>${seq(t(ui.studio))}</h2>
     ${about.map((a) => `<p data-sw>${seq(t(a))}</p>`).join('')}
-    <div class="contact" id="contact" data-reveal>
-      <h2 class="lbl" id="contact-t">${esc(t(ui.contact))}</h2>
+    <div class="contact" id="contact">
+      <h2 class="lbl" id="contact-t" data-sw>${seq(t(ui.contact))}</h2>
       <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-sw data-sw-letters aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
-      <div class="contact__row">
+      <div class="contact__row" data-reveal>
         <button class="btn btn--light copy" type="button" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}">${esc(t(ui.copy))}</button>
         <ul class="socials">${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
       </div>
@@ -201,11 +202,12 @@ export function render(lang) {
 </main>
 
 <footer class="foot wrap">
-  <p class="lbl">© ${new Date().getFullYear()} Holosene · Johann Arata</p>
+  <p class="lbl" data-sw>${seq(`© ${new Date().getFullYear()} Holosene · Johann Arata`)}</p>
   <a class="lbl" href="${root}mentions-legales.html">${esc(t(ui.legal))}</a>
 </footer>
 
 ${projects.map(fiche).join('')}
 <div class="fiche-veil" aria-hidden="true"></div>
+<img class="fiche-brand" src="${root}media/monogram-iris-dark.svg" alt="" aria-hidden="true" width="470" height="576" draggable="false">
 `
 }
