@@ -448,13 +448,15 @@ const wordBlocks = [...document.querySelectorAll('[data-words]:not(.hero__line)'
 // À propos : mots allumés au fil du défilement (comme la présentation de l'accueil), dans l'ordre de lecture ; tout est
 // allumé quand le dernier paragraphe atteint le milieu de l'écran ; en remontant, ils s'éteignent dans l'ordre inverse
 // textes des sections (Projets choisis, Travaux de recherche, À propos, adresse) : chaque mot apparaît exactement quand
-// il franchit une ligne fixe de l'écran, aux 7/8 de sa hauteur, et disparaît en repassant dessous (même fondu et même
+// il franchit une ligne fixe de l'écran, aux 8/10 de sa hauteur, et disparaît en repassant sous une ligne plus basse (96 %) (même fondu et même
 // flou que la présentation de l'accueil). Sur une même ligne de texte, les mots se suivent de gauche à droite à mesure
 // que la ligne monte de sa hauteur : l'effet reste mot par mot. Les derniers mots de la page, qui n'atteindraient jamais
 // la ligne, ont leur seuil ramené juste avant le bas de page. Seuils en cache, recalculés au redimensionnement et au
 // changement de langue.
-const SW_LINE = 7 / 8, SW_MIN_STEP = 10
-let swWords = null, swT = null, swOn = null
+// deux lignes : un mot apparaît quand il monte jusqu'à SW_LINE de la hauteur de l'écran (un peu au-dessus du bas : il
+// n'apparaît pas encore tout en bas), et ne disparaît, en redescendant, qu'à SW_OFF (presque sorti par le bas)
+const SW_LINE = 0.8, SW_OFF = 0.96, SW_MIN_STEP = 10
+let swWords = null, swT = null, swOn = null, swOffT = null
 const resetScrollWords = () => { swWords = null }
 addEventListener('resize', resetScrollWords)
 addEventListener('load', resetScrollWords)
@@ -477,10 +479,11 @@ function scrollWords(vh) {
       const n = swWords.length - tail, start = Math.max(tail > 0 ? swT[tail - 1] + SW_MIN_STEP : 0, end - n * SW_MIN_STEP * 2.5)
       for (let i = tail; i < swWords.length; i++) swT[i] = Math.min(swT[i], start + ((i - tail) / Math.max(1, n - 1)) * (end - start))
     }
+    swOffT = swT.map((t) => t - (SW_OFF - SW_LINE) * vh)
     swOn = swWords.map((w) => w.classList.contains('on'))
   }
   for (let i = 0; i < swWords.length; i++) {
-    const on = scrollY >= swT[i]
+    const on = swOn[i] ? scrollY >= swOffT[i] : scrollY >= swT[i]
     if (on !== swOn[i]) { swOn[i] = on; swWords[i].classList.toggle('on', on) }
   }
 }
@@ -554,8 +557,8 @@ const glMade = new Promise((done) => requestAnimationFrame(() => setTimeout(() =
   try { backdrop = createBackdrop(document.querySelector('.bg-canvas'), { reduced }) } catch (err) { console.warn(err) }
   done(gl)
 })))
-/* Écran de chargement : n'attend que l'essentiel (polices, image de l'accueil, logo WebGL prêt), au moins 0,9 s depuis
-   l'ouverture de la page (le chargeur ne fait pas qu'apparaître et disparaître), au plus 5 s. Les images des vignettes
+/* Écran de chargement : n'attend que l'essentiel (polices, image de l'accueil, logo WebGL prêt), et au moins une seconde
+   d'animation du chargeur une fois apparu (jamais un simple flash), au plus 5 s. Les images des vignettes
    continuent de se charger ensuite (plus bas dans la page, envoyées au GPU après l'intro, gl.js). */
 lenis?.stop(); scrollTo(0, 0); lenis?.scrollTo(0, { immediate: true, force: true })   // Lenis aussi : pas de retour à l'ancienne position au déblocage
 // accueil : la page reste bloquée (molette, doigt, clavier, barre de défilement) pendant le chargeur et l'arrivée du
@@ -598,7 +601,8 @@ Promise.race([
   Promise.all([
     document.fonts?.ready,
     heroImg && !heroImg.complete ? new Promise((r) => { heroImg.addEventListener('load', r, { once: true }); heroImg.addEventListener('error', r, { once: true }) }) : null,
-    new Promise((r) => setTimeout(r, reduced || backTo ? 0 : Math.max(0, 900 - performance.now()))),
+    // au moins une seconde d'animation du chargeur, entièrement visible, même si tout est déjà chargé
+    new Promise((r) => setTimeout(r, reduced || backTo ? 0 : Math.max(0, loader.shownAt + 1000 - performance.now()))),
     glMade.then((g) => g?.ready),   // logo WebGL prêt
   ]),
   new Promise((r) => setTimeout(r, 5000)),   // au plus 5 s (connexion lente)

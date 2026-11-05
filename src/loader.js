@@ -4,12 +4,13 @@
  *   const L = createLoader(el, { reduced })
  *   L.ready      promesse : première image dessinée (le chargeur peut apparaître)
  *   L.setRadius(r)   rayon du relais avec le logo WebGL (px CSS)
- *   L.finish(grow)   fermeture (LOADER.close ms) ; promesse résolue à la fin, au moment du relais
+ *   L.shownAt    instant (performance.now) où le chargeur est entièrement apparu
+ *   L.finish(grow)   fermeture (closeDuration(grow) ms) ; promesse résolue à la fin, au moment du relais
  */
-import { createLoaderDraw, LOADER } from './loader-draw.js'
+import { createLoaderDraw, LOADER, closeDuration } from './loader-draw.js'
 
 export function createLoader(canvas, { reduced = false, r1 = 44 } = {}) {
-  if (!canvas) return { ready: Promise.resolve(), setRadius() {}, finish: () => Promise.resolve() }
+  if (!canvas) return { ready: Promise.resolve(), shownAt: 0, setRadius() {}, finish: () => Promise.resolve() }
   const dpr = Math.min(3, devicePixelRatio || 1)
   const cssSize = (r) => { const s = Math.ceil(r * 2 * LOADER.margin * dpr / 2) * 2 / dpr; canvas.style.width = canvas.style.height = s + 'px' }
   cssSize(r1)
@@ -33,10 +34,11 @@ export function createLoader(canvas, { reduced = false, r1 = 44 } = {}) {
   }
   return {
     ready,
+    shownAt: performance.now() + 450,   // fondu d'apparition (styles.css, loader-in) : opaque après ≈ 0,45 s
     setRadius(r) { cssSize(r); post ? post({ type: 'r1', r1: r }) : local.resize(r) },
     finish(grow) {
       post ? post({ type: 'close', grow }) : local.close(grow)
-      return new Promise((res) => setTimeout(res, reduced ? 0 : LOADER.close))
+      return new Promise((res) => setTimeout(res, reduced ? 0 : closeDuration(grow)))
     },
   }
 }

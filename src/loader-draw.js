@@ -6,9 +6,10 @@
  * Rotation : un arc de 306° tourne sur la roue fixe (il en dévoile les couleurs à leur angle exact). Opaque sur
  * l'essentiel de sa longueur, il s'efface sur ses 84 derniers degrés (la queue) ; ses bords sont de plus en plus flous
  * de la tête (nette) à la queue ; la tête est un bout arrondi net (demi-disque). Profil relevé sur l'ancien masque.
- * Fermeture (1300 ms) : la queue s'arrête, la tête continue sur son élan et ralentit jusqu'à la queue (bout toujours
- * arrondi) ; l'anneau plein vient couvrir la queue estompée, le flou de la queue s'éteint ; puis l'anneau grandit en
- * accélérant (60 % → 100 % du rayon du relais) : le « o » du logo WebGL prend le relais au même pixel, à la même vitesse.
+ * Fermeture : la rotation continue ; la tête, partie à la vitesse de la rotation (sans à-coup), accélère, rattrape sa
+ * queue et la recouvre (bout toujours arrondi) : l'anneau est plein. Alors seulement le flou de la queue s'éteint ; puis
+ * l'anneau grandit en accélérant (60 % → 100 % du rayon du relais) : le « o » du logo WebGL prend le relais au même
+ * pixel, à la même vitesse.
  */
 import { IRIS_STOPS, IRIS_INNER_RATIO, sampleIris } from '../design/logo-kit/src/iris.js'
 
@@ -18,23 +19,24 @@ export const LOADER = {
   tail: 84,          // la queue s'efface sur ses 84 premiers degrés (0 au bout, 1 ensuite)
   tailBlur: 0.5,     // flou : demi-largeur du bord, en fraction de l'épaisseur, de la queue (× 1) à la tête (× 0, net)
   start: 0.6,        // taille pendant la rotation (fraction du rayon du relais)
-  close: 1300,       // durée de la fermeture (ms)
-  sweep: 640,        // la tête rejoint la queue (ms)
-  full: [660, 900],  // l'anneau plein couvre la queue estompée (ms)
-  fade: [880, 1120], // puis le flou de la queue s'éteint (ms) : l'anneau ne faiblit jamais entre les deux
+  catchUp: 760,      // fermeture : la tête accélère et rattrape sa queue (ms) ; la rotation, elle, continue
+  catchArc: 150,     // chemin de la tête : l'écart (54°) + la queue estompée (84°) + la marge du bout arrondi
+  deblur: 340,       // puis, seulement une fois l'anneau plein, le flou de la queue s'éteint (ms)
   margin: 1.5,       // cadre de la toile : 1,5 × le diamètre (le flou n'est jamais coupé)
 }
 
 const TAU = Math.PI * 2, DEG = Math.PI / 180
 const clamp01 = (x) => Math.min(1, Math.max(0, x))
 const smooth = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t) }
-const easeOut = (x) => 1 - Math.pow(1 - clamp01(x), 3)   // pente initiale 3 × 54° / 0,64 s ≈ vitesse de rotation : sans à-coup
+const easeIn = (x) => { const t = clamp01(x); return t * t }   // vitesse ajoutée nulle au départ, puis accélération constante
+/** Durée totale de la fermeture (ms) pour une croissance de grow ms. */
+export const closeDuration = (grow) => LOADER.catchUp + LOADER.deblur + grow
 
 export function createLoaderDraw(canvas, { dpr = 1, r1 = 44, reduced = false, now = () => performance.now() } = {}) {
   const ctx = canvas.getContext('2d')
   const mk = (w, h) => (typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : Object.assign(document.createElement('canvas'), { width: w, height: h }))
   let R1 = r1, size = 0, sprite = null, mask = null, mctx = null
-  let t0 = now(), closeAt = null, growMs = 400, frozen = 0
+  let t0 = now(), closeAt = null, growMs = 400
 
   // forme de l'arc (alpha seulement), calculée pixel par pixel une fois par taille, à l'échelle 1 (rayon R1) : bord
   // anticrénelé au pixel, flou croissant vers la queue, tête en demi-disque net. Tête à l'angle 0 (droite), queue derrière.
@@ -90,29 +92,29 @@ export function createLoaderDraw(canvas, { dpr = 1, r1 = 44, reduced = false, no
   function draw() {
     const t = now(), c = size / 2
     const k = closeAt === null ? -1 : t - closeAt   // temps depuis le début de la fermeture
-    // angle de la tête : rotation continue, figée au début de la fermeture
-    const rot = reduced ? -90 * DEG : closeAt === null ? ((t - t0) / LOADER.turn) * TAU : frozen
-    // taille : 60 % pendant la rotation ; à la fermeture, croissance accélérée (t²) sur les growMs dernières ms
-    const g0 = LOADER.close - growMs, gx = k < 0 ? 0 : clamp01((k - g0) / growMs)
+    const total = closeDuration(growMs), merged = LOADER.catchUp
+    // rotation : continue du début à la fin (une fois l'anneau plein, elle ne se voit plus : la roue est fixe)
+    const rot = reduced ? -90 * DEG : ((t - t0) / LOADER.turn) * TAU
+    // taille : 60 % pendant la rotation ; à la fin, croissance accélérée (t²) sur les growMs dernières ms
+    const gx = k < 0 ? 0 : clamp01((k - (total - growMs)) / growMs)
     const s = LOADER.start + (1 - LOADER.start) * gx * gx
     const ro = R1 * dpr * s, th = ro * (1 - IRIS_INNER_RATIO), mid = ro - th / 2
 
     mctx.setTransform(1, 0, 0, 1, 0, 0); mctx.clearRect(0, 0, size, size)
-    mctx.globalAlpha = k < 0 ? 1 : 1 - smooth(LOADER.fade[0], LOADER.fade[1], k)
+    // l'arc et le flou de sa queue ; le flou ne s'éteint qu'une fois l'anneau plein
+    mctx.globalAlpha = k < merged ? 1 : 1 - smooth(merged, merged + LOADER.deblur, k)
     if (mctx.globalAlpha > 0.001) {
       mctx.translate(c, c); mctx.rotate(rot); mctx.scale(s, s)
       mctx.drawImage(sprite, -c, -c)
       mctx.setTransform(1, 0, 0, 1, 0, 0)
     }
-    if (k >= 0) {
-      // la tête avance seule jusqu'à la queue, bout arrondi
-      const gap = (360 - LOADER.arc) * DEG, a0 = rot - 0.5 * DEG, a1 = rot + gap * easeOut(k / LOADER.sweep)
-      mctx.globalAlpha = 1; mctx.lineWidth = th; mctx.lineCap = 'round'; mctx.strokeStyle = '#000'
+    mctx.globalAlpha = 1; mctx.fillStyle = mctx.strokeStyle = '#000'
+    if (k >= merged) { ringPath(mctx, c, ro); mctx.fill('evenodd') }   // anneau plein, net
+    else if (k >= 0) {
+      // la tête accélère au-delà de la rotation et recouvre la queue ; bout arrondi (rayon : demi-épaisseur)
+      const a0 = rot - 1 * DEG, a1 = rot + LOADER.catchArc * DEG * easeIn(k / LOADER.catchUp)
+      mctx.lineWidth = th; mctx.lineCap = 'round'
       mctx.beginPath(); mctx.arc(c, c, mid, a0, Math.max(a0 + 1e-3, a1 - th / 2 / mid)); mctx.stroke()
-      // anneau plein : couvre la queue estompée (net)
-      const f = smooth(LOADER.full[0], LOADER.full[1], k)
-      if (f > 0) { mctx.globalAlpha = f; mctx.fillStyle = '#000'; ringPath(mctx, c, ro); mctx.fill('evenodd') }
-      mctx.globalAlpha = 1
     }
     ctx.globalCompositeOperation = 'source-over'
     ctx.clearRect(0, 0, size, size)
@@ -120,7 +122,7 @@ export function createLoaderDraw(canvas, { dpr = 1, r1 = 44, reduced = false, no
     ctx.globalCompositeOperation = 'destination-in'
     ctx.drawImage(mask, 0, 0)
     ctx.globalCompositeOperation = 'source-over'
-    return k >= LOADER.close
+    return k >= total
   }
 
   return {
@@ -129,8 +131,8 @@ export function createLoaderDraw(canvas, { dpr = 1, r1 = 44, reduced = false, no
     size: () => size / dpr,
     close(ms) {
       if (closeAt !== null) return
-      growMs = ms; frozen = reduced ? -90 * DEG : ((now() - t0) / LOADER.turn) * TAU
-      closeAt = reduced ? now() - LOADER.close : now()
+      growMs = ms
+      closeAt = reduced ? now() - closeDuration(ms) : now()
     },
   }
 }
