@@ -424,7 +424,19 @@ const hero = document.querySelector('.hero')
 let heroWords = [...document.querySelectorAll('.hero__line .w')]
 if (!heroWords.length) root.classList.add('hero-done')   // pages sans accueil : tout est visible d'emblée
 let heroOn = -1
-const wordsSvg = [...document.querySelectorAll('.hero .studio__word, .hero__word')]   // le titre porte le flou du nom
+const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
+// nom de l'accueil en « balayage » (src/logotype-svg.js) : les dégradés des masques glissent de gauche à droite ; à
+// chaque endroit du nom, la copie très floue, puis la peu floue, puis la nette prennent le relais (bande de largeur bb)
+const sweeps = wordsSvg.filter((w) => w.dataset.bb).map((el) => ({ el, gs: [...el.querySelectorAll('.bal-g')], x: +el.dataset.bx, w: +el.dataset.bw, b: +el.dataset.bb, last: '' }))
+function sweep(draw) {
+  for (const s of sweeps) {
+    const t = (s.x + (1 - draw) * (s.w + s.b) - s.b).toFixed(1)
+    if (t === s.last) continue
+    s.last = t
+    for (const g of s.gs) g.setAttribute('gradientTransform', `translate(${t} 0)`)
+    s.el.classList.toggle('bal-net', draw <= 0)   // entièrement net : les copies floues ne sont plus calculées
+  }
+}
 // chaque moitié du logotype (HOLO / SENE) cadrée sur ses lettres
 // même hauteur de cadre pour les deux (celle de HOLO, avec ses capitales) : les lettres gardent la même échelle
 
@@ -518,6 +530,7 @@ function scrollEffects() {
     w.style.setProperty('--draw', (1 - Math.min(1, p * 1.2)).toFixed(3))
     w.style.setProperty('--fill', Math.min(1, Math.max(0, (p - 0.4) / 0.6)).toFixed(3))
   })
+  sweep(1 - Math.min(1, k(0.12, 0.5) * 1.2))
   for (const b of wordBlocks) {
     const r = b.el.getBoundingClientRect()
     const p = Math.min(1, Math.max(0, (vh * 0.85 - r.top) / (r.height + vh * 0.25)))
@@ -532,7 +545,7 @@ function scrollEffects() {
     if (lead) { const v = f.toFixed(3); if (lead.dataset.f !== v) { lead.dataset.f = v; lead.style.setProperty('--f', v) } }
   }
 }
-if (reduced) { root.classList.add('hero-done', 'bar-on'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
+if (reduced) { root.classList.add('hero-done', 'bar-on'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); sweep(0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
 /* Chargeur : le « o » du logo-kit (loader.js, loader-draw.js), dessiné hors du fil principal quand le navigateur le
    permet. En fin de chargement, la tête rejoint la queue, l'anneau se complète et grandit en accélérant (60 % → 100 % du

@@ -205,7 +205,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   .js [data-reveal], .js [data-reveal="line"] > span { transform: none !important; transition: opacity var(--dur-base); animation: none !important; }
   .js [data-reveal="clip"] { clip-path: none; }
   .js [data-words] .w { opacity: 1; filter: none; animation: none !important; }
-  .js [data-reveal], .js .hero__line .w, .hero .studio__word, .hero__word { filter: none !important; }
+  .js [data-reveal], .js .hero__line .w, .hero .studio__word { filter: none !important; }
 }
 
 /* 1. accueil : le monogramme en aplat, puis le nom et la présentation */
@@ -655,17 +655,16 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* « JOHANN ARATA » : le logotype vectoriel du pack (public/logotypes/svg/johann-arata.svg, composant src/logotype-svg.js),
    à l'encre du thème ; apparaît en fondu, du flou au net, piloté par la scène de l'accueil (--draw, main.js), entièrement
    net avant que la présentation commence. Sur une ligne (ordinateur) ou JOHANN au-dessus de ARATA (mobile). */
-.hero__name { color: var(--ink); opacity: calc(1 - var(--draw, 0)); }
+.hero__name { color: var(--ink); }
 .hero .studio__word.hero__name { height: auto; filter: none; }
-/* en plus du fondu et du flou : le nom se découvre d'un seul bloc, de gauche à droite (masque à bord doux), piloté par le
-   même --draw ; entièrement découvert exactement quand il devient net. Le flou est porté par le titre (.hero__word) :
-   il s'applique après le masque, le halo flou n'est donc jamais coupé aux bords du dessin. */
-.hero__word { filter: blur(calc(var(--draw, 0) * 10px)); }
-.hero__name { --wipe: calc((1 - var(--draw, 0)) * 125%);
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--wipe) - 25%), transparent var(--wipe));
-  mask-image: linear-gradient(90deg, #000 calc(var(--wipe) - 25%), transparent var(--wipe)); }
-.hero__word .hero__name.studio__word--line { width: min(84vw, 1560px); }
-@media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { width: min(92vw, 480px); } }
+/* apparition (main.js, sweep) : de gauche à droite, chaque endroit du nom passe à son tour de flou et transparent à net
+   et plein, comme les mots des textes mais en continu ; le nom ne bouge pas. Entièrement net exactement à la fin de
+   sa phase (avant la présentation). Le dessin a une marge (--m, part de sa largeur) pour le halo du flou : la largeur
+   et les marges négatives la compensent, le mot occupe exactement la place --w. */
+.hero__word .hero__name.logotype--balayage { width: calc(var(--w) * (1 + 2 * var(--m))); margin: calc(var(--w) * -1 * var(--m)); }
+.bal-net .bal-c0, .bal-net .bal-c1 { display: none; }
+.hero__word .hero__name.studio__word--line { --w: min(84vw, 1560px); }
+@media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { --w: min(92vw, 480px); } }
 /* pied de page : HOLOSENE en signature ; apparaît lettre par lettre en arrivant à l'écran, puis vague au survol (main.js) */
 .foot .foot__logo { flex: none; width: auto; height: 26px; color: var(--ink); }
 @media (max-width: 760px) { .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
