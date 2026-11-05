@@ -665,6 +665,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
 /* voile clair à flou progressif de la barre du haut, retourné, au bas de l'écran (mode clair seulement, comme en haut) */
 :root .bottom-glass.topbar__glass { display: none; }
-.bottom-glass { position: fixed; left: 0; right: 0; bottom: 0; height: 91px; z-index: 15; pointer-events: none; transform: scaleY(-1); }
+.bottom-glass { position: fixed; left: 0; right: 0; top: auto; bottom: 0; height: 91px; z-index: 15; pointer-events: none; transform: scaleY(-1); }
 @media (min-width: 769px) { .bottom-glass { height: 100px; } }
 :root[data-theme="light"].f-band .bottom-glass.topbar__glass { display: block; }
