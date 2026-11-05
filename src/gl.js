@@ -646,12 +646,14 @@ export function createGL(canvas, { reduced }) {
   resize(); addEventListener('resize', resize)
 
   // une seule lentille pour toute la page : elle suit le pointeur de près (sans dépassement), apparaît sur les cartes
-  const lens = { x: 0, y: 0, s: 0, init: false, soft: 0, softT: 0 }
+  // fondu intérieur de l'anneau : à mi-chemin par défaut (SOFT_REST), complet avec la touche J maintenue
+  const SOFT_REST = 0.5
+  const lens = { x: 0, y: 0, s: 0, init: false, soft: SOFT_REST, softT: SOFT_REST }
   const SOFT_W = 0.22   // touche J : largeur du fondu intérieur de l'anneau, en part du rayon de la loupe
-  // touche J maintenue : le bord intérieur de l'anneau se fond dans la loupe (transition douce dans les deux sens)
+  // touche J maintenue : le bord intérieur de l'anneau se fond complètement dans la loupe (transition douce dans les deux sens)
   addEventListener('keydown', (e) => { if (e.code === 'KeyJ' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) lens.softT = 1 })
-  addEventListener('keyup', (e) => { if (e.code === 'KeyJ') lens.softT = 0 })
-  addEventListener('blur', () => { lens.softT = 0 })
+  addEventListener('keyup', (e) => { if (e.code === 'KeyJ') lens.softT = SOFT_REST })
+  addEventListener('blur', () => { lens.softT = SOFT_REST })
   const hoverDevice = matchMedia('(hover: hover)').matches
   // suivi amorti ; à moins de 1e-4 de la cible (invisible), la valeur s'y pose : une scène immobile est vraiment immobile
   const follow = (a, b, tau, dt) => { const v = a + (b - a) * (1 - Math.exp(-dt / tau)); return Math.abs(b - v) < 1e-4 ? b : v }

@@ -26,6 +26,11 @@ Tout ce qui touche au logo, au « o » irisé ou à l'anneau de la lentille du c
 - Fonds : dark `#1E1E1E`, light `#F6F5F2`. Encre : blanc sur dark, `#1E1E1E` sur light.
 - Dark et light utilisent **exactement la même roue**.
 
+### Exception voulue : anneau de la lentille du curseur (vignettes)
+- Son bord **intérieur** est volontairement fondu (choix de Johann) : à mi-chemin par défaut, complet avec la touche J
+  maintenue (`SOFT_REST`, `SOFT_W` dans `src/gl.js`). La loupe se resserre d'autant et garde son effet à l'intérieur.
+  Ne pas « corriger » ce fondu ; le bord extérieur, les couleurs et l'épaisseur restent ceux du kit.
+
 ### Vérification obligatoire avant de dire « fini »
 1. Capture d'écran (Playwright, deviceScaleFactor 2) du rendu concerné.
 2. Comparaison côte à côte avec `design/logo-kit/ref/*.png` (même orientation des couleurs, même épaisseur d'anneau, bords nets sans halo).
