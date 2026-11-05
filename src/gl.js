@@ -52,6 +52,7 @@ uniform float uFloor;   // taille minimale des points dans le masque
 uniform float uRadius;  // coins arrondis (0 : aucun)
 uniform vec3 uLens;     // centre (px CSS), rayon intérieur
 uniform float uLensO;   // rayon extérieur de l'anneau
+uniform float uSoft;    // touche J maintenue (0 à 1) : bord intérieur de l'anneau fondu dans la loupe
 uniform float uGlass;   // survol d'une carte : bord de verre (0 à 1)
 uniform vec4 uClip;     // piste horizontale : bords gauche et droit (px, dans la vue), largeur du fondu
 uniform float uCardBg;  // gris du fond des cartes
@@ -175,7 +176,8 @@ vec3 withLens(vec2 q, vec3 base) {
       float bend = 0.36 * k * k;
       // fondu de flou en dégradé sur le pourtour intérieur : nul au centre, il croît sur le tiers extérieur jusqu'à
       // ≈ 5 px contre l'anneau (8 échantillons en cercle + le centre : flou lisse, sans marches)
-      float kb = smoothstep(0.66, 1.0, r), bl = 0.6 + 4.6 * kb * kb;
+      // touche J (uSoft) : flou plus fort et qui commence plus tôt, pour se fondre avec le bord intérieur de l'anneau
+      float kb = smoothstep(0.66 - 0.2 * uSoft, 1.0, r), bl = 0.6 + (4.6 + 5.4 * uSoft) * kb * kb;
       vec2 c0 = uLens.xy;
       vec3 orig = vec3(0.0);
       for (int i = 0; i < 9; i++) {
@@ -189,7 +191,9 @@ vec3 withLens(vec2 q, vec3 base) {
       if (uHasText > 0.5) orig = mix(orig, vec3(1.0), texture2D(uText, (c0 + lp * (1.0 - bend)) / uRes).a);   // le texte est grossi comme l'image
       // légère teinte irisée en dégradé : rien au centre, au plus 14 % contre l'anneau, couleur de la roue « flux » du kit
       // à cet angle (la même que l'anneau juste à côté : la teinte semble rayonner de l'anneau)
-      orig = mix(orig, flowColor(lp), 0.14 * smoothstep(0.3, 1.0, r) * smoothstep(0.3, 1.0, r));
+      // touche J (uSoft) : la teinte monte jusqu'aux couleurs pleines de l'anneau à son bord, sans marche
+      float kt = smoothstep(0.3, 1.0, r); kt *= kt;
+      orig = mix(orig, flowColor(lp), mix(0.14 * kt, 0.14 * kt + 0.5 * pow(smoothstep(0.55, 1.0, r), 2.0), uSoft));
       vec2 dir = d > 0.001 ? lp / d : vec2(0.0);
       orig += vec3(0.18) * exp(-(R - d) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0);
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
@@ -411,11 +415,16 @@ const RING = `precision highp float;
 uniform sampler2D uFlow;
 uniform vec4 uRing;     // centre (px CSS, depuis le haut à gauche), rayon intérieur, rayon extérieur
 uniform vec2 uView;     // hauteur de la toile (px écran), dpr
+uniform float uSoft;    // touche J maintenue (0 à 1) : bord intérieur en dégradé de flou (largeur en px : uSoft)
 vec3 flowColor(vec2 p) { float u = fract((degrees(atan(p.y, p.x)) + 90.0 - 180.0) / 360.0); return texture2D(uFlow, vec2(u, 0.5)).rgb; }
 void main() {
   vec2 p = vec2(gl_FragCoord.x, uView.x - gl_FragCoord.y) / uView.y;
   vec2 lp = p - uRing.xy; float d = length(lp), aw = 1.0 / uView.y;
-  float ring = smoothstep(uRing.w + aw * 0.5, uRing.w - aw * 0.5, d) * smoothstep(uRing.z - aw * 0.5, uRing.z + aw * 0.5, d);
+  // bord intérieur : net au repos ; touche J : il s'étire vers le centre en un dégradé doux (courbe en S, sans limite
+  // visible), les couleurs de l'anneau se fondent dans la loupe
+  float wIn = aw * 0.5 + uSoft;
+  float inner = smoothstep(uRing.z - wIn, uRing.z + aw * 0.5, d);
+  float ring = smoothstep(uRing.w + aw * 0.5, uRing.w - aw * 0.5, d) * inner * inner * (3.0 - 2.0 * inner);
   gl_FragColor = vec4(flowColor(lp) * ring, ring);
 }`
 
@@ -431,7 +440,7 @@ export function createGL(canvas, { reduced }) {
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
   const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0)
-  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow', 'uHal']) U[n] = gl.getUniformLocation(prog, n)
+  const U = {}; for (const n of ['uTex', 'uMask', 'uRes', 'uOrigin', 'uImg', 'uDpr', 'uCell', 'uReveal', 'uFade', 'uHasMask', 'uFloor', 'uRadius', 'uLens', 'uLensO', 'uSoft', 'uGlass', 'uEye', 'uMarkXf', 'uBg', 'uMaskB', 'uCanvas', 'uClip', 'uCardBg', 'uColor', 'uScr', 'uTime', 'uText', 'uHasText', 'uMono', 'uInk', 'uEdgeFloor', 'uFlow', 'uHal']) U[n] = gl.getUniformLocation(prog, n)
   gl.uniform1i(U.uTex, 0); gl.uniform1i(U.uMask, 1); gl.uniform1i(U.uText, 3); gl.uniform1i(U.uMaskB, 5)
   gl.uniform1f(U.uHal, FX.halation)
   gl.uniform4f(U.uMono, MONO_W, MONO_O[0], MONO_O[1], 0)
@@ -465,7 +474,7 @@ export function createGL(canvas, { reduced }) {
   const rProg = gl.createProgram()
   gl.attachShader(rProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(rProg, sh(gl.FRAGMENT_SHADER, RING)); gl.bindAttribLocation(rProg, 0, 'a'); gl.linkProgram(rProg)
   if (!gl.getProgramParameter(rProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(rProg))
-  const RU = { uFlow: gl.getUniformLocation(rProg, 'uFlow'), uRing: gl.getUniformLocation(rProg, 'uRing'), uView: gl.getUniformLocation(rProg, 'uView') }
+  const RU = { uFlow: gl.getUniformLocation(rProg, 'uFlow'), uRing: gl.getUniformLocation(rProg, 'uRing'), uView: gl.getUniformLocation(rProg, 'uView'), uSoft: gl.getUniformLocation(rProg, 'uSoft') }
   gl.useProgram(rProg); gl.uniform1i(RU.uFlow, 6); gl.useProgram(prog)
   // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
   // défilement pour la graine du grain), aucune allocation par image
@@ -635,7 +644,11 @@ export function createGL(canvas, { reduced }) {
   resize(); addEventListener('resize', resize)
 
   // une seule lentille pour toute la page : elle suit le pointeur de près (sans dépassement), apparaît sur les cartes
-  const lens = { x: 0, y: 0, s: 0, init: false }
+  const lens = { x: 0, y: 0, s: 0, init: false, soft: 0, softT: 0 }
+  // touche J maintenue : le bord intérieur de l'anneau se fond dans la loupe (transition douce dans les deux sens)
+  addEventListener('keydown', (e) => { if (e.code === 'KeyJ' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) lens.softT = 1 })
+  addEventListener('keyup', (e) => { if (e.code === 'KeyJ') lens.softT = 0 })
+  addEventListener('blur', () => { lens.softT = 0 })
   const hoverDevice = matchMedia('(hover: hover)').matches
   // suivi amorti ; à moins de 1e-4 de la cible (invisible), la valeur s'y pose : une scène immobile est vraiment immobile
   const follow = (a, b, tau, dt) => { const v = a + (b - a) * (1 - Math.exp(-dt / tau)); return Math.abs(b - v) < 1e-4 ? b : v }
@@ -709,6 +722,7 @@ export function createGL(canvas, { reduced }) {
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
     const sc = lens.s < 0.005 ? 0 : 1 - Math.pow(1 - lens.s, 2)
+    lens.soft = reduced ? lens.softT : follow(lens.soft, lens.softT, 0.14, dt)
     // le « o » remplace le curseur : flèche masquée partout tant que le « o » est affiché (souris uniquement)
     const hide = sc > 0.02 && hoverDevice && !ptr.touch && !onCtl   // tant que le « o » est visible, sauf sur un bouton
     if (hide !== lens.hidden) { document.documentElement.classList.toggle('lens-on', hide); lens.hidden = hide }
@@ -718,7 +732,7 @@ export function createGL(canvas, { reduced }) {
     // d'abord (phase 1, sans rien dessiner), puis comparées à celles de l'image précédente. Identiques : rien n'est
     // envoyé au GPU, la toile garde l'image déjà affichée (exactement la même). Sinon, dessin complet (phase 2).
     const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
-    const sig = [canvas.width, canvas.height, dpr, cellScale, FX.version, ...theme.bg, ...theme.ink, sc, sc > 0 ? lens.x : 0, sc > 0 ? lens.y : 0, views.indexOf(lens.view),
+    const sig = [canvas.width, canvas.height, dpr, cellScale, FX.version, ...theme.bg, ...theme.ink, sc, lens.soft, sc > 0 ? lens.x : 0, sc > 0 ? lens.y : 0, views.indexOf(lens.view),
       FX.colorStrength > 0 || FX.grain > 0 ? now : 0, Math.floor(scrollY / SEED_STEP)]
     const jobs = []
     for (const v of order) {
@@ -820,7 +834,7 @@ export function createGL(canvas, { reduced }) {
       if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 80, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
-      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uGlass, v.glass)
+      gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uSoft, lens.soft); gl.uniform1f(U.uGlass, v.glass)
       if (v.mark) {
         gl.uniform3f(U.uInk, ...theme.ink)
         gl.uniform4f(U.uMarkXf, xf[0], xf[1], xf[2], xf[3]); gl.uniform1f(U.uReveal, xf[4])   // le S apparaît pendant le glissement
@@ -863,6 +877,7 @@ export function createGL(canvas, { reduced }) {
       gl.scissor(x0, y0, Math.ceil((ro + pad) * 2 * dpr), Math.ceil((ro + pad) * 2 * dpr))
       gl.useProgram(rProg)
       gl.uniform4f(RU.uRing, lens.x, lens.y, ri, ro); gl.uniform2f(RU.uView, canvas.height, dpr)
+      gl.uniform1f(RU.uSoft, lens.soft * ri * 0.4)   // touche J : dégradé intérieur sur 40 % du rayon
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       gl.useProgram(prog)
     }
