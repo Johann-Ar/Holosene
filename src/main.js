@@ -572,34 +572,6 @@ function scrollEffects() {
 }
 if (reduced) { root.classList.add('hero-done', 'bar-on'); heroWords.forEach((w) => w.classList.add('on')); wordsSvg.forEach((w) => w.style.setProperty('--draw', 0)); sweep(0); wordBlocks.forEach((b) => b.words.forEach((w) => w.classList.add('on'))) }
 
-/* Touche K maintenue : JOHANN ARATA grandit proportionnellement jusqu'à ce que son encre touche exactement les marges
-   de l'accueil, pas plus (styles.css, .k-wide). Le résultat est d'abord mesuré sans animation (mise en page instantanée,
-   invisible), largeur et position corrigées sur l'encre réelle, puis l'agrandissement est animé vers ce résultat. */
-{ const copy = document.querySelector('.hero__copy')
-  const names = () => [...(copy?.querySelectorAll('.hero__name') || [])]
-  const inkOf = () => { const s = names().find((x) => x.getBoundingClientRect().width); return s?.querySelector('.bal-c2 use')?.getBoundingClientRect() }
-  const fit = () => {
-    const svg = names().find((x) => x.getBoundingClientRect().width); if (!svg) return
-    const cs = getComputedStyle(copy), cr = copy.getBoundingClientRect()
-    const L = cr.left + parseFloat(cs.paddingLeft), R = cr.right - parseFloat(cs.paddingRight)
-    const m = parseFloat(svg.style.getPropertyValue('--m')) || 0
-    const set = (kw, dx) => { root.style.setProperty('--k-w', kw.toFixed(2) + 'px'); root.style.setProperty('--k-dx', dx.toFixed(2) + 'px') }
-    names().forEach((n) => { n.style.transition = 'none' })
-    let ink = inkOf(), kw = (R - L) * (svg.getBoundingClientRect().width / (1 + 2 * m)) / ink.width, dx = 0
-    root.classList.add('k-wide')
-    for (let pass = 0; pass < 2; pass++) {
-      set(kw, dx); ink = inkOf(); kw *= (R - L) / ink.width
-      set(kw, dx); ink = inkOf(); dx += (L + R) / 2 - (ink.left + ink.right) / 2
-    }
-    set(kw, dx)
-    root.classList.remove('k-wide'); void copy.offsetWidth
-    names().forEach((n) => { n.style.transition = '' })
-  }
-  const wide = (on) => { if (on && copy) fit(); root.classList.toggle('k-wide', on) }
-  addEventListener('keydown', (e) => { if (e.code === 'KeyK' && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) wide(true) })
-  addEventListener('keyup', (e) => { if (e.code === 'KeyK') wide(false) })
-  addEventListener('blur', () => wide(false)) }
-
 /* Chargeur : le « o » du logo-kit (loader.js, loader-draw.js), dessiné hors du fil principal quand le navigateur le
    permet. En fin de chargement, la tête rejoint la queue, l'anneau se complète et grandit en accélérant (60 % → 100 % du
    rayon du relais) ; le « o » du logo WebGL prend le relais au même pixel et à la même vitesse, avec la même roue (le flux
