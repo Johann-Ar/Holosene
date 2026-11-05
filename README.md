@@ -34,7 +34,13 @@ npm run todo      # liste des textes encore à fournir dans src/content.js
 - Langue : redirection vers `/en/` des navigateurs non francophones à la première visite, par le serveur
   (`vercel.json`, en-tête `Accept-Language`) ou à défaut par un script en tête de page ; le choix FR / EN est mémorisé
   (cookie `lang` et `localStorage`).
-- Aucun traceur. Stockage local : la langue choisie.
+- Aucun traceur. Stockage local et cookie technique `lang` : la langue choisie (exempté de consentement, voir mentions).
+- Sécurité : politique de contenu (CSP) écrite dans chaque page à la compilation (`vite.config.js`, `csp()` : seuls les
+  fichiers du site, scripts en ligne autorisés par empreinte SHA-256) ; en-têtes de l'hébergeur dans `vercel.json`
+  (cadre interdit, Permissions-Policy, nosniff, COOP ; HTTPS imposé par Vercel). Un script ajouté à la main dans une
+  page est bloqué : passer par `src/` ou relancer la compilation.
+- Avant la mise en ligne : `npm run todo` liste tout ce qui reste à fournir (textes, PDF du CV, mentions légales).
+  Le bouton « Curriculum vitae » n'apparaît en ligne qu'une fois `public/cv/johann-arata-cv.pdf` déposé.
 
 ## Publication
 

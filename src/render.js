@@ -3,7 +3,7 @@
  * Tout le contenu est dans le HTML publié (lisible sans JavaScript). Les fiches projet s'ouvrent par l'ancre
  * #p-<slug> (CSS :target), le JavaScript ajoute focus, Échap et piégeage du focus.
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { site, ui, projects, research, studio, about, workIntro } from './content.js'
 import sizes from './media-sizes.json' with { type: 'json' }
 import { IRIS_STOPS } from '../design/logo-kit/src/iris.js'
@@ -42,6 +42,8 @@ const nameStacked = nameSvg(nameParts.slice(0, 6).join('') + `<g transform="tran
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
 export function render(lang) {
+  // CV : le lien n'est publié que si le PDF existe (sinon masqué en ligne, visible avec ?dev comme les textes à fournir)
+  const cvReady = existsSync(new URL(`../public/${site.cv}`, import.meta.url))
   resetLogotypes()   // mêmes id de logotypes dans chaque langue (voir logotype-svg.js)
   const t = (v) => (v && typeof v === 'object' && 'fr' in v ? v[lang] : v)
   const txt = (v, tag = 'p', cls = '') => {
@@ -60,7 +62,7 @@ export function render(lang) {
   const card = (c) => {
     const tag = c.href ? 'a' : 'div', href = c.href ? ` href="${c.href}"` : ''
     const media = c.image
-      ? `<${tag} class="card__media${c.overlay ? ' card__media--badge' : ''}"${href} data-gl="card" data-cell="6"${c.color ? ' data-color' : ''}${c.text ? ` data-text="${esc(c.text)}"` : ''} data-radius="26" aria-label="${esc(t(ui.open))} : ${esc(c.title)}"><img src="${m(c.image)}" alt="" decoding="async" loading="lazy">${c.overlay ? `<span class="disp">${esc(c.badge || '')}</span>` : ''}${c.label ? `<span class="sr">${esc(c.label)}</span>` : ''}</${tag}>`
+      ? `<${tag} class="card__media${c.overlay ? ' card__media--badge' : ''}"${href} data-gl="card" data-cell="6"${c.color ? ' data-color' : ''}${c.text ? ` data-text="${esc(c.text)}"` : ''} data-radius="26"${c.href ? ` aria-label="${esc(t(ui.open))} : ${esc(c.title)}"` : ' aria-hidden="true"'}><img src="${m(c.image)}" alt="" decoding="async" loading="lazy">${c.overlay ? `<span class="disp">${esc(c.badge || '')}</span>` : ''}${c.label ? `<span class="sr">${esc(c.label)}</span>` : ''}</${tag}>`
       : `<div class="card__media card__media--text"><span class="disp">${esc(c.badge || '')}</span></div>`
     return `
       <article class="card${c.todo ? ' todo' : ''}" id="${c.id}" aria-labelledby="${c.id}-t">
@@ -153,7 +155,7 @@ export function render(lang) {
   </a>
   <div class="topbar__tools">
     <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><span class="theme-toggle__t">${lang === "fr" ? "Sombre" : "Dark"}</span></button>
-    <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="${esc(t(ui.langLabel))}"><span class="lang__fr">FR</span><span class="lang__sep">/</span><span class="lang__en">EN</span></a>
+    <a class="lang" href="${other}" hreflang="${lang === 'fr' ? 'en' : 'fr'}" aria-label="FR/EN, ${esc(t(ui.langLabel))}"><span class="lang__fr">FR</span><span class="lang__sep">/</span><span class="lang__en">EN</span></a>
   </div>
 </header>
 
@@ -195,7 +197,7 @@ export function render(lang) {
       <h2 class="lbl" id="contact-t" data-sw>${seq(t(ui.contact))}</h2>
       <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-sw data-sw-letters aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
       <div class="contact__row" data-reveal>
-        <ul class="socials"><li><a href="${root}${esc(site.cv)}" download="Johann-Arata-CV.pdf" type="application/pdf">${esc(t(ui.cv))} ↗</a></li>${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
+        <ul class="socials"><li${cvReady ? '' : ' class="todo"'}><a ${cvReady ? 'href' : 'data-href'}="${root}${esc(site.cv)}" download="Johann-Arata-CV.pdf" type="application/pdf">${esc(t(ui.cv))} ↗</a></li>${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
       </div>
     </div>
   </section>

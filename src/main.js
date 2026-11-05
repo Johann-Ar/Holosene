@@ -29,7 +29,7 @@ const langLink = document.querySelector('.topbar .lang')
 langLink?.addEventListener('click', () => {
   const l = langLink.getAttribute('hreflang')
   store.set('lang', l)
-  document.cookie = `lang=${l}; path=/; max-age=31536000; samesite=lax`
+  document.cookie = `lang=${l}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
 })
 
 /* Réglages Iris en direct (?debug=iris) : en développement seulement, absent du site publié */
@@ -744,7 +744,7 @@ document.addEventListener('click', async (e) => {
         }
       },
       onDone: () => {
-        try { store.set('lang', root.lang); document.cookie = `lang=${root.lang}; path=/; max-age=31536000; samesite=lax` } catch {}
+        try { store.set('lang', root.lang); document.cookie = `lang=${root.lang}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}` } catch {}
         history.pushState(null, '', url); shownPath = location.pathname
         labelThemes()
         dispatchEvent(new Event('resize'))   // largeurs des textes changées : pistes, WebGL et fond se remesurent

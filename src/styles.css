@@ -493,8 +493,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .legal { padding-block: 120px var(--sp-8); max-width: 820px; display: grid; gap: 14px; }
 .legal h1 { font-size: var(--fs-h1); margin-bottom: 8px; }
 .legal h2 { margin-top: var(--sp-4); }
-.legal .note { color: #ffb36b; }
-.legal .missing { color: #ffb36b; }
+/* informations à fournir (temporaires) : orange lisible (contraste AA) sur fond clair, orange clair sur fond sombre */
+.legal .note, .legal .missing { color: #9a4f00; }
+:root[data-theme="dark"] .legal .note, :root[data-theme="dark"] .legal .missing { color: #ffb36b; }
 .legal .btn { margin-right: 8px; margin-top: var(--sp-4); }
 .notfound { min-height: 100svh; display: grid; place-content: center; justify-items: start; gap: 16px; padding-block: 80px; }
 .notfound h1 { font-size: var(--fs-h1); }

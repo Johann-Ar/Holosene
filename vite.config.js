@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
+import { createHash } from 'node:crypto'
 import { pathToFileURL } from 'node:url'
 import { defineConfig } from 'vite'
 
@@ -112,9 +113,37 @@ function absolute404() {
   }
 }
 
+/** Politique de sécurité du contenu (CSP), dans chaque page publiée : seuls les fichiers du site sont chargés ; les petits
+ *  scripts en ligne du site (langue, mode clair / sombre) sont autorisés par leur empreinte SHA-256, calculée ici à chaque
+ *  compilation (un script modifié reste donc toujours autorisé, tout autre script est bloqué). Le cadre (frame-ancestors)
+ *  et les autres protections sont envoyés en en-têtes par l'hébergeur (vercel.json). */
+function csp() {
+  return {
+    name: 'csp',
+    apply: 'build',
+    closeBundle() {
+      for (const page of ['index.html', 'en/index.html', 'mentions-legales.html', '404.html']) {
+        const f = resolve(join('dist', page))
+        if (!existsSync(f)) continue
+        let html = readFileSync(f, 'utf8')
+        const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)(?![^>]*application\/ld\+json)[^>]*>([\s\S]*?)<\/script>/g)]
+          .map((m) => `'sha256-${createHash('sha256').update(m[1]).digest('base64')}'`)
+        const policy = [
+          "default-src 'self'", `script-src 'self' ${hashes.join(' ')}`.trim(), "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: blob:", "font-src 'self'", "connect-src 'self'", "media-src 'self'", "worker-src 'self'",
+          "object-src 'none'", "base-uri 'self'", "form-action 'none'",   // HTTPS : imposé par l'hébergeur (HSTS)
+        ].join('; ')
+        html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\s*/, '')
+          .replace(/(<meta charset="utf-8" \/>)/, `$1\n  <meta http-equiv="Content-Security-Policy" content="${policy}" />`)
+        writeFileSync(f, html)
+      }
+    },
+  }
+}
+
 export default defineConfig({
   base: './',
-  plugins: [prerender(), irisCss(), themeHead(), absolute404(), seoFiles()],
+  plugins: [prerender(), irisCss(), themeHead(), absolute404(), seoFiles(), csp()],
   build: {
     target: 'es2022',
     rollupOptions: {
