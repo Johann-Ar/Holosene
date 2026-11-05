@@ -81,6 +81,11 @@ a { color: inherit; }
    finisse en dessous d'eux ; voile léger dégradé par-dessus */
 .topbar__glass { display: none; position: absolute; left: 0; right: 0; top: 0; height: calc((100% + 48px) / 1.3); z-index: -1; pointer-events: none; background: linear-gradient(color-mix(in srgb, white 72%, transparent), color-mix(in srgb, white 34%, transparent) 55%, transparent); }   /* voile blanc : boutons et liens mieux contrastés */   /* voile blanc : boutons et liens mieux contrastés */
 .topbar__glass i { position: absolute; inset: 0; }
+/* touche G (main.js) : le voile blanc passe dans ::before pour être découpé comme les couches de flou ; le conteneur
+   lui-même n'est jamais masqué (voir main.js, bloc « Touche G ») */
+.g-tabs .topbar__glass { background: none; }
+.g-tabs .topbar__glass::before { content: ''; position: absolute; inset: 0; background: linear-gradient(color-mix(in srgb, white 72%, transparent), color-mix(in srgb, white 34%, transparent) 55%, transparent);
+  -webkit-mask: var(--g-mask, none) 0 0 / 100% 100% no-repeat; mask: var(--g-mask, none) 0 0 / 100% 100% no-repeat; }
 /* flou de la barre : seulement quand le contenu passe dessous (après la scène de l'accueil) ; sur l'accueil et pendant
    le chargement, la barre n'a que ses liens. Sans fondu d'opacité : pendant un fondu, le navigateur coupe le flou des
    calques puis le rétablit d'un coup (à-coup visible) */
@@ -665,6 +670,14 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .bal-net .bal-c0, .bal-net .bal-c1 { display: none; }
 .hero__word .hero__name.studio__word--line { --w: min(84vw, 1560px); }
 @media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { --w: min(92vw, 480px); } }
+/* touche H maintenue (main.js) : HOLOSENE (logotype vectorisé du pack) à la place de JOHANN ARATA, centré au même
+   endroit, à la même hauteur de lettres que JOHANN ARATA sur ordinateur ; rien d'autre ne bouge (visibilité seulement) */
+.hero__word { position: relative; }
+.hero__word .hero__name.hero__name--holo { position: absolute; left: 50%; top: 50%; margin: 0; transform: translate(-50%, -50%); visibility: hidden;
+  --w: calc(min(84vw, 1560px) * 2028 / 3052); }
+@media (max-width: 760px) { .hero__word .hero__name.hero__name--holo { --w: min(92vw, 480px); } }
+.h-holo .hero__word .hero__name:not(.hero__name--holo) { visibility: hidden; }
+.h-holo .hero__word .hero__name.hero__name--holo { visibility: visible; }
 /* pied de page : HOLOSENE en signature ; apparaît lettre par lettre en arrivant à l'écran, puis vague au survol (main.js) */
 .foot .foot__logo { flex: none; width: auto; height: 26px; color: var(--ink); }
 @media (max-width: 760px) { .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
