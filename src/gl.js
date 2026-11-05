@@ -587,8 +587,9 @@ export function createGL(canvas, { reduced }) {
     // composition : aucun mouvement propre vers le haut) ; m va de 0 à 1 exactement quand cette montée amène son centre
     // à la hauteur du petit logo de la barre. Seules sa taille et sa position horizontale s'ajustent au fil du
     // défilement, pour qu'il s'emboîte dans le petit logo au moment où il l'atteint (dock : repère de la vue)
+    // réduction exponentielle : presque rien au début, de plus en plus vite, exactement la taille du petit logo à m = 1
     if (dock && dock.m > 0) {
-      const d = io(dock.m)
+      const d = (Math.pow(2, 10 * dock.m) - 1) / 1023
       cx += (dock.x - cx) * d; size += (dock.h - size) * d
     }
     if (ms >= GROW + SHIFT) return [cx, cy, size, 0, 1]
