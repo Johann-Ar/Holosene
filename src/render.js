@@ -203,6 +203,7 @@ export function render(lang) {
 </main>
 
 <footer class="foot wrap">
+  <p class="lbl">© ${new Date().getFullYear()} Holosene · Johann Arata</p>
   ${logotypeSvg({ mot: 'johann-arata', className: 'foot__logo' })}
   <a class="lbl" href="${root}mentions-legales.html">${esc(t(ui.legal))}</a>
 </footer>
