@@ -492,8 +492,8 @@ let footPush = -1
 function scrollEffects() {
   scrollWords(innerHeight)
   const vh = innerHeight
-  // la bande du bas s'efface en haut de page (mots-clés de l'accueil) ; en fin de page, le pied de page la pousse hors de
-  // l'écran par le bas, au fur et à mesure qu'il apparaît (il n'est jamais flouté, rien ne disparaît d'un coup)
+  // la bande du bas s'efface en haut de page (mots-clés de l'accueil) ; en fin de page, elle est coupée au bord haut du
+  // pied de page, au fur et à mesure qu'il apparaît : il n'est jamais flouté, rien ne disparaît d'un coup
   root.classList.toggle('edge-bottom-off', scrollY < 40)
   if (foot) { const push = Math.max(0, vh - foot.getBoundingClientRect().top); if (push !== footPush) { footPush = push; root.style.setProperty('--band-push', push.toFixed(1) + 'px') } }
   // accueil épinglé : avancée hp (0 à 1) ; le mot se trace puis se remplit, puis la présentation s'allume
