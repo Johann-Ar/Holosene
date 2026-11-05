@@ -40,6 +40,10 @@ const BAL = { flous: [26, 11], bande: 0.4, retenue: 1, marge: 80 }
 const ARRETS = 33   // arrêts des dégradés, répartis sur la largeur du mot
 
 let compteur = 0
+// numérotation des id internes : remise à zéro au début de chaque page (render.js), pour que les pages FR et EN aient
+// exactement les mêmes id. Le changement de langue sans rechargement (lang-swap.js) recopie l'attribut href des <use>
+// de l'autre page : avec des numéros différents, le nom pointait vers un dessin absent et disparaissait.
+export const resetLogotypes = () => { compteur = 0 }
 export function logotypeSvg({ mot = 'holosene', animation = '', className = '', id = '', decoratif = false, empile = false, balayage = false } = {}) {
   if (!MOTS[mot]) throw new Error(`logotype inconnu : ${mot}`)
   if (animation && !ANIMS.includes(animation)) throw new Error(`animation inconnue : ${animation}`)

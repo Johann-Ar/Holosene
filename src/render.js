@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 import { site, ui, projects, research, studio, about, workIntro } from './content.js'
 import sizes from './media-sizes.json' with { type: 'json' }
 import { IRIS_STOPS } from '../design/logo-kit/src/iris.js'
-import { logotypeSvg } from './logotype-svg.js'
+import { logotypeSvg, resetLogotypes } from './logotype-svg.js'
 
 // logotype en ligne (À propos) : le tracé se dessine, le blanc se remplit, puis ses bords se fondent dans une suite
 // répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir (étapes successives, pas en même temps).
@@ -42,6 +42,7 @@ const nameStacked = nameSvg(nameParts.slice(0, 6).join('') + `<g transform="tran
 export const esc = (s = '') => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
 export function render(lang) {
+  resetLogotypes()   // mêmes id de logotypes dans chaque langue (voir logotype-svg.js)
   const t = (v) => (v && typeof v === 'object' && 'fr' in v ? v[lang] : v)
   const txt = (v, tag = 'p', cls = '') => {
     if (!v) return ''
