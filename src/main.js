@@ -698,29 +698,44 @@ addEventListener('popstate', () => { if (location.pathname !== shownPath) locati
   }, { passive: true }) }
 
 
-/* Touche G maintenue : au lieu du voile en bande de toute la barre du haut, une « gélule » claire derrière chaque élément
-   de la barre (liens, logo, mode, langue), juste là où il faut du contraste (styles.css, .g-pills) */
+/* Touche G maintenue : le voile de la barre du haut (même dégradé, même flou progressif : .topbar__glass et le fondu
+   .edge--top) n'est plus une bande sur toute la largeur. Il est découpé en languettes accrochées au bord haut de l'écran,
+   une derrière chaque élément de la barre (liens, logo, mode, langue) : bas arrondi en gélule, raccord arrondi avec le
+   haut de l'écran, bords fondus. Le découpage est un masque SVG (forme floutée), calculé à l'appui (styles.css, .g-tabs). */
 { const bar = document.querySelector('.topbar')
-  let box = null
+  const layers = [bar?.querySelector('.topbar__glass'), document.querySelector('body > .edge--top')].filter(Boolean)
+  const FILLET = 16, SOFT = 7   // raccord avec le haut de l'écran (px), fondu des bords (écart type du flou, px)
+  const tabsPath = (rects, H) => rects.map(({ x0, x1, yb }) => {
+    const r = Math.min((x1 - x0) / 2, Math.max(8, yb - FILLET) / 1.2), f = FILLET
+    return `M${x0 - f - 40} ${-40}H${x1 + f + 40}V0H${x1 + f}Q${x1} 0 ${x1} ${f}V${yb - r}A${r} ${r} 0 0 1 ${x1 - r} ${yb}H${x0 + r}A${r} ${r} 0 0 1 ${x0} ${yb - r}V${f}Q${x0} 0 ${x0 - f} 0H${x0 - f - 40}Z`
+  }).join('')
   const place = () => {
-    if (!bar) return
-    box ??= Object.assign(document.createElement('div'), { className: 'pills' })
-    box.setAttribute('aria-hidden', 'true'); if (!box.isConnected) bar.prepend(box)
-    const br = bar.getBoundingClientRect()
-    const els = [...bar.querySelectorAll('.topbar__nav a, .brand, .theme-toggle, .lang')]
-    box.replaceChildren(...els.map((el) => {
-      const r = el.getBoundingClientRect(), padX = el.matches('.brand') ? 8 : 9, padY = el.matches('.brand') ? 5 : 8
-      const i = document.createElement('i'); if (el.matches('.brand')) i.className = 'pill--brand'
-      Object.assign(i.style, { left: r.left - br.left - padX + 'px', top: r.top - br.top - padY + 'px', width: r.width + padX * 2 + 'px', height: r.height + padY * 2 + 'px' })
-      return i
-    }))
+    const els = [...bar.querySelectorAll('.topbar__nav a, .brand, .theme-toggle, .lang')].filter((el) => el.offsetParent && (!el.matches('.brand') || root.classList.contains('brand-on')))
+    for (const layer of layers) {
+      const lr = layer.getBoundingClientRect(), W = Math.round(lr.width), H = Math.round(lr.height)
+      if (!W || !H) continue
+      const rects = els.map((el) => {
+        const r = el.getBoundingClientRect(), padX = el.matches('.brand') ? 10 : 12, padY = el.matches('.brand') ? 8 : 12
+        return { x0: r.left - lr.left - padX, x1: r.right - lr.left + padX, yb: r.bottom - lr.top + padY }
+      })
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><filter id="s" x="-10%" y="-60%" width="120%" height="220%"><feGaussianBlur stdDeviation="${SOFT}"/></filter><path filter="url(#s)" fill="#fff" d="${tabsPath(rects, H)}"/></svg>`
+      const url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+      // masque d'origine du calque (fondu vertical du mode clair) conservé : les deux se multiplient
+      layer._mask ??= getComputedStyle(layer).maskImage || getComputedStyle(layer).webkitMaskImage || 'none'
+      const both = layer._mask && layer._mask !== 'none' ? `${url}, ${layer._mask}` : url
+      layer.style.setProperty('-webkit-mask-image', both); layer.style.setProperty('mask-image', both)
+      layer.style.setProperty('-webkit-mask-size', '100% 100%'); layer.style.setProperty('mask-size', '100% 100%')
+      layer.style.setProperty('-webkit-mask-repeat', 'no-repeat'); layer.style.setProperty('mask-repeat', 'no-repeat')
+      if (both !== url) { layer.style.setProperty('-webkit-mask-composite', 'source-in'); layer.style.setProperty('mask-composite', 'intersect') }
+    }
   }
-  const on = () => { place(); root.classList.add('g-pills') }
-  const off = () => root.classList.remove('g-pills')
+  const clear = () => { for (const l of layers) for (const k of ['-webkit-mask-image', 'mask-image', '-webkit-mask-size', 'mask-size', '-webkit-mask-repeat', 'mask-repeat', '-webkit-mask-composite', 'mask-composite']) l.style.removeProperty(k) }
+  const on = () => { if (!bar) return; clear(); layers.forEach((l) => { l._mask = undefined }); place(); root.classList.add('g-tabs') }
+  const off = () => { if (!root.classList.contains('g-tabs')) return; root.classList.remove('g-tabs'); clear() }
   addEventListener('keydown', (e) => { if (e.code === 'KeyG' && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) on() })
   addEventListener('keyup', (e) => { if (e.code === 'KeyG') off() })
   addEventListener('blur', off)
-  addEventListener('resize', () => { if (root.classList.contains('g-pills')) place() }) }
+  addEventListener('resize', () => { if (root.classList.contains('g-tabs')) { clear(); place() } }) }
 
 /* Touche F maintenue : en bas, le même fondu que celui du haut, à la place de la bande floue (styles.css, .f-band) */
 addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('f-band') })

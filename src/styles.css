@@ -668,17 +668,6 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .bottom-glass { position: fixed; left: 0; right: 0; top: auto; bottom: 0; height: 91px; z-index: 15; pointer-events: none; transform: scaleY(-1); }
 @media (min-width: 769px) { .bottom-glass { height: 100px; } }
 :root[data-theme="light"].f-band .bottom-glass.topbar__glass { display: block; }
-
-/* touche G maintenue (main.js) : plus de voile en bande sous la barre du haut ; à la place, une gélule claire et floue
-   derrière chaque élément de la barre (même voile blanc et même flou que la barre, aux bords fondus) */
-.topbar .pills { display: none; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
-.g-pills .topbar .pills { display: block; }
-.g-pills .topbar .topbar__glass { display: none !important; }
-.js:not(.hero-done) .topbar .pills { visibility: hidden; }   /* comme le voile : seulement une fois la scène de l'accueil finie */
-.topbar .pills i { position: absolute; border-radius: 999px; --pill: color-mix(in srgb, white 66%, transparent);
-  background: var(--pill); box-shadow: 0 0 14px 6px var(--pill);
-  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-:root[data-theme="dark"] .topbar .pills i { --pill: color-mix(in srgb, var(--bg) 72%, transparent); }
-.topbar .pills .pill--brand { opacity: 0; transition: opacity 0.3s var(--ease-flow); }
-.brand-on .topbar .pills .pill--brand { opacity: 1; }
-.fiche-open .topbar .pills { display: none; }
+/* touche G maintenue (main.js) : le voile et le fondu de la barre du haut, découpés en languettes accrochées au haut de
+   l'écran derrière chaque élément (masque calculé par main.js) ; même dégradé, même flou que la bande entière.
+   En sombre, le fondu du haut (.edge--top) prend la même découpe. */
