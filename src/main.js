@@ -425,16 +425,24 @@ let heroWords = [...document.querySelectorAll('.hero__line .w')]
 if (!heroWords.length) root.classList.add('hero-done')   // pages sans accueil : tout est visible d'emblée
 let heroOn = -1
 const wordsSvg = [...document.querySelectorAll('.hero .studio__word')]
-// nom de l'accueil en « balayage » (src/logotype-svg.js) : les dégradés des masques glissent de gauche à droite ; à
-// chaque endroit du nom, la copie très floue, puis la peu floue, puis la nette prennent le relais (bande de largeur bb)
-const sweeps = wordsSvg.filter((w) => w.dataset.bb).map((el) => ({ el, gs: [...el.querySelectorAll('.bal-g')], x: +el.dataset.bx, w: +el.dataset.bw, b: +el.dataset.bb, last: '' }))
+// nom de l'accueil en « balayage » (src/logotype-svg.js) : trois copies (très floue, un peu floue, nette) découvertes
+// par des dégradés ; pour chaque arrêt (position xn de 0 à 1 sur le mot), l'avancée locale s (0 : rien, 1 : net et
+// plein) suit une bande qui va de gauche à droite, plafonnée par la retenue (rien n'est entièrement net avant la fin)
+const sweeps = wordsSvg.filter((w) => w.dataset.bande).map((el) => ({ el, stops: [...el.querySelectorAll('.bal-g')].map((g) => [...g.querySelectorAll('stop')]),
+  b: +el.dataset.bande, r: +el.dataset.retenue, last: -1 }))
+// poids des trois copies pour une avancée s : de la très floue à la nette ; leur somme vaut s (l'opacité)
+const sweepW = (s) => s <= 0.5 ? [s * (1 - 2 * s), 2 * s * s, 0] : [0, s * (2 - 2 * s), s * (2 * s - 1)]
 function sweep(draw) {
-  for (const s of sweeps) {
-    const t = (s.x + (1 - draw) * (s.w + s.b) - s.b).toFixed(1)
-    if (t === s.last) continue
-    s.last = t
-    for (const g of s.gs) g.setAttribute('gradientTransform', `translate(${t} 0)`)
-    s.el.classList.toggle('bal-net', draw <= 0)   // entièrement net : les copies floues ne sont plus calculées
+  const a = Math.round((1 - draw) * 1000) / 1000
+  for (const sw of sweeps) {
+    if (a === sw.last) continue
+    sw.last = a
+    const n = sw.stops[0].length, cap = 1 - sw.r + sw.r * a
+    for (let i = 0; i < n; i++) {
+      const xn = i / (n - 1), s = Math.min(1, Math.max(0, (a * (1 + sw.b) - xn) / sw.b)) * cap, ws = sweepW(s)
+      for (let k = 0; k < 3; k++) sw.stops[k][i].setAttribute('stop-opacity', ws[k].toFixed(3))
+    }
+    sw.el.classList.toggle('bal-net', a >= 1)   // entièrement net : les copies floues ne sont plus calculées
   }
 }
 // chaque moitié du logotype (HOLO / SENE) cadrée sur ses lettres

@@ -12,9 +12,10 @@
  * - empile    : JOHANN au-dessus de ARATA, centrés (accueil sur mobile).
  * - balayage  : apparition de gauche à droite où chaque endroit du mot passe, à son tour, de flou et transparent à net
  *               et plein (comme les mots des textes, mais en continu). Trois copies du mot (très floue, un peu floue,
- *               nette), chacune découverte par un masque en dégradé ; main.js fait glisser les dégradés (attribut
- *               gradientTransform, voir data-bx / data-bw / data-bb). Une marge (--m) autour du dessin laisse la place au
- *               halo du flou ; le CSS la compense par des marges négatives : le mot reste exactement à sa place.
+ *               nette), chacune découverte par un masque en dégradé (ARRETS arrêts répartis sur la largeur du mot) ;
+ *               main.js (sweep) recalcule l'opacité de chaque arrêt selon l'avancée (data-bande, data-retenue). Une
+ *               marge (--m) autour du dessin laisse la place au halo du flou ; le CSS la compense par des marges
+ *               négatives : le mot reste exactement à sa place.
  * Taille : par le CSS (largeur), la hauteur suit le dessin ; couleur : propriété CSS color.
  */
 import { readFileSync } from 'node:fs'
@@ -28,12 +29,15 @@ const lire = (mot) => sources[mot] ??= readFileSync(new URL(`../public/logotypes
 // (x 6 à 1631), ARATA (x 1667 à 3046) est ramené sous JOHANN, centré, 400 unités plus bas (hauteur 344 + interligne)
 const EMPILE = { bas: 'ARATA', dx: (6 + 1631) / 2 - (1667 + 3046) / 2, dy: 400, viewBox: '0 -14 1637 772' }
 
-// balayage : flou des deux copies floues (unités du dessin), largeur de la bande de transition (part de la largeur du
-// mot), marge autour du dessin (≥ 3 × le plus grand flou)
-const BAL = { flous: [26, 11], bande: 0.4, marge: 80 }
-// poids de chaque copie (très floue, un peu floue, nette) selon l'avancée locale s (0 : pas encore touché, 1 : net),
-// échantillonnés en s = 1, 0,75, 0,5, 0,25, 0 (de gauche à droite dans la bande) ; leur somme vaut s
-const POIDS = [[0, 0, 0, 0.125, 0], [0, 0.375, 0.5, 0.125, 0], [1, 0.375, 0, 0, 0]]
+// balayage — réglages :
+//   flous   : flou des deux copies floues (unités du dessin)
+//   bande   : largeur de la zone de passage du flou au net, en part de la largeur du mot
+//   retenue : 0 = chaque endroit devient net et plein dès que la bande l'a traversé ; 1 = rien n'est entièrement net
+//             et plein avant la fin : la première lettre continue de se préciser jusqu'à l'arrivée de la dernière, et
+//             tout le nom devient net en même temps (valeurs intermédiaires : entre les deux)
+//   marge   : marge autour du dessin pour le halo (≥ 3 × le plus grand flou)
+const BAL = { flous: [26, 11], bande: 0.4, retenue: 1, marge: 80 }
+const ARRETS = 33   // arrêts des dégradés, répartis sur la largeur du mot
 
 let compteur = 0
 export function logotypeSvg({ mot = 'holosene', animation = '', className = '', id = '', decoratif = false, empile = false, balayage = false } = {}) {
@@ -57,13 +61,12 @@ export function logotypeSvg({ mot = 'holosene', animation = '', className = '', 
   const motG = (attrs = '') => `<g class="mot" fill="currentColor" fill-rule="evenodd"${attrs}>${lettres.join('')}</g>`
   if (!balayage) return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" class="${classes}"${id ? ` id="${id}"` : ''} ${a11y}>${titre}${motG()}</svg>`
 
-  const [x, y, w, h] = viewBox.split(/\s+/).map(Number), M = BAL.marge, B = Math.round(w * BAL.bande)
+  const [x, y, w, h] = viewBox.split(/\s+/).map(Number), M = BAL.marge
   const box = `x="${x - M}" y="${y - M}" width="${w + 2 * M}" height="${h + 2 * M}"`
   const u = tid.replace(/-titre-/, '-')   // suffixe unique des id internes
-  // dégradés : de x à x + B, de « net » (à gauche) à « pas encore touché » (à droite) ; au départ, glissés tout à droite
-  // de la bande (mot entièrement découvert : rendu sans JavaScript)
-  const defs = POIDS.map((ps, k) => `<linearGradient id="bal-g${k}-${u}" class="bal-g" gradientUnits="userSpaceOnUse" x1="${x}" x2="${x + B}" y1="0" y2="0" gradientTransform="translate(${w + B} 0)">`
-      + ps.map((a, i) => `<stop offset="${i / 4}" stop-color="#fff" stop-opacity="${a}"/>`).join('') + '</linearGradient>'
+  // dégradés : de x à x + w ; au départ, mot entièrement net (copie nette seule : rendu sans JavaScript)
+  const defs = [0, 0, 1].map((a, k) => `<linearGradient id="bal-g${k}-${u}" class="bal-g" gradientUnits="userSpaceOnUse" x1="${x}" x2="${x + w}" y1="0" y2="0">`
+      + Array.from({ length: ARRETS }, (_, i) => `<stop offset="${(i / (ARRETS - 1)).toFixed(4)}" stop-color="#fff" stop-opacity="${a}"/>`).join('') + '</linearGradient>'
       + `<mask id="bal-m${k}-${u}" maskUnits="userSpaceOnUse" ${box}><rect ${box} fill="url(#bal-g${k}-${u})"/></mask>`).join('')
     + BAL.flous.map((f, k) => `<filter id="bal-f${k}-${u}" filterUnits="userSpaceOnUse" ${box} color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${f}"/></filter>`).join('')
     + `<g id="bal-l-${u}">${motG()}</g>`
@@ -73,6 +76,6 @@ export function logotypeSvg({ mot = 'holosene', animation = '', className = '', 
     ? `<g filter="url(#bal-f${k}-${u})"><rect ${box} fill="#000" fill-opacity="0"/><use href="#bal-l-${u}"/></g>`
     : `<use href="#bal-l-${u}"/>`) + '</g>'
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x - M} ${y - M} ${w + 2 * M} ${h + 2 * M}" class="${classes} logotype--balayage"${id ? ` id="${id}"` : ''} ${a11y}`
-    + ` data-bx="${x}" data-bw="${w}" data-bb="${B}" style="--m:${(M / w).toFixed(5)}">`
+    + ` data-bande="${BAL.bande}" data-retenue="${BAL.retenue}" style="--m:${(M / w).toFixed(5)}">`
     + `${titre}<defs>${defs}</defs>${couche(0)}${couche(1)}${couche(2)}</svg>`
 }
