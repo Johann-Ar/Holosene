@@ -126,7 +126,7 @@ export function render(lang) {
   const selected = projects.filter((p) => !p.research)
   const words = (str) => str.split(' ').map((w) => `<span class="w">${esc(w)}</span>`).join(' ')
   // texte apparaissant mot à mot au défilement (data-sw : main.js, scrollWords) ; tous les textes de l'accueil sauf les
-  // vignettes et les boutons (titres, sous-titres, À propos, Contact, adresse, pied de page) ; **gras** conservé ;
+  // vignettes, les boutons et le pied de page (tout en bas, il ne franchirait jamais la ligne : toujours visible) ; **gras** conservé ;
   // --i : rang du mot (décalage de l'apparition)
   const seq = (str) => { let bold = false, i = 0; return esc(str).split(' ').map((w) => {
     const open = w.startsWith('**'), close = w.replace(/^\*\*/, '').endsWith('**') || (open && w.length > 4 && w.endsWith('**'))
@@ -140,6 +140,7 @@ export function render(lang) {
 <canvas class="bg-canvas" aria-hidden="true"></canvas>
 <canvas class="gl-canvas" aria-hidden="true"></canvas>
 <div class="edge edge--top" aria-hidden="true"></div><div class="edge edge--bottom" aria-hidden="true"></div>
+<div class="topbar__glass bottom-glass" aria-hidden="true">${'<i></i>'.repeat(5)}</div>
 <header class="topbar wrap">
   <div class="topbar__glass" aria-hidden="true">${'<i></i>'.repeat(5)}</div>
   <nav class="topbar__nav" aria-label="${esc(t(ui.nav))}">
@@ -202,7 +203,7 @@ export function render(lang) {
 </main>
 
 <footer class="foot wrap">
-  <p class="lbl" data-sw>${seq(`© ${new Date().getFullYear()} Holosene · Johann Arata`)}</p>
+  <p class="lbl">© ${new Date().getFullYear()} Holosene · Johann Arata</p>
   <a class="lbl" href="${root}mentions-legales.html">${esc(t(ui.legal))}</a>
 </footer>
 

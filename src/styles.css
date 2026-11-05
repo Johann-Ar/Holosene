@@ -127,6 +127,7 @@ a { color: inherit; }
 @media (min-width: 769px) { .edge--top { height: 74px; } }   /* PC : fondu du haut plus court */
 .edge--bottom { bottom: 0; height: 120px; background: linear-gradient(0deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%); }
 .edge-bottom-off .edge--bottom { visibility: hidden !important; }
+.edge--bottom { transform: translate3d(0, var(--band-push, 0px), 0); }   /* poussée hors de l'écran par le pied de page (main.js) */
 /* mode clair : un voile clair en fondu blanchit le contenu ; à la place, flou progressif (backdrop-filter masqué en dégradé,
    comme les barres des interfaces claires) et voile bien plus léger ; sur les côtés de la piste, flou seul (voir .work__pin) */
 :root { --edge-floor: 0.12; }
@@ -655,8 +656,15 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
   opacity: calc(1 - var(--draw, 0)); filter: blur(calc(var(--draw, 0) * 10px)); }
 .hero .studio__word.hero__name { width: auto; height: auto; filter: blur(calc(var(--draw, 0) * 10px)); }
 @media (max-width: 760px) { .hero__name { font-size: 16vw; white-space: normal; } .hero__name > span { display: block; } }
-/* touche F maintenue (main.js) : en haut, exactement la bande du bas (hauteur, flou, fondu), à la place du voile clair */
-.f-band .topbar__glass { display: none !important; }
-.f-band body > .edge--top { visibility: visible; height: var(--band); -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
-  -webkit-mask: linear-gradient(#000, transparent); mask: linear-gradient(#000, transparent); }
-:root[data-theme="light"].f-band body > .edge--top { opacity: 1; background: none; }
+/* touche F maintenue (main.js) : en bas, exactement le fondu du haut (même dégradé, même flou, même voile en clair, en
+   miroir), à la place de la bande floue du bas */
+.f-band body > .edge--bottom { visibility: visible !important; transform: none; height: 92px; background: linear-gradient(0deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%);
+  -webkit-backdrop-filter: none; backdrop-filter: none; -webkit-mask: none; mask: none; opacity: 1; }
+@media (min-width: 769px) { .f-band body > .edge--bottom { height: 74px; } }
+:root[data-theme="light"].f-band body > .edge--bottom { opacity: 0.35; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  -webkit-mask: linear-gradient(0deg, #000, transparent); mask: linear-gradient(0deg, #000, transparent); }
+/* voile clair à flou progressif de la barre du haut, retourné, au bas de l'écran (mode clair seulement, comme en haut) */
+:root .bottom-glass.topbar__glass { display: none; }
+.bottom-glass { position: fixed; left: 0; right: 0; bottom: 0; height: 91px; z-index: 15; pointer-events: none; transform: scaleY(-1); }
+@media (min-width: 769px) { .bottom-glass { height: 100px; } }
+:root[data-theme="light"].f-band .bottom-glass.topbar__glass { display: block; }

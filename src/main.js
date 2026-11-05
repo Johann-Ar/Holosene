@@ -487,11 +487,15 @@ function scrollWords(vh) {
     if (on !== swOn[i]) { swOn[i] = on; swWords[i].classList.toggle('on', on) }
   }
 }
+const foot = document.querySelector('.foot')
+let footPush = -1
 function scrollEffects() {
   scrollWords(innerHeight)
   const vh = innerHeight
-  // la bande du bas s'efface en haut de page (mots-clés de l'accueil) et en fin de page (pied de page)
-  root.classList.toggle('edge-bottom-off', scrollY < 40 || scrollY + vh > document.documentElement.scrollHeight - 120)
+  // la bande du bas s'efface en haut de page (mots-clés de l'accueil) ; en fin de page, le pied de page la pousse hors de
+  // l'écran par le bas, au fur et à mesure qu'il apparaît (il n'est jamais flouté, rien ne disparaît d'un coup)
+  root.classList.toggle('edge-bottom-off', scrollY < 40)
+  if (foot) { const push = Math.max(0, vh - foot.getBoundingClientRect().top); if (push !== footPush) { footPush = push; root.style.setProperty('--band-push', push.toFixed(1) + 'px') } }
   // accueil épinglé : avancée hp (0 à 1) ; le mot se trace puis se remplit, puis la présentation s'allume
   const hr = hero?.getBoundingClientRect()
   const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
@@ -694,7 +698,7 @@ addEventListener('popstate', () => { if (location.pathname !== shownPath) locati
   }, { passive: true }) }
 
 
-/* Touche F maintenue : en haut, la même bande que celle du bas, à la place du voile clair (styles.css, .f-band) */
+/* Touche F maintenue : en bas, le même fondu que celui du haut, à la place de la bande floue (styles.css, .f-band) */
 addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('f-band') })
 addEventListener('keyup', (e) => { if (e.code === 'KeyF') root.classList.remove('f-band') })
 addEventListener('blur', () => root.classList.remove('f-band'))
