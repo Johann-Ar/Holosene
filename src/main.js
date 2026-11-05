@@ -698,6 +698,30 @@ addEventListener('popstate', () => { if (location.pathname !== shownPath) locati
   }, { passive: true }) }
 
 
+/* Touche G maintenue : au lieu du voile en bande de toute la barre du haut, une « gélule » claire derrière chaque élément
+   de la barre (liens, logo, mode, langue), juste là où il faut du contraste (styles.css, .g-pills) */
+{ const bar = document.querySelector('.topbar')
+  let box = null
+  const place = () => {
+    if (!bar) return
+    box ??= Object.assign(document.createElement('div'), { className: 'pills' })
+    box.setAttribute('aria-hidden', 'true'); if (!box.isConnected) bar.prepend(box)
+    const br = bar.getBoundingClientRect()
+    const els = [...bar.querySelectorAll('.topbar__nav a, .brand, .theme-toggle, .lang')]
+    box.replaceChildren(...els.map((el) => {
+      const r = el.getBoundingClientRect(), padX = el.matches('.brand') ? 8 : 9, padY = el.matches('.brand') ? 5 : 8
+      const i = document.createElement('i'); if (el.matches('.brand')) i.className = 'pill--brand'
+      Object.assign(i.style, { left: r.left - br.left - padX + 'px', top: r.top - br.top - padY + 'px', width: r.width + padX * 2 + 'px', height: r.height + padY * 2 + 'px' })
+      return i
+    }))
+  }
+  const on = () => { place(); root.classList.add('g-pills') }
+  const off = () => root.classList.remove('g-pills')
+  addEventListener('keydown', (e) => { if (e.code === 'KeyG' && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) on() })
+  addEventListener('keyup', (e) => { if (e.code === 'KeyG') off() })
+  addEventListener('blur', off)
+  addEventListener('resize', () => { if (root.classList.contains('g-pills')) place() }) }
+
 /* Touche F maintenue : en bas, le même fondu que celui du haut, à la place de la bande floue (styles.css, .f-band) */
 addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('f-band') })
 addEventListener('keyup', (e) => { if (e.code === 'KeyF') root.classList.remove('f-band') })
