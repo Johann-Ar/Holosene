@@ -1,0 +1,78 @@
+/* Animations pour les logotypes HOLOSENE et JOHANN ARATA
+   À utiliser avec le SVG collé directement dans le HTML (inline).
+   Chaque lettre est un <path class="lettre" style="--i:N">.
+   Ajouter UNE classe sur la balise <svg> : anim-apparition, anim-vague,
+   anim-flottement ou anim-trace (cette dernière demande logotype.js). */
+
+.logotype {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  --duree: 0.9s;
+  --decalage: 0.07s;
+}
+.logotype .lettre {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+
+/* 1. Apparition lettre par lettre */
+.anim-apparition .lettre {
+  opacity: 0;
+  animation: logotype-apparition var(--duree) cubic-bezier(.2, .8, .2, 1) forwards;
+  animation-delay: calc(var(--i) * var(--decalage));
+}
+@keyframes logotype-apparition {
+  from { opacity: 0; transform: translateY(18%) scale(.92); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+/* 2. Vague au survol */
+.anim-vague:hover .lettre {
+  animation: logotype-vague .7s ease-in-out;
+  animation-delay: calc(var(--i) * 0.05s);
+}
+@keyframes logotype-vague {
+  0%, 100% { transform: none; }
+  40% { transform: translateY(-9%) rotate(-3deg); }
+  70% { transform: translateY(3%) rotate(1deg); }
+}
+
+/* 3. Flottement continu, doux */
+.anim-flottement .lettre {
+  animation: logotype-flottement 4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.45s);
+}
+@keyframes logotype-flottement {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-3.5%) rotate(1.2deg); }
+}
+
+/* 4. Tracé du contour puis remplissage (logotype.js prépare les longueurs) */
+.anim-trace .lettre {
+  fill-opacity: 0;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: var(--longueur, 3000);
+  stroke-dashoffset: var(--longueur, 3000);
+  animation:
+    logotype-trace 2.2s ease-in-out forwards,
+    logotype-remplir .8s ease forwards;
+  animation-delay: calc(var(--i) * 0.12s), calc(1.6s + var(--i) * 0.12s);
+}
+@keyframes logotype-trace { to { stroke-dashoffset: 0; } }
+@keyframes logotype-remplir { to { fill-opacity: 1; stroke-width: 0; } }
+
+/* Accessibilité : pas d'animation si l'utilisateur la refuse */
+@media (prefers-reduced-motion: reduce) {
+  .logotype .lettre {
+    animation: none !important;
+    opacity: 1 !important;
+    fill-opacity: 1 !important;
+    stroke-width: 0 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}

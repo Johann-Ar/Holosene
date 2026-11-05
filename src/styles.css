@@ -650,12 +650,16 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 :root[lang="fr"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__en, :root[lang="en"] .topbar .lang:is(:hover, :focus-visible, :active) .lang__fr { color: var(--bg) !important; }
 
 
-/* « JOHANN ARATA » : texte en capitales, Futura Bold ; apparaît en fondu, du flou au net, piloté par la scène de l'accueil
-   (--draw, main.js), entièrement net avant que la présentation commence */
-.hero__name { display: block; font: 700 min(8.6vw, 104px)/1 var(--font-display); text-transform: uppercase; letter-spacing: -0.005em; color: var(--ink); white-space: nowrap;
-  opacity: calc(1 - var(--draw, 0)); filter: blur(calc(var(--draw, 0) * 10px)); }
-.hero .studio__word.hero__name { width: auto; height: auto; filter: blur(calc(var(--draw, 0) * 10px)); }
-@media (max-width: 760px) { .hero__name { font-size: 16vw; white-space: normal; } .hero__name > span { display: block; } }
+/* « JOHANN ARATA » : le logotype vectoriel du pack (public/logotypes/svg/johann-arata.svg, composant src/logotype-svg.js),
+   à l'encre du thème ; apparaît en fondu, du flou au net, piloté par la scène de l'accueil (--draw, main.js), entièrement
+   net avant que la présentation commence. Sur une ligne (ordinateur) ou JOHANN au-dessus de ARATA (mobile). */
+.hero__name { color: var(--ink); opacity: calc(1 - var(--draw, 0)); }
+.hero .studio__word.hero__name { height: auto; filter: blur(calc(var(--draw, 0) * 10px)); }
+.hero__word .hero__name.studio__word--line { width: min(68vw, 860px); }
+@media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { width: min(76vw, 360px); } }
+/* pied de page : HOLOSENE en signature ; apparaît lettre par lettre en arrivant à l'écran, puis vague au survol (main.js) */
+.foot .foot__logo { flex: none; width: auto; height: 26px; color: var(--ink); }
+@media (max-width: 760px) { .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
 /* touche F maintenue (main.js) : en bas, exactement le fondu du haut (même dégradé, même flou, même voile en clair, en
    miroir), à la place de la bande floue du bas */
 .f-band body > .edge--bottom { visibility: visible !important; clip-path: inset(0 0 var(--band-push, 0px) 0); height: 92px; background: linear-gradient(0deg, color-mix(in srgb, var(--bg) 88.0%, transparent) 0%, color-mix(in srgb, var(--bg) 69.8%, transparent) 10%, color-mix(in srgb, var(--bg) 53.9%, transparent) 20%, color-mix(in srgb, var(--bg) 40.2%, transparent) 30%, color-mix(in srgb, var(--bg) 28.6%, transparent) 40%, color-mix(in srgb, var(--bg) 19.2%, transparent) 50%, color-mix(in srgb, var(--bg) 11.7%, transparent) 60%, color-mix(in srgb, var(--bg) 6.2%, transparent) 70%, color-mix(in srgb, var(--bg) 2.6%, transparent) 80%, color-mix(in srgb, var(--bg) 0.6%, transparent) 90%, color-mix(in srgb, var(--bg) 0.0%, transparent) 100%);

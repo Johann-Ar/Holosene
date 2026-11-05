@@ -1,5 +1,7 @@
 import 'virtual:iris.css'
 import './styles.css'
+import './logotype-animations.css'
+import { apparitionAuScroll } from './logotype.js'
 import { FLOW, updateFlow } from './flow.js'
 import Lenis from 'lenis'
 import { createGL, loaderRadius } from './gl.js'
@@ -741,3 +743,12 @@ addEventListener('popstate', () => { if (location.pathname !== shownPath) locati
 addEventListener('keydown', (e) => { if (e.code === 'KeyF' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.target.closest?.('input, textarea, [contenteditable]')) root.classList.add('f-band') })
 addEventListener('keyup', (e) => { if (e.code === 'KeyF') root.classList.remove('f-band') })
 addEventListener('blur', () => root.classList.remove('f-band'))
+
+/* Logotype HOLOSENE du pied de page (pack logotypes) : apparition lettre par lettre quand il arrive à l'écran, puis la
+   vague au survol ; sans animation (préférence système), il est simplement visible */
+{ const logo = document.querySelector('.foot__logo')
+  if (logo) {
+    apparitionAuScroll('.foot__logo')
+    const last = logo.querySelector('.lettre:last-of-type')
+    logo.addEventListener('animationend', (e) => { if (e.target === last && e.animationName === 'logotype-apparition') logo.classList.replace('anim-apparition', 'anim-vague') })
+  } }

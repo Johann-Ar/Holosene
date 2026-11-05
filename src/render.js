@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs'
 import { site, ui, projects, research, studio, about, workIntro } from './content.js'
 import sizes from './media-sizes.json' with { type: 'json' }
 import { IRIS_STOPS } from '../design/logo-kit/src/iris.js'
+import { logotypeSvg } from './logotype-svg.js'
 
 // logotype en ligne (À propos) : le tracé se dessine, le blanc se remplit, puis ses bords se fondent dans une suite
 // répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir (étapes successives, pas en même temps).
@@ -164,7 +165,7 @@ export function render(lang) {
       </div>
       <div class="hero__copy">
         <div class="hero__slot" aria-hidden="true"><img class="hero__mark only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576"><img class="hero__mark only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576"></div>
-        <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span><span class="studio__word hero__name" aria-hidden="true"><span>Johann</span> <span>Arata</span></span></h1>
+        <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${logotypeSvg({ mot: 'johann-arata', decoratif: true, className: 'studio__word hero__name studio__word--line' })}${logotypeSvg({ mot: 'johann-arata', decoratif: true, empile: true, className: 'studio__word hero__name studio__word--stack' })}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
         <a class="hero__cta" href="#projets" aria-label="${lang === 'fr' ? 'Voir les projets' : 'See the work'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       </div>
@@ -203,6 +204,7 @@ export function render(lang) {
 </main>
 
 <footer class="foot wrap">
+  ${logotypeSvg({ mot: 'holosene', className: 'foot__logo' })}
   <p class="lbl">© ${new Date().getFullYear()} Holosene · Johann Arata</p>
   <a class="lbl" href="${root}mentions-legales.html">${esc(t(ui.legal))}</a>
 </footer>
