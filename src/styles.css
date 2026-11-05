@@ -228,9 +228,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* composition : logo, nom, présentation en une colonne centrée, espacements réguliers ; le logo WebGL vient se poser
    dans .hero__slot (gl.js lit sa position), l'image du monogramme y sert de repli sans WebGL */
 .hero__copy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(14px, 2.8svh, 30px); padding: 96px var(--edge-l) calc(14svh + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
-/* proportions de la maquette d'accueil : logo ≈ 15,5 % de la hauteur de l'écran, nom ≈ 76 % de la largeur, logo → nom
+/* proportions de la maquette d'accueil : logo ≈ 13 % de la hauteur de l'écran, nom ≈ 84 % de la largeur, logo → nom
    ≈ 4,3 % de la hauteur, nom → présentation ≈ 2,8 % */
-.hero__slot { height: clamp(96px, 15.5svh, 180px); aspect-ratio: 470 / 576; flex: none; margin-bottom: clamp(4px, 1.5svh, 14px); }
+.hero__slot { height: clamp(82px, 13svh, 150px); aspect-ratio: 470 / 576; flex: none; margin-bottom: clamp(4px, 1.5svh, 14px); }
 .hero__mark { display: block; width: 100%; height: 100%; }
 .has-gl .hero__mark { visibility: hidden; }
 .hero__word { margin: 0; line-height: 0; }
@@ -256,7 +256,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* mobile : « Arata » à la ligne sous « Johann » */
 @media (max-width: 760px) {
   .hero__copy { gap: clamp(12px, 2.4svh, 24px); }
-  .hero__slot { height: clamp(84px, 13svh, 130px); }
+  .hero__slot { height: clamp(72px, 11svh, 110px); }
   .hero__word .studio__word--line { display: none; }
   .hero__word .studio__word--stack { display: block; width: min(68vw, 340px); }
   .hero__line { max-width: 30ch; }
@@ -657,8 +657,12 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
    net avant que la présentation commence. Sur une ligne (ordinateur) ou JOHANN au-dessus de ARATA (mobile). */
 .hero__name { color: var(--ink); opacity: calc(1 - var(--draw, 0)); }
 .hero .studio__word.hero__name { height: auto; filter: blur(calc(var(--draw, 0) * 10px)); }
-.hero__word .hero__name.studio__word--line { width: min(76vw, 1400px); }
-@media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { width: min(86vw, 440px); } }
+/* en plus du fondu et du flou : les lettres apparaissent une à une, de gauche à droite, pendant cette même phase.
+   Avancée a = 1 − --draw (0 à 1) ; la lettre de rang --i (0 à 12, liaisons comprises) passe de 0 à 1 sur une fenêtre de
+   4 rangs : (a × 16 − i) / 4. La dernière est pleine exactement quand le nom devient net (a = 1). */
+.hero__name .lettre { opacity: clamp(0, (1 - var(--draw, 0)) * 4 - var(--i) * 0.25, 1); }
+.hero__word .hero__name.studio__word--line { width: min(84vw, 1560px); }
+@media (max-width: 760px) { .hero__word .hero__name.studio__word--stack { width: min(92vw, 480px); } }
 /* pied de page : HOLOSENE en signature ; apparaît lettre par lettre en arrivant à l'écran, puis vague au survol (main.js) */
 .foot .foot__logo { flex: none; width: auto; height: 26px; color: var(--ink); }
 @media (max-width: 760px) { .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
