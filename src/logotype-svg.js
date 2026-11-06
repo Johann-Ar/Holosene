@@ -1,6 +1,6 @@
 /**
  * Composant « logotype » : HOLOSENE ou JOHANN ARATA en SVG dans la page (inline), à partir des fichiers du pack
- * (public/logotypes/svg/, export Figma). Rien n'est redessiné : chaque lettre (ou morceau soudé : JOH, ANN, ARATA) reste un <path class="lettre"> à part
+ * (public/logotypes/svg/, export Figma). Rien n'est redessiné : chaque morceau soudé reste un <path> à part
  * (les lettres se chevauchent, les ligatures ne doivent pas devenir des trous), remplie en currentColor.
  * Utilisé à la compilation par src/render.js.
  *
@@ -25,9 +25,12 @@ const ANIMS = ['apparition', 'vague', 'flottement', 'trace']
 const sources = {}
 const lire = (mot) => sources[mot] ??= readFileSync(new URL(`../public/logotypes/svg/${mot}.svg`, import.meta.url), 'utf8')
 
-// JOHANN ARATA empilé : le dessin est en 3 morceaux soudés (data-lettre JOH, ANN, ARATA) ; JOHANN = JOH + ANN
-// (x 6 à 1631), ARATA (x 1667 à 3046) est ramené sous JOHANN, centré, 400 unités plus bas (hauteur 344 + interligne)
-const EMPILE = { bas: 'ARATA', dx: (6 + 1631) / 2 - (1667 + 3046) / 2, dy: 400, viewBox: '0 -14 1637 772' }
+// JOHANN ARATA empilé : le dessin est en morceaux soudés (pack v2 : 3 <path class="piece">) ; JOHANN de x 6 à 1631,
+// ARATA de x 1667 à 3046. Les morceaux qui commencent à droite de l'espace entre les deux mots (coupe à x 1649) forment
+// ARATA : il est ramené sous JOHANN, centré, 400 unités plus bas (hauteur 344 + interligne). Repérage par la position,
+// indépendant des noms de classes du pack
+const EMPILE = { coupe: 1649, dx: (6 + 1631) / 2 - (1667 + 3046) / 2, dy: 400, viewBox: '0 -14 1637 772' }
+const gaucheDe = (p) => Math.min(...(p.match(/\sd="([^"]+)"/)?.[1].match(/-?\d+(?:\.\d+)?/g) || []).filter((_, i) => i % 2 === 0).map(Number))
 
 // balayage — réglages :
 //   flous   : flou des deux copies floues (unités du dessin)
@@ -52,8 +55,8 @@ export function logotypeSvg({ mot = 'holosene', animation = '', className = '', 
   let lettres = src.match(/<path [^>]*\/>/g)
   if (empile) {
     if (mot !== 'johann-arata') throw new Error('empile : seulement pour johann-arata')
-    const enBas = (p) => p.includes(`data-lettre="${EMPILE.bas}"`)
-    if (!lettres.some(enBas)) throw new Error(`empile : morceau ${EMPILE.bas} introuvable dans johann-arata.svg`)
+    const enBas = (p) => gaucheDe(p) > EMPILE.coupe
+    if (!lettres.some(enBas) || lettres.every(enBas)) throw new Error('empile : séparation JOHANN / ARATA introuvable dans johann-arata.svg')
     lettres = [...lettres.filter((p) => !enBas(p)),
       `<g transform="translate(${EMPILE.dx} ${EMPILE.dy})">`, ...lettres.filter(enBas), '</g>']
     viewBox = EMPILE.viewBox
