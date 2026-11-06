@@ -641,7 +641,7 @@ export function createGL(canvas, { reduced }) {
     v.textKey = key
   }
 
-  let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false, markDom = false, heroHi = hasMark
+  let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false, markDom = false, heroHi = hasMark, centerV = null
   const PX_BUDGET = 2880 * 1800   // pixels de la toile au plus, au-delà de 2× (zoom du navigateur)
   const brandMark = document.querySelector('.topbar .brand')
   const heroEl = document.querySelector('.hero'), dockVals = {}
@@ -758,6 +758,23 @@ export function createGL(canvas, { reduced }) {
     const light = theme.bg[0] + theme.bg[1] + theme.bg[2] > 1.5
     const sig = [canvas.width, canvas.height, dpr, cellScale, FX.version, ...theme.bg, ...theme.ink, sc, sc > 0 ? lens.x : 0, sc > 0 ? lens.y : 0, views.indexOf(lens.view),
       FX.colorStrength > 0 || FX.grain > 0 ? now : 0, Math.floor(scrollY / SEED_STEP)]
+    // écran tactile : ni le toucher ni l'appui n'allument une vignette ; c'est la vignette affichée au centre de l'écran
+    // (la plus proche du centre, partie visible seulement) qui passe en couleur avec son bord irisé. Petite marge (32 px)
+    // avant de changer de vignette, pour qu'elle ne clignote pas entre deux vignettes à égale distance.
+    if (!hoverDevice) {
+      let best = null, bestD = Infinity, curD = Infinity
+      for (const v of views) {
+        if (v.mark || !v.ready) continue
+        const b = v.el.getBoundingClientRect(), cr = v.clip?.getBoundingClientRect()
+        const l = Math.max(b.left, cr ? cr.left : 0, 0), r = Math.min(b.right, cr ? cr.right : W, W)
+        const t = Math.max(b.top, 0), bo = Math.min(b.bottom, H)
+        if (r - l < b.width * 0.5 || bo - t < b.height * 0.5) continue   // moins de la moitié visible : pas candidate
+        const d = Math.hypot((l + r) / 2 - W / 2, (t + bo) / 2 - H / 2)
+        if (d < bestD) { bestD = d; best = v }
+        if (v === centerV) curD = d
+      }
+      if (!best || curD === Infinity || bestD < curD - 32) centerV = best
+    }
     const jobs = []
     for (const v of order) {
       const b = v.el.getBoundingClientRect()
@@ -773,7 +790,9 @@ export function createGL(canvas, { reduced }) {
       const reveal = 1   // vignettes : trame toujours complète (plus d'apparition ni de disparition en noir)
       if (v.mark) { maskFor(v); if (!v.maskB) continue }
       // la vignette sous le « o » passe en couleur en même temps que lui (aussi pendant le défilement : tout de suite)
-      const hov = !v.mark && ((hoverDevice && show && v === over) || (ptr.touch && ptr.down)) && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
+      const hov = !v.mark && (hoverDevice
+        ? show && v === over && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
+        : v === centerV)   // écran tactile : la vignette au centre de l'écran (plus haut)
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
       let xf = null
       if (v.mark) {
