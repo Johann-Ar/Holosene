@@ -235,7 +235,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__copy > .hero__line { align-self: start; }
 /* proportions de la maquette d'accueil : logo ≈ 13 % de la hauteur de l'écran, nom ≈ 84 % de la largeur, logo → nom
    ≈ 4,3 % de la hauteur, nom → présentation ≈ 2,8 % */
-.hero__slot { height: clamp(82px, 13svh, 150px); aspect-ratio: 470 / 576; flex: none; }
+.hero__slot { height: clamp(90px, 14.3svh, 165px); aspect-ratio: 470 / 576; flex: none; }   /* ordinateur : un peu plus grand (+10 %) ; mobile : plus bas */
 .hero__mark { display: block; width: 100%; height: 100%; }
 .has-gl .hero__mark { visibility: hidden; }
 /* écran tactile, montée vers la barre (gl.js, mark-dom) : l'image du logo, dans la page, remplace le logo WebGL et défile
@@ -679,12 +679,13 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .topbar .lang .lang__sep, :root[lang="fr"] .topbar .lang .lang__en, :root[lang="en"] .topbar .lang .lang__fr { color: color-mix(in srgb, var(--ink) 58%, var(--bg));   /* au repos : un peu plus foncé en clair, un peu plus clair en sombre (plus proche de l'encre) */
  
   text-shadow: 0 0 2.5px color-mix(in srgb, currentColor 55%, transparent), 0 0 7px rgb(255 255 255 / 0.28), 0 0 16px rgb(255 255 255 / 0.15); }
-/* au survol, en clair comme en sombre : la langue non choisie (celle vers laquelle on bascule) en blanc (couleur du
-   texte du bouton survolé) ; la langue choisie et la barre dans le gris le plus clair ; même graisse partout */
+/* au survol, en clair comme en sombre : la langue affichée en blanc (couleur du texte du bouton survolé), comme au repos
+   où elle ressort ; l'autre langue et la barre dans le gris le plus clair ; même graisse partout */
 .topbar .lang:is(:hover, :focus-visible, :active) span { color: color-mix(in srgb, var(--bg) 78%, var(--ink)) !important; }
 :root[data-theme="dark"] .topbar .lang:is(:hover, :focus-visible, :active) span { color: color-mix(in srgb, var(--bg) 30%, var(--ink)) !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .topbar .lang:is(:hover, :focus-visible, :active) span { color: color-mix(in srgb, var(--bg) 30%, var(--ink)) !important; } }
-:root:root[lang="fr"] .topbar .lang:is(:hover, :focus-visible, :active) span.lang__en, :root:root[lang="en"] .topbar .lang:is(:hover, :focus-visible, :active) span.lang__fr { color: var(--bg) !important; }
+/* au survol, comme au repos : la langue affichée ressort (couleur du fond, sur le bouton plein), l'autre et « / » en gris */
+:root:root[lang="fr"] .topbar .lang:is(:hover, :focus-visible, :active) span.lang__fr, :root:root[lang="en"] .topbar .lang:is(:hover, :focus-visible, :active) span.lang__en { color: var(--bg) !important; }
 
 
 /* « JOHANN ARATA » : le logotype vectoriel du pack (public/logotypes/svg/johann-arata.svg, composant src/logotype-svg.js),
