@@ -567,6 +567,7 @@ export function createGL(canvas, { reduced }) {
     return v
   })
   if (!views.length) return null
+  const hasMark = views.some((v) => v.mark)
 
   // masque du monogramme en espace local (816 × 1000) : le S en rouge, le « o » en vert. Dessiné une fois ;
   // le placement, la taille et la rotation sont appliqués dans le shader (uMarkXf).
@@ -640,7 +641,7 @@ export function createGL(canvas, { reduced }) {
     v.textKey = key
   }
 
-  let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false, markDom = false
+  let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false, markDom = false, heroHi = hasMark
   const PX_BUDGET = 2880 * 1800   // pixels de la toile au plus, au-delà de 2× (zoom du navigateur)
   const brandMark = document.querySelector('.topbar .brand')
   function resize() {
@@ -650,7 +651,9 @@ export function createGL(canvas, { reduced }) {
     // et la densité monte d'autant ; la toile garde le même nombre de pixels mais reste nette comme le texte et les SVG
     // (avant : plafond à 2×, logo et vignettes agrandis, flous)
     const phone = W < 760 && matchMedia('(pointer: coarse)').matches
-    dpr = Math.min(devicePixelRatio || 1, phone ? 1.75 : Math.max(2, Math.min(8, Math.sqrt(PX_BUDGET / Math.max(1, W * H)))))
+    // téléphone : 1,75× pour les vignettes (coût) ; mais tant que le gros logo de l'accueil est dessiné ici (heroHi), la
+    // densité réelle de l'écran (3× sur iPhone) : sinon la toile est agrandie par le navigateur et ses bords sont flous
+    dpr = Math.min(devicePixelRatio || 1, phone ? (heroHi ? 3 : 1.75) : Math.max(2, Math.min(8, Math.sqrt(PX_BUDGET / Math.max(1, W * H)))))
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
   }
   resize(); addEventListener('resize', resize)
@@ -690,6 +693,9 @@ export function createGL(canvas, { reduced }) {
   function draw(now) {
     const dt = Math.min((now - last) / 1000, 0.05); last = now
     time += dt
+    // gros logo dessiné par la toile (ni relayé par l'image pendant sa montée, ni posé dans la barre) : pleine densité
+    const wantHi = hasMark && !markDom && !docked
+    if (wantHi !== heroHi) { heroHi = wantHi; resize() }
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     sendNext()
     let flowNeeded = lens.s > 0.01
