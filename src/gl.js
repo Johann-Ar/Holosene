@@ -544,6 +544,7 @@ export function createGL(canvas, { reduced }) {
   // dessinées sur la toile fixe (elles traîneraient d'une image derrière la page) mais copiées dans leur propre image,
   // dans la page ; le logo de l'accueil, fixe pendant sa scène, reste sur la toile
   const detached = matchMedia('(hover: none) and (pointer: coarse)').matches
+  const OWN_NEAR = 40, OWN_STEP = 30   // écran tactile : bords où la position compte (px), pas de mise à jour près d'un bord (ms)
   let order = null
   const pending = []
   const sendNext = () => {
@@ -804,7 +805,25 @@ export function createGL(canvas, { reduced }) {
           if (FLOW.hoverTarget) FLOW.hoverU = (((Math.atan2(dy, dx) * 180 / Math.PI + 90 - 180) / 360) % 1 + 1) % 1 }
       }
       if (v.text) sig.push(`${Math.round(w)}x${Math.round(h)}@${dpr}:${document.fonts?.status}`)
-      sig.push(views.indexOf(v), b.left, b.top, w, h, cr ? cr.left : 0, cr ? cr.right : 0, v.glass, v.color ? 1 : 0, ...(xf || []))
+      // écran tactile : la vignette est copiée dans sa propre image, qui défile toute seule avec la page. Son dessin ne
+      // dépend de sa position que près des bords (verre liquide : haut et bas de l'écran, côtés de la piste, ~40 px).
+      // Loin des bords (OWN_NEAR), position « canonique » : bouger ne la redessine pas. Près d'un bord : position réelle,
+      // mise à jour au plus toutes les OWN_STEP ms (30 images/s au lieu de 60) ; la copie, elle, suit la page à chaque image
+      let px = b.left, py = b.top, cl = cr ? cr.left : 0, crr = cr ? cr.right : 0
+      if (detached && !v.mark) {
+        const nearY = b.top < OWN_NEAR || b.bottom > H - OWN_NEAR
+        const nearX = !!cr && (b.left - cr.left < OWN_NEAR || cr.right - b.right < OWN_NEAR)
+        if (!nearY) py = (H - h) / 2
+        if (!nearX) { px = (W - w) / 2; cl = px - 1e4; crr = px + w + 1e4 }
+        if (nearX || nearY) {
+          const moved = px !== v.ownPx || py !== v.ownPy || cl !== v.ownCl
+          if (moved && v.ownT !== undefined && now - v.ownT < OWN_STEP && v.ownPx !== undefined) { px = v.ownPx; py = v.ownPy; cl = v.ownCl; crr = v.ownCr }
+          else if (moved) v.ownT = now
+        }
+        v.ownPx = px; v.ownPy = py; v.ownCl = cl; v.ownCr = crr
+      }
+      v.drawPos = [px, py, cl, crr]
+      sig.push(views.indexOf(v), px, py, w, h, cl, crr, v.glass, v.color ? 1 : 0, ...(xf || []))
       jobs.push({ v, b, cr, w, h, reveal, xf, glassy: v.radius > 0 })
     }
     if (flowNeeded || sc > 0) sig.push(FLOW.version)   // roue « flux » : logo de l'accueil et anneau de la lentille
@@ -854,9 +873,10 @@ export function createGL(canvas, { reduced }) {
       gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, v.text ? v.textTex : null)
       gl.uniform1f(U.uHasText, v.text ? 1 : 0)
       gl.uniform1f(U.uColor, v.color ? 1 : v.glass)   // au survol : la trame passe en couleur (fondu)
-      gl.uniform4f(U.uScr, b.left, b.top, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
+      const [dpx, dpy, dcl, dcr] = v.drawPos || [b.left, b.top, cr ? cr.left : 0, cr ? cr.right : 0]
+      gl.uniform4f(U.uScr, dpx, dpy, W, H); gl.uniform1f(U.uTime, reduced ? 0 : time)
       gl.uniform1f(U.uCardBg, 0)
-      if (cr) gl.uniform4f(U.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 80, 0)
+      if (cr) gl.uniform4f(U.uClip, dcl - dpx, dcr - dpx, W < 769 ? 21 : 80, 0)
       else gl.uniform4f(U.uClip, 0, 0, 0, 0)
       // intérieur de la lentille : l'image d'origine de cette vue (l'anneau est dessiné après, par-dessus tout)
       gl.uniform3f(U.uLens, lens.x - b.left, lens.y - b.top, v !== lens.view ? 0 : (Ri + 1) * sc); gl.uniform1f(U.uLensO, Ro * sc); gl.uniform1f(U.uSoft, (Ri + 1) * sc * SOFT_W); gl.uniform1f(U.uGlass, v.glass)
@@ -878,9 +898,9 @@ export function createGL(canvas, { reduced }) {
         gl.uniform1f(GU.uVivid, light ? 1 : 0); gl.uniform1f(GU.uEdgeFloor, light ? 1 : 0.12)
         v.irisMix ??= [Math.random(), Math.random() < 0.5 ? -1 : 1, 4 + Math.floor(Math.random() * 4)]   // tirée une fois par vignette
         gl.uniform3f(GU.uIrisMix, ...v.irisMix)
-        gl.uniform2f(GU.uScrY, b.top, H); gl.uniform2f(GU.uScrX, b.left, W)
+        gl.uniform2f(GU.uScrY, dpy, H); gl.uniform2f(GU.uScrX, dpx, W)
         sendFx()
-        if (cr) gl.uniform4f(GU.uClip, cr.left - b.left, cr.right - b.left, W < 769 ? 21 : 80, 0)
+        if (cr) gl.uniform4f(GU.uClip, dcl - dpx, dcr - dpx, W < 769 ? 21 : 80, 0)
         else gl.uniform4f(GU.uClip, 0, 0, 0, 0)
         gl.drawArrays(gl.TRIANGLES, 0, 3)
       }
