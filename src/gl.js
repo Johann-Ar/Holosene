@@ -655,8 +655,8 @@ export function createGL(canvas, { reduced }) {
     // (avant : plafond à 2×, logo et vignettes agrandis, flous)
     const phone = W < 760 && matchMedia('(pointer: coarse)').matches
     // téléphone : 1,75× pour les vignettes (coût) ; mais tant que le gros logo de l'accueil est dessiné ici (heroHi), la
-    // densité réelle de l'écran (3× sur iPhone) : sinon la toile est agrandie par le navigateur et ses bords sont flous
-    dpr = Math.min(devicePixelRatio || 1, phone ? (heroHi ? 3 : 1.75) : Math.max(2, Math.min(8, Math.sqrt(PX_BUDGET / Math.max(1, W * H)))))
+    // densité réelle de l'écran (3× sur iPhone, jusqu'à 4× sur Android) : sinon la toile est agrandie par le navigateur et ses bords sont flous
+    dpr = Math.min(devicePixelRatio || 1, phone ? (heroHi ? 4 : 1.75) : Math.max(2, Math.min(8, Math.sqrt(PX_BUDGET / Math.max(1, W * H)))))
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
   }
   resize(); addEventListener('resize', resize)
