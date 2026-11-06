@@ -7,7 +7,7 @@
  * script (copies des cartes, bandes de flou, calques) sont ignorés ; les blocs découpés en mots (présentation, textes
  * des sections), dont le nombre de mots change d'une langue à l'autre, sont remplacés en entier.
  */
-const SKIP = '.card--copy, .side, .fx, .gl-card, canvas, script, style, .loader, .copy-toast'
+const SKIP = '.card--copy, .side, .fx, .gl-card, canvas, script, style, .loader, .copy-toast, iframe, [hidden]:not([id])'
 const WHOLE = '[data-seq], [data-hwords], [data-sw]'
 const ATTRS = ['aria-label', 'alt', 'title', 'href', 'hreflang', 'lang', 'data-copy', 'data-done', 'data-light', 'data-dark', 'content']
 
@@ -38,8 +38,17 @@ export async function swapLanguage(url, { onWhole, onDone }) {
   const res = await fetch(url, { credentials: 'same-origin' })
   if (!res.ok) throw new Error('page introuvable')
   const doc = new DOMParser().parseFromString(await res.text(), 'text/html')
-  const a = serverEls(doc.body), b = serverEls(document.body)
-  if (a.length !== b.length || a.some((el, i) => el.tagName !== b[i].tagName || cls(el) !== cls(b[i]))) throw new Error('structure différente')
+  const a = serverEls(doc.body), all = serverEls(document.body)
+  // la page en place peut contenir des éléments en plus (ajoutés par une extension du navigateur, un traducteur, un
+  // gestionnaire de mots de passe…) : on aligne dans l'ordre, en sautant ce qui n'existe pas dans la page de l'autre
+  // langue ; seul un élément du site introuvable fait abandonner (chargement normal)
+  const same = (x, y) => x.tagName === y.tagName && cls(x) === cls(y)
+  const b = []
+  for (let i = 0, j = 0; i < a.length; i++) {
+    while (j < all.length && !same(a[i], all[j])) j++
+    if (j >= all.length) throw new Error('structure différente')
+    b.push(all[j++])
+  }
   // tout vérifier avant de toucher à la page
   for (let i = 0; i < a.length; i++) {
     const ft = [...a[i].childNodes].filter((n) => n.nodeType === 3).length, tt = [...b[i].childNodes].filter((n) => n.nodeType === 3).length

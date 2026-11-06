@@ -306,6 +306,8 @@ document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el))
    Pavé tactile (glissement latéral), doigt, souris (glisser), flèches et clavier ; douceur, inertie, et boucle sans fin :
    la position est ramenée dans un jeu de cartes (modulo), des copies couvrent les bords, sans saut visible. */
 const COPIES = 2
+const SNAP_NEAR = 0.08   // PC : calage sur une carte seulement si l'arrivée du geste en est à moins de 8 % d'un pas
+const RAIL_TAU = 0.11    // douceur de la piste (constante de temps, s)
 // molette de souris ou pavé tactile ? Souris : crans (lignes, ou pas de mouvement latéral et un wheelDelta qui n'est pas
 // le triple exact de deltaY, signature des pavés tactiles de Mac). Un geste latéral récent signale un pavé tactile.
 let padT = -1e9, pageWheelT = -1e9
@@ -339,7 +341,7 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
     if (r.finite) { const max = (r.n - 1) * r.step; r.target = Math.min(max, Math.max(0, mod(r.target, r.setW))); r.x = r.target }
   }
   r.measure()
-  const nudge = (d) => { r.target = Math.round((r.target + d) / r.step) * r.step; r.last = performance.now() }
+  const nudge = (d) => { r.target = Math.round((r.target + d) / r.step) * r.step; r.last = performance.now(); r.tau = 0 }
   pin.querySelectorAll('.work__nav').forEach((b) => b.addEventListener('click', () => nudge(r.step * +b.dataset.dir)))
   track.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); nudge(r.step * (e.key === 'ArrowRight' ? 1 : -1)) } })
   // pavé tactile / molette latérale (ou Maj + molette) ; molette de souris (verticale) : fait défiler la piste quand on
@@ -350,7 +352,7 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
     if (!dx && isMouseWheel(e) && now - pageWheelT > 350) dx = e.deltaY
     if (!dx) return
     e.preventDefault(); e.stopPropagation()
-    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = now; r.wheel = true; r.dir = Math.sign(dx)   // sens de l'élan (magnétisme)
+    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = now; r.wheel = true; r.tau = 0; r.dir = Math.sign(dx)   // sens de l'élan (magnétisme)
   }, { passive: false })
   // glisser (souris, doigt, stylet) ; le défilement vertical au doigt reste au navigateur (touch-action: pan-y)
   let down = null, moved = false
@@ -376,7 +378,7 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
   const up = (e) => {
     if (!down || (e.pointerId !== undefined && e.pointerId !== down.id)) return
     down = null; track.classList.remove('is-drag')
-    if (moved) { r.target += r.vel * 320; r.wheel = false; r.last = performance.now() - 120; if (Math.abs(r.vel) > 0.02) r.dir = Math.sign(r.vel) }   // inertie
+    if (moved) { r.target += r.vel * 320; r.wheel = false; r.tau = 0; r.last = performance.now() - 120; if (Math.abs(r.vel) > 0.02) r.dir = Math.sign(r.vel) }   // inertie
   }
   addEventListener('pointerup', up); addEventListener('pointercancel', up)
   track.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false } }, true)
@@ -397,17 +399,19 @@ function workFrame(now = performance.now()) {
     // mobile (piste finie) : à l'arrêt, la piste se cale sur la carte la plus proche (toujours centrée) ; PC : défilement
     // libre, les vignettes restent là où le geste les a laissées
     if (r.finite && !r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
-    // PC : léger magnétisme, dans la continuité de l'élan. Une fois le geste fini, la cible (où la piste allait s'arrêter,
-    // inertie comprise) glisse doucement vers la carte la plus proche ; la piste la suit avec sa douceur habituelle
-    if (!r.finite && !r.isDown() && now - r.last > (r.wheel ? 180 : 90)) {
-      // la carte d'arrivée est prise dans le sens de l'élan (jamais de retour en arrière), sauf si la carte d'où l'on vient
-      // est toute proche : alors léger recul, plus doux
-      const pos = r.target / r.step, lo = Math.floor(pos), frac = pos - lo, NEAR = 0.14
-      const cell = r.dir > 0 ? (frac < NEAR ? lo : lo + 1) : r.dir < 0 ? (frac > 1 - NEAR ? lo + 1 : lo) : Math.round(pos)
-      const goal = cell * r.step, back = r.dir && Math.sign(goal - r.target) === -r.dir
-      r.target += (goal - r.target) * (reduced ? 1 : 1 - Math.exp(-dt / (back ? 0.4 : 0.22)))
-      if (Math.abs(goal - r.target) < 0.5) r.dir = 0
-      r.wheel = false
+    // PC : pas de magnétisme visible. Les vignettes restent là où le geste les laisse ; seule exception, si l'arrivée du
+    // geste (inertie comprise) tombe tout près d'une carte (SNAP_NEAR), le point d'arrivée est déplacé une seule fois sur
+    // cette carte, à la fin du geste : la piste y va dans la même courbe de ralentissement (aucune reprise de vitesse,
+    // aucun second mouvement). Hors de l'écran, le recalage se fait d'un coup (plus bas).
+    if (!r.finite && !r.isDown() && r.wheel !== 'done' && now - r.last > (r.wheel ? 120 : 60)) {
+      const goal = Math.round(r.target / r.step) * r.step, rest = r.target - r.x, rest2 = goal - r.x
+      // même vitesse qu'à cet instant (v = reste / TAU) : nouvelle constante de temps TAU × reste' / reste. La courbe
+      // continue sans à-coup et ne fait que ralentir ; si la piste est déjà presque arrêtée, elle reste où elle est
+      if (goal !== r.target && Math.abs(goal - r.target) < r.step * SNAP_NEAR && Math.abs(rest) > 2 && Math.sign(rest2) === Math.sign(rest)) {
+        const tau = RAIL_TAU * rest2 / rest
+        if (tau > 0.04 && tau < 0.6) { r.target = goal; r.tau = tau }
+      }
+      r.wheel = 'done'; r.dir = 0
     }
     // PC (défilement libre) : quand la piste est entièrement hors de l'écran, elle se recale d'un coup sur la carte la plus
     // proche (personne ne le voit) ; en y revenant, les vignettes sont en place dans la grille
@@ -420,7 +424,7 @@ function workFrame(now = performance.now()) {
       const max = (r.n - 1) * r.step
       r.target = Math.min(max, Math.max(0, r.target))
     }
-    if (!r.isDown()) r.x += (r.target - r.x) * (reduced ? 1 : 1 - Math.exp(-dt / 0.11))
+    if (!r.isDown()) r.x += (r.target - r.x) * (reduced ? 1 : 1 - Math.exp(-dt / (r.tau || RAIL_TAU)))
     const k = r.finite ? r.x : mod(r.x, r.setW)
     r.strip.style.transform = `translate3d(${(-(r.start + k)).toFixed(2)}px, 0, 0)`
   }
@@ -694,9 +698,11 @@ addEventListener('pageshow', (e) => { if (e.persisted) { try { sessionStorage.re
    doute (structure différente, page introuvable), chargement normal. */
 document.addEventListener('click', async (e) => {
   const a = e.target.closest('.topbar .lang')
-  if (!a || e.metaKey || e.ctrlKey || e.shiftKey || ficheOf() || !root.classList.contains('intro-done')) return
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return
   e.preventDefault()
-  const url = new URL(a.getAttribute('href'), location.href).href
+  if (!root.classList.contains('intro-done')) return   // pendant l'arrivée du logo : rien (jamais de rechargement)
+  // fiche ouverte : elle reste ouverte, ses textes changent de langue sur place (l'ancre #p-… est conservée)
+  const url = new URL(a.getAttribute('href'), location.href).href, hash = ficheOf() ? location.hash : ''
   try {
     await swapLanguage(url, {
       onWhole: (el) => {
@@ -717,12 +723,12 @@ document.addEventListener('click', async (e) => {
       },
       onDone: () => {
         try { store.set('lang', root.lang); document.cookie = `lang=${root.lang}; path=/; max-age=31536000; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}` } catch {}
-        history.pushState(null, '', url); shownPath = location.pathname
+        history.pushState(null, '', url + hash); shownPath = location.pathname
         labelThemes()
         dispatchEvent(new Event('resize'))   // largeurs des textes changées : pistes, WebGL et fond se remesurent
       },
     })
-  } catch (err) { console.warn('changement de langue : chargement normal', err); location.href = url }
+  } catch (err) { console.warn('changement de langue : chargement normal (raison :', err?.message || err, ')'); location.href = url + hash }
 })
 // retour arrière vers l'autre langue (adresse de page différente de la langue affichée) : rechargement
 let shownPath = location.pathname

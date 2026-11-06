@@ -715,9 +715,8 @@ export function createGL(canvas, { reduced }) {
     // si la souris bouge, la lentille apparaît tout de suite, même pendant le défilement
     if (Math.abs(scrollY - lastSY) > 1) scrollT = now
     lastSY = scrollY
-    const still = now - scrollT > 120 || now - ptr.t < 300
-    // le « o » suit le curseur même pendant le défilement (il passe tout de suite d'une vignette à l'autre) ; seule la mise
-    // en couleur des vignettes attend la fin du défilement (pas de clignotement des vignettes qui défilent dessous)
+    // le « o » suit le curseur même pendant le défilement (il passe tout de suite d'une vignette à l'autre) ; la vignette
+    // dessous passe en couleur au même moment
     const show = !!over && !onCtl && !ptr.touch   /* au doigt : pas de « o » (pas de curseur à remplacer) */ && !document.documentElement.classList.contains('fiche-open')
     if (!lens.init || (lens.s < 0.02 && show)) { lens.x = ptr.x; lens.y = ptr.y; lens.init = true }
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
@@ -748,7 +747,8 @@ export function createGL(canvas, { reduced }) {
       const vis = Math.min(1, Math.max(0, Math.min(H - b.top, b.bottom) / (H * 0.6)))
       const reveal = 1   // vignettes : trame toujours complète (plus d'apparition ni de disparition en noir)
       if (v.mark) { maskFor(v); if (!v.maskB) continue }
-      const hov = !v.mark && ((hoverDevice && still) || (ptr.touch && ptr.down)) && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
+      // la vignette sous le « o » passe en couleur en même temps que lui (aussi pendant le défilement : tout de suite)
+      const hov = !v.mark && ((hoverDevice && show && v === over) || (ptr.touch && ptr.down)) && ptr.x >= b.left && ptr.x <= b.right && ptr.y >= b.top && ptr.y <= b.bottom && (!cr || (ptr.x > cr.left && ptr.x < cr.right))
       v.glass = reduced ? (hov ? 1 : 0) : follow(v.glass, hov ? 1 : 0, hov ? 0.16 : 0.12, dt)
       let xf = null
       if (v.mark) {
