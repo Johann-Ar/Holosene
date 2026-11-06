@@ -11,6 +11,7 @@ import KIT from '../design/logo-kit/tokens/iris.json'
 import { IRIS } from './iris-config.js'
 import { FX, hueAt } from './fx-config.js'
 import { FLOW } from './flow.js'
+import { HERO } from './hero-progress.js'
 
 // roue du logo-kit (source de vérité) : irisColor(p), irisRing(p, Ro) ; irisAt(t) pour une position t sur le cercle
 // (0 = en haut, sens horaire, y vers le bas). fwidth vient de OES_standard_derivatives (repli : 1 px).
@@ -765,7 +766,7 @@ export function createGL(canvas, { reduced }) {
       let xf = null
       if (v.mark) {
         const hero = v.el.closest('.hero'), hr = hero.getBoundingClientRect(), sr = hero.querySelector('.hero__slot').getBoundingClientRect()
-        const p = Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - H)))
+        const p = HERO.p   // avancée de la scène (freinée sur écran tactile : hero-progress.js)
         const slot = { x: sr.left - b.left + sr.width / 2, y: sr.top - b.top + sr.height / 2, h: sr.height }
         // animations réduites : pas de scène de défilement, le logo est d'emblée à sa place (au-dessus du nom)
         // place du petit logo de la barre ; le logo y arrive quand la vue a remonté de (hauteur du logo posé − barre)

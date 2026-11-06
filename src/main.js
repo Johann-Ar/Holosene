@@ -8,6 +8,7 @@ import { createBackdrop } from './backdrop.js'
 import { IRIS } from './iris-config.js'
 import { startFxCss } from './fx-css.js'
 import { swapLanguage } from './lang-swap.js'
+import { HERO, updateHero } from './hero-progress.js'
 import { createLoader } from './loader.js'
 
 const root = document.documentElement
@@ -542,8 +543,8 @@ function scrollEffects() {
   root.classList.toggle('edge-bottom-off', scrollY < 40)
   if (foot) { const push = Math.max(0, vh - foot.getBoundingClientRect().top); if (push !== footPush) { footPush = push; root.style.setProperty('--band-push', push.toFixed(1) + 'px') } }
   // accueil épinglé : avancée hp (0 à 1) ; le mot se trace puis se remplit, puis la présentation s'allume
-  const hr = hero?.getBoundingClientRect()
-  const hp = hr ? Math.min(1, Math.max(0, -hr.top / Math.max(1, hr.height - vh))) : 1
+  // (écran tactile : avancée freinée, hero-progress.js)
+  const hp = HERO.p
   const k = (a, b) => Math.min(1, Math.max(0, (hp - a) / (b - a)))
   if (heroWords.length) {
     // le logo se place (0 à 0,54), le nom se trace (0,14 à 0,70), la présentation s'allume (0,60 à 0,86) ; puis un court
@@ -673,6 +674,7 @@ function loop(t) {
   // pistes et fiches d'abord, puis le WebGL : les images sont dessinées à la position finale des titres (même image)
   workFrame(t)
   ficheFrame(t)
+  updateHero(t, hero)   // avancée de la scène d'accueil (freinée sur écran tactile)
   updateFlow(t)   // roue « flux » : une texture par image, partagée par le chargeur, le logo et la lentille
   backdrop?.frame(t)
   gl?.frame(t)
