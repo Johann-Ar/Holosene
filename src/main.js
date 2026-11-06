@@ -331,6 +331,7 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
   const r = { pin, track, strip, originals, x: 0, target: 0, vel: 0, setW: 0, start: 0, n: 0, last: 0 }
   // mobile : piste finie (copies masquées en CSS) ; elle s'arrête à la première et à la dernière carte
   r.measure = () => {
+    pin.style.setProperty('--track-w', track.clientWidth + 'px')   // largeur des vignettes (styles.css) : centre exact
     const shown = originals.filter((c) => c.offsetParent)
     const all = [...strip.children].filter((c) => c.offsetParent)
     r.n = shown.length

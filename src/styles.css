@@ -301,14 +301,18 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .work__pin { padding-block: var(--sp-5) var(--sp-5); }
 .work__track { --fade: 120px;   /* même largeur que le fondu du haut */ overflow-x: auto; scrollbar-width: none; padding-bottom: 8px;
   -webkit-mask: linear-gradient(90deg, rgb(0 0 0 / var(--edge-floor)), #000 min(var(--fade), var(--edge-l)), #000 calc(100% - var(--fade)), rgb(0 0 0 / var(--edge-floor))); mask: linear-gradient(90deg, rgb(0 0 0 / var(--edge-floor)), #000 min(var(--fade), var(--edge-l)), #000 calc(100% - var(--fade)), rgb(0 0 0 / var(--edge-floor))); }
-.work__strip { display: flex; gap: clamp(24px, 4vw, 64px); width: max-content; }
+:root { --rail-gap: clamp(24px, 4vw, 64px); }
+.work__strip { display: flex; gap: var(--rail-gap); width: max-content; }
 /* avec le script : la piste est déplacée par le script (glisser, pavé tactile, flèches), en boucle */
 .is-rail .work__track { overflow: hidden; cursor: grab; touch-action: pan-y; }
 .is-rail .work__strip { will-change: transform; }
 .work__track.is-drag { cursor: grabbing; user-select: none; }
 .work__track:focus-visible { outline: none; }
 .work__track::-webkit-scrollbar { display: none; }
-.card { flex: 0 0 auto; width: min(84vw, 40vw + 40px, 72svh);   /* la section (titre + piste + noms) tient en un écran */ scroll-snap-align: start; display: grid; gap: 22px; align-content: start; }
+.card { flex: 0 0 auto; width: min(84vw, 40vw + 40px, 72svh); scroll-snap-align: start; display: grid; gap: 22px; align-content: start; }
+/* PC : au repos, l'espace entre les deux premières vignettes est exactement au centre de l'écran (sous le logo de la
+   barre) : largeur = moitié de la piste − marge gauche − moitié de l'écart (--track-w : largeur de la piste, main.js) */
+@media (min-width: 761px) { .card { width: calc(var(--track-w, 100vw) / 2 - var(--edge-l) - var(--rail-gap) / 2); } }
 .card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }   /* appui long : ni menu, ni sélection (la vignette passe en couleur) */
 .card__media { aspect-ratio: 16 / 10; border-radius: 26px; background: var(--card-bg); }
 .card__media > img { border-radius: 26px; }
@@ -348,7 +352,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .fiche__media figure { position: relative; }
 
 /* 4. recherche : même gabarit que Projets choisis ; une carte sans image montre son état en grand */
-.work--research { padding-top: var(--sp-6); }
+.work--research { padding-top: var(--sp-8); }   /* plus d'air au-dessus de « Travaux de recherche » */
 .lens-on:not(.fiche-open), .lens-on:not(.fiche-open) * { cursor: none !important; }   /* seulement sur les vignettes, jamais dans une fiche */
 .card__media--text, .has-gl .card__media--text { display: grid; place-items: center;
   background: radial-gradient(120% 90% at 15% 10%, color-mix(in srgb, var(--iris-rose) 34%, transparent), transparent 60%), radial-gradient(90% 80% at 85% 20%, color-mix(in srgb, var(--iris-bleu) 34%, transparent), transparent 60%),
