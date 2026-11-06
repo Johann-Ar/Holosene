@@ -19,7 +19,7 @@ function prerender() {
       const { render, esc } = await load('src/render.js')
       const { site } = await load('src/content.js')
       const url = lang === 'fr' ? SITE_URL : `${SITE_URL}en/`
-      const title = lang === 'fr' ? 'Holosene, portfolio de Johann Arata' : 'Holosene, Johann Arata’s portfolio'
+      const title = 'JOHANN ARATA'
       const desc = site.description[lang]
       const ld = {
         '@context': 'https://schema.org',
@@ -35,7 +35,7 @@ function prerender() {
   <link rel="alternate" hreflang="en" href="${SITE_URL}en/" />
   <link rel="alternate" hreflang="x-default" href="${SITE_URL}" />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Holosene" />
+  <meta property="og:site_name" content="JOHANN ARATA" />
   <meta property="og:locale" content="${lang === 'fr' ? 'fr_FR' : 'en_GB'}" />
   <meta property="og:title" content="${esc(title)}" />
   <meta property="og:description" content="${esc(desc)}" />
@@ -102,15 +102,16 @@ function seoFiles() {
   }
 }
 
-/** 404 : l'hébergeur la sert à n'importe quelle adresse, ses liens doivent donc être absolus. */
+/** 404 : l'hébergeur la sert à n'importe quelle adresse, ses liens doivent donc être absolus, et commencer par le dossier
+ *  où le site est publié : « / » sur Vercel, « /Holosene/ » sur GitHub Pages (BASE_PATH, fixé par le workflow pages.yml). */
 function absolute404() {
-  const basePath = new URL(SITE_URL).pathname
+  const basePath = (process.env.BASE_PATH || new URL(SITE_URL).pathname).replace(/\/?$/, '/')
   return {
     name: 'absolute-404',
     closeBundle() {
       const f = resolve('dist/404.html')
       if (!existsSync(f)) return
-      writeFileSync(f, readFileSync(f, 'utf8').replace(/(href|src)="\.\/(?!\/)/g, `$1="${basePath}`))
+      writeFileSync(f, readFileSync(f, 'utf8').replace(/(href|src)="\.?\/(?!\/)/g, `$1="${basePath}`))
     },
   }
 }
