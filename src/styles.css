@@ -690,6 +690,9 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
    l'écran derrière chaque élément (masque calculé par main.js) ; même dégradé, même flou que la bande entière.
    En sombre, le fondu du haut (.edge--top) prend la même découpe. */
 
+/* adresse e-mail : curseur « copie » du système (macOS : flèche + pastille verte ; Chrome / Edge sous Windows : leur propre
+   version) ; un clic copie l'adresse (main.js) */
+.mail { cursor: copy; }
 /* « Adresse copiée » (clic sur l'adresse e-mail, main.js) : juste sous l'adresse, dans le style des boutons survolés
    (capitales grasses sur l'aplat d'encre) ; sa place est toujours réservée : rien ne bouge ni n'est caché quand il
    apparaît ; apparition et disparition en fondu et flou, comme les textes de la page */
