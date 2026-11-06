@@ -21,7 +21,7 @@ Tout ce qui touche au logo, au « o » irisé ou à l'anneau de la lentille du c
 | Variables CSS (dark / light) | `design/logo-kit/tokens/theme.css` |
 
 ### Constantes
-- Dégradé conique : `from 180deg`, sens horaire (0deg = haut). Position 0 = cyan #2ACCC7 (en bas), 0,5 = rose #FE46A8 (en haut). Roue v2 : 10 teintes sans doublon, surface égale, luminosité rapprochée.
+- Dégradé conique : `from 180deg`, sens horaire (0deg = haut). Position 0 = cyan #22E0D8 (en bas), 0,5 = rose #FD35A5 (en haut). Roue du 6 novembre 2026 (export « logos-holosene-final », relue par `brand/tools/kit-depuis-pack.mjs`).
 - Anneau : rayon intérieur = **0,514 × rayon extérieur**.
 - Fonds : dark `#1E1E1E`, light `#F6F5F2`. Encre : blanc sur dark, `#1E1E1E` sur light.
 - Dark et light utilisent **exactement la même roue**.
@@ -30,6 +30,11 @@ Tout ce qui touche au logo, au « o » irisé ou à l'anneau de la lentille du c
 - Son bord **intérieur** est volontairement fondu (choix de Johann) : dégradé de flou sur 11 % du rayon (`SOFT_W` dans
   `src/gl.js`). La loupe se resserre d'autant et garde son effet à l'intérieur.
   Ne pas « corriger » ce fondu ; le bord extérieur, les couleurs et l'épaisseur restent ceux du kit.
+
+### Mettre à jour le logo depuis un export Figma
+`node brand/tools/kit-depuis-pack.mjs <dossier logos-holosene-final>` régénère `design/logo-kit` (SVG, `src/*`, `tokens/*`)
+à partir des tracés exacts de l'export ; puis `node brand/tools/sdf.mjs`, copie de `design/logo-kit/svg/monogram-*.svg`
+dans `public/media/`, et `MONO_VB` de `src/gl.js` si le cadre du monogramme change (actuellement `152.4 150.7 470 576`).
 
 ### Vérification obligatoire avant de dire « fini »
 1. Capture d'écran (Playwright, deviceScaleFactor 2) du rendu concerné.

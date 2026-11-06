@@ -20,7 +20,7 @@ Tout ce qui touche au logo, au « o » irisé ou à l'anneau de la lentille du c
 | Variables CSS (dark / light) | `design/logo-kit/tokens/theme.css` |
 
 ### Constantes
-- Dégradé conique : `from 180deg`, sens horaire (0deg = haut). Position 0 = cyan #2ACCC7 (en bas), 0,5 = rose #FE46A8 (en haut). Roue v2 : 10 teintes sans doublon, surface égale, luminosité rapprochée.
+- Dégradé conique : `from 180deg`, sens horaire (0deg = haut). Position 0 = cyan #22E0D8 (en bas), 0,5 = rose #FD35A5 (en haut). Roue du 6 novembre 2026 (export « logos-holosene-final », relue par `brand/tools/kit-depuis-pack.mjs`).
 - Anneau : rayon intérieur = **0,514 × rayon extérieur**.
 - Fonds : dark `#1E1E1E`, light `#F6F5F2`. Encre : blanc sur dark, `#1E1E1E` sur light.
 - Dark et light utilisent **exactement la même roue**.

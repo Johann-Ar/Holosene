@@ -22,8 +22,8 @@ ${KIT_IRIS}
 vec3 irisAt(float t) { float a = t * 6.2831853; return irisColor(vec2(sin(a), -cos(a))); }`
 const DERIV = '#extension GL_OES_standard_derivatives : enable\n'
 
-// monogramme du kit (viewBox 146 154 470 576 ; anneau : tokens/iris.json), en unités de 1000 pour sa hauteur
-const MONO_VB = [146, 154, 470, 576], MONO_U = 1000 / MONO_VB[3]
+// monogramme du kit (viewBox 152.4 150.7 470 576 ; anneau : tokens/iris.json), en unités de 1000 pour sa hauteur
+const MONO_VB = [152.4, 150.7, 470, 576], MONO_U = 1000 / MONO_VB[3]
 const MONO_W = MONO_VB[2] * MONO_U                                                        // ≈ 816
 const MONO_O = [(KIT.ring.center[0] - MONO_VB[0]) * MONO_U, (KIT.ring.center[1] - MONO_VB[1]) * MONO_U]   // centre du « o »
 
