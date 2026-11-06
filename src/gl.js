@@ -175,13 +175,13 @@ vec3 withLens(vec2 q, vec3 base) {
       // de la loupe (on y prolonge simplement le bord de la loupe, le long du rayon)
       float Re = R - uSoft, dd = min(d, Re);
       vec2 dir = d > 0.001 ? lp / d : vec2(0.0), le = dir * dd;
-      // seul effet de la lentille : au bord intérieur, sur une bande contre l'anneau (37 % extérieurs du rayon), l'image
-      // est tirée vers le centre ; le centre reste net et non déformé (pas de fisheye)
-      float r = dd / Re, k = smoothstep(0.63, 1.0, r);
+      // seul effet de la lentille : au bord intérieur, sur une bande contre l'anneau, l'image
+      // est tirée vers le centre (bande des 31 % extérieurs) ; le centre reste net et non déformé (pas de fisheye)
+      float r = dd / Re, k = smoothstep(0.69, 1.0, r);
       float bend = 0.36 * k * k;
       // fondu de flou en dégradé sur le pourtour intérieur : nul au centre, il croît sur le tiers extérieur jusqu'à
       // ≈ 5 px contre le bord (8 échantillons en cercle + le centre : flou lisse, sans marches)
-      float kb = smoothstep(0.66, 1.0, r), bl = 0.6 + 4.6 * kb * kb;
+      float kb = smoothstep(0.72, 1.0, r), bl = 0.6 + 4.6 * kb * kb;
       vec2 c0 = uLens.xy;
       vec3 orig = vec3(0.0);
       for (int i = 0; i < 9; i++) {
@@ -722,6 +722,11 @@ export function createGL(canvas, { reduced }) {
     if (reduced) { lens.x = ptr.x; lens.y = ptr.y; lens.s = show ? 1 : 0 }
     else { lens.x = follow(lens.x, ptr.x, 0.035, dt); lens.y = follow(lens.y, ptr.y, 0.035, dt); lens.s = follow(lens.s, show ? 1 : 0, 0.09, dt) }
     const sc = lens.s < 0.005 ? 0 : 1 - Math.pow(1 - lens.s, 2)
+    // curseur agité sur la roue : vitesse du pointeur (px/s), 0 à 1 vers 1800 px/s, lissée ; le flux accélère (flow.js)
+    { const pv = lens.px === undefined || !dt ? 0 : Math.hypot(ptr.x - lens.px, ptr.y - lens.py) / dt
+      lens.px = ptr.x; lens.py = ptr.y
+      const ag = show && !reduced ? Math.min(1, pv / 1800) : 0
+      FLOW.agitate = follow(FLOW.agitate, ag, ag > FLOW.agitate ? 0.12 : 0.6, dt) }
     // le « o » remplace le curseur : flèche masquée partout tant que le « o » est affiché (souris uniquement)
     const hide = sc > 0.02 && hoverDevice && !ptr.touch && !onCtl   // tant que le « o » est visible, sauf sur un bouton
     if (hide !== lens.hidden) { document.documentElement.classList.toggle('lens-on', hide); lens.hidden = hide }

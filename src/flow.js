@@ -28,6 +28,7 @@ export const FLOW = {
   frozen: false,    // panneau ?debug=iris : roue finale (amount = 0)
   cpuMs: 0,         // temps de calcul de la dernière texture (mesure)
   t0,               // début de la montée du flux (fixé au relais du chargeur)
+  agitate: 0,       // 0 à 1 : curseur agité sur la roue de la lentille (gl.js) ; le flux va plus vite
 }
 
 // l'intensité monte de 0 à 1 en 1,2 s (ease-out) à partir de FLOW.t0 : le relais du chargeur (main.js), dont la roue
@@ -46,7 +47,8 @@ const GROW_MAX = 0.6            // jusqu'à 2,5 fois la place de la couleur surv
 const GROW_IN = 0.6, GROW_OUT = 0.95, FOLLOW = 0.32   // constantes de temps (s) : lent et fluide
 const SMOOTH_R = 10             // lissage des transitions de couleur (échantillons, sur 512) : pas de segments visibles
 const N = 512, tmp = new Float32Array(N * 3), acc = new Float32Array(N * 3)
-let lastAmount = -1, clock = 0, lastNow = null, grow = 0, focus = 0
+let lastAmount = -1, clock = 0, lastNow = null, grow = 0, focus = 0, speed = 1
+const AGITATE_MAX = 3   // vitesse du flux quand on agite la roue (× le rythme passif)
 // flou circulaire (deux passes de moyenne glissante ≈ gaussien) : transitions de couleur fondues
 function smoothRing(src) {
   for (let i = 0; i < N; i++) for (let c = 0; c < 3; c++) tmp[i * 3 + c] = src[i * 4 + c]
@@ -65,7 +67,10 @@ function smoothRing(src) {
 }
 export function updateFlow(now) {
   const dt = lastNow === null ? 0 : Math.min(0.1, (now - lastNow) / 1000); lastNow = now
-  clock += dt
+  // roue de la lentille agitée par le curseur : le flux accélère (jusqu'à × AGITATE_MAX), revient doucement à son rythme
+  const sp = 1 + (AGITATE_MAX - 1) * FLOW.agitate
+  speed += (sp - speed) * (1 - Math.exp(-dt / (sp > speed ? 0.25 : 0.9)))
+  clock += dt * speed
   const tgt = FLOW.hoverTarget ? GROW_MAX : 0
   grow += (tgt - grow) * (1 - Math.exp(-dt / (tgt > grow ? GROW_IN : GROW_OUT)))
   if (FLOW.hoverTarget) { const d = ((FLOW.hoverU - focus + 1.5) % 1) - 0.5; focus = (focus + d * (1 - Math.exp(-dt / FOLLOW)) + 1) % 1 }

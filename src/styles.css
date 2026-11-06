@@ -693,3 +693,27 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .copy-toast.on { opacity: 1; visibility: visible; translate: -50% 0; }
 .mail { cursor: copy; }
 @media (prefers-reduced-motion: reduce) { .copy-toast { transition: none; } }
+
+/* ——— survol de tous les boutons : le carré noir (aplat d'encre) apparaît et disparaît en fondu de flou léger, sans
+   fondu d'opacité ni balayage ; comme les autres apparitions de la page. Il naît flou et se précise ; en partant, il
+   se floute puis s'efface à la fin du flou. Un seul pseudo-élément (::after, ::before pour « Voir la fiche »), derrière
+   le texte ; le texte passe en couleur du fond comme avant. */
+:root { --hl-blur-max: 6px; }
+:is(.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle) { position: relative; isolation: isolate; background: none !important; }
+:is(.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle)::after {
+  content: '' !important; display: block !important; position: absolute !important; inset: 0 !important; width: auto !important; height: auto !important; z-index: -1;
+  background: var(--ink) !important; border-radius: 0 !important; opacity: 1 !important; clip-path: none !important;
+  filter: blur(var(--hl-blur-max)) !important; visibility: hidden; transition: filter var(--hl-dur) var(--hl-ease), visibility 0s linear var(--hl-dur) !important; }
+:is(.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle):is(:hover, :focus-visible, :active)::after,
+.theme-toggle:active::after {
+  filter: blur(0) !important; visibility: visible; transition: filter var(--hl-dur) var(--hl-ease), visibility 0s !important; }
+.fiche__open::before { transform: none !important; filter: blur(var(--hl-blur-max)); visibility: hidden; transition: filter var(--hl-dur) var(--hl-ease), visibility 0s linear var(--hl-dur) !important; }
+.fiche__open:is(:hover, :focus-visible, :active)::before { filter: blur(0); visibility: visible; transition: filter var(--hl-dur) var(--hl-ease), visibility 0s !important; }
+/* écrans tactiles : le carré ne vit que pendant l'appui (pas d'état « survol » collé) */
+@media (hover: none) {
+  :is(.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle):hover:not(:active)::after { filter: blur(var(--hl-blur-max)) !important; visibility: hidden; }
+  .fiche__open:hover:not(:active)::before { filter: blur(var(--hl-blur-max)); visibility: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.topbar__nav a:not(.lang), .socials a, .foot a, .mail, .fiche__close, .topbar .lang, .btn--light, .theme-toggle)::after, .fiche__open::before { transition: none !important; }
+}
