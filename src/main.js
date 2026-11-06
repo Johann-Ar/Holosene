@@ -306,7 +306,7 @@ document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el))
    Pavé tactile (glissement latéral), doigt, souris (glisser), flèches et clavier ; douceur, inertie, et boucle sans fin :
    la position est ramenée dans un jeu de cartes (modulo), des copies couvrent les bords, sans saut visible. */
 const COPIES = 2
-const SNAP_NEAR = 0.08   // PC : calage sur une carte seulement si l'arrivée du geste en est à moins de 8 % d'un pas
+const SNAP_NEAR = 0.12   // PC : calage sur une carte seulement si l'arrivée du geste en est à moins de 12 % d'un pas
 const RAIL_TAU = 0.11    // douceur de la piste (constante de temps, s)
 // molette de souris ou pavé tactile ? Souris : crans (lignes, ou pas de mouvement latéral et un wheelDelta qui n'est pas
 // le triple exact de deltaY, signature des pavés tactiles de Mac). Un geste latéral récent signale un pavé tactile.
@@ -353,7 +353,7 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
     if (!dx && isMouseWheel(e) && now - pageWheelT > 350) dx = e.deltaY
     if (!dx) return
     e.preventDefault(); e.stopPropagation()
-    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = now; r.wheel = true; r.tau = 0; r.dir = Math.sign(dx)   // sens de l'élan (magnétisme)
+    r.target += dx * (e.deltaMode === 1 ? 32 : 1); r.last = now; r.wheel = true; r.tau = 0; r.snapped = false; r.dir = Math.sign(dx)   // sens de l'élan (magnétisme)
   }, { passive: false })
   // glisser (souris, doigt, stylet) ; le défilement vertical au doigt reste au navigateur (touch-action: pan-y)
   let down = null, moved = false
@@ -379,7 +379,7 @@ const rails = [...document.querySelectorAll('.work__pin')].map((pin) => {
   const up = (e) => {
     if (!down || (e.pointerId !== undefined && e.pointerId !== down.id)) return
     down = null; track.classList.remove('is-drag')
-    if (moved) { r.target += r.vel * 320; r.wheel = false; r.tau = 0; r.last = performance.now() - 120; if (Math.abs(r.vel) > 0.02) r.dir = Math.sign(r.vel) }   // inertie
+    if (moved) { r.target += r.vel * 320; r.wheel = false; r.tau = 0; r.snapped = false; r.last = performance.now() - 120; if (Math.abs(r.vel) > 0.02) r.dir = Math.sign(r.vel) }   // inertie
   }
   addEventListener('pointerup', up); addEventListener('pointercancel', up)
   track.addEventListener('click', (e) => { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false } }, true)
@@ -400,19 +400,20 @@ function workFrame(now = performance.now()) {
     // mobile (piste finie) : à l'arrêt, la piste se cale sur la carte la plus proche (toujours centrée) ; PC : défilement
     // libre, les vignettes restent là où le geste les a laissées
     if (r.finite && !r.isDown() && now - r.last > (r.wheel ? 260 : 140)) { r.target = Math.round(r.target / r.step) * r.step; r.wheel = false }
-    // PC : pas de magnétisme visible. Les vignettes restent là où le geste les laisse ; seule exception, si l'arrivée du
-    // geste (inertie comprise) tombe tout près d'une carte (SNAP_NEAR), le point d'arrivée est déplacé une seule fois sur
-    // cette carte, à la fin du geste : la piste y va dans la même courbe de ralentissement (aucune reprise de vitesse,
-    // aucun second mouvement). Hors de l'écran, le recalage se fait d'un coup (plus bas).
-    if (!r.finite && !r.isDown() && r.wheel !== 'done' && now - r.last > (r.wheel ? 120 : 60)) {
-      const goal = Math.round(r.target / r.step) * r.step, rest = r.target - r.x, rest2 = goal - r.x
-      // même vitesse qu'à cet instant (v = reste / TAU) : nouvelle constante de temps TAU × reste' / reste. La courbe
-      // continue sans à-coup et ne fait que ralentir ; si la piste est déjà presque arrêtée, elle reste où elle est
-      if (goal !== r.target && Math.abs(goal - r.target) < r.step * SNAP_NEAR && Math.abs(rest) > 2 && Math.sign(rest2) === Math.sign(rest)) {
-        const tau = RAIL_TAU * rest2 / rest
-        if (tau > 0.04 && tau < 0.6) { r.target = goal; r.tau = tau }
+    // PC : magnétisme léger, seulement près d'une carte. Pendant que la piste avance encore, si l'endroit où elle va
+    // s'arrêter (sa cible, inertie comprise) tombe à moins de SNAP_NEAR d'une carte, la cible devient cette carte et la
+    // constante de temps est ajustée pour garder exactement la vitesse de cet instant : même courbe de ralentissement,
+    // aucune reprise de vitesse, aucun second mouvement. Plus loin d'une carte, la piste reste là où le geste la laisse.
+    // Hors de l'écran, recalage d'un coup (plus bas).
+    // décidé seulement après une courte pause des entrées (fin d'un cran de molette, fin de l'inertie du pavé) : en
+    // avançant lentement près d'une carte, rien ne retient la piste
+    if (!r.finite && !r.isDown() && !r.snapped && now - r.last > 40) {
+      const rest = r.target - r.x, goal = Math.round(r.target / r.step) * r.step, rest2 = goal - r.x
+      if (goal !== r.target && Math.abs(rest) > 0.5 && Math.abs(goal - r.target) < r.step * SNAP_NEAR && Math.sign(rest2) === Math.sign(rest)) {
+        const tau = (r.tau || RAIL_TAU) * rest2 / rest
+        if (tau > 0.04 && tau < 1.2) { r.target = goal; r.tau = tau }
       }
-      r.wheel = 'done'; r.dir = 0
+      r.snapped = true
     }
     // PC (défilement libre) : quand la piste est entièrement hors de l'écran, elle se recale d'un coup sur la carte la plus
     // proche (personne ne le voit) ; en y revenant, les vignettes sont en place dans la grille
