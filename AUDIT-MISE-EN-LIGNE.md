@@ -35,7 +35,9 @@ Site vérifié en local (compilation de production) et en ligne (holosene.vercel
 
 ## À faire par toi avant la mise en ligne publique (bloquant)
 
-1. **Mentions légales** : statut, SIRET, adresse (ou domiciliation) — `npm run todo` les liste. Faire relire la page.
+1. **Mentions légales** : réglé — site personnel édité à titre non professionnel (LCEN art. 6-III-2) : pas de statut,
+   SIRET ni adresse à publier. Si un jour le site sert une activité professionnelle (clients, factures), il faudra y
+   ajouter nom avec la mention « EI », adresse (domiciliation possible), téléphone et SIRET.
 2. **CV** : déposer `public/cv/johann-arata-cv.pdf` (le bouton apparaît alors tout seul).
 3. **Textes à fournir** : 16 textes `TODO(...)` dans `src/content.js` (invisibles en ligne, visibles avec `?dev`).
 4. **Crédits** : la mention exacte exigée par la licence du Schmidt Ocean Institute (Dumbo) ; l'accord écrit de
