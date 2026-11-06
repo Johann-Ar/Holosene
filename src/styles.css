@@ -247,6 +247,13 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .hero__dock { position: absolute; left: var(--dock-l, 0px); top: var(--dock-t, 0px); width: var(--dock-w, 0px); height: var(--dock-h, 0px); z-index: 26; pointer-events: none; visibility: hidden; transform: translateX(var(--dock-x, 0px)) scale(var(--dock-s, 1)); transform-origin: 50% 50%; }
 .hero__dock img { width: 100%; height: 100%; vertical-align: top; }
 .has-gl.mark-dom:not(.brand-on) .hero__dock { visibility: visible; }
+/* Montée pilotée par le défilement lui-même (animation liée au défilement : calculée par le navigateur au rythme du
+   doigt, sans l'image de retard d'un script) : de --dock-y0 à --dock-y1 (positions de défilement, gl.js), le logo glisse
+   vers le centre de la barre et rapetisse jusqu'à la taille du petit logo, en accélérant (courbe exponentielle 2^(10t)). */
+@supports (animation-timeline: scroll()) {
+  .hero__dock { transform: none; animation: hero-dock 1s linear(0.0000 0%, 0.0004 5%, 0.0010 10%, 0.0018 15%, 0.0029 20%, 0.0046 25%, 0.0068 30%, 0.0101 35%, 0.0147 40%, 0.0211 45%, 0.0303 50%, 0.0433 55%, 0.0616 60%, 0.0875 65%, 0.1241 70%, 0.1760 75%, 0.2493 80%, 0.3529 85%, 0.4995 90%, 0.7068 95%, 1.0000 100%) both; animation-timeline: scroll(root block); animation-range: var(--dock-y0, 0px) var(--dock-y1, 1px); }
+}
+@keyframes hero-dock { from { transform: translateX(0px) scale(1); } to { transform: translateX(var(--dock-dx, 0px)) scale(var(--dock-ds, 1)); } }
 .hero__word { margin: 0; line-height: 0; }
 .hero__word .studio__word { width: min(64vw, 820px); height: auto; }
 .hero__line { margin: 0; max-width: 38ch; text-align: center !important; font-size: var(--fs-text); line-height: 1.3; color: var(--ink-86); text-wrap: balance; }
@@ -270,7 +277,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* mobile : « Arata » à la ligne sous « Johann » */
 @media (max-width: 760px) {
   .hero__copy { --hero-gap: clamp(14px, 3svh, 28px); }
-  .hero__slot { height: clamp(72px, 11svh, 110px); }
+  .hero__slot { height: clamp(62px, 9.5svh, 96px); }   /* logo au-dessus du nom : un peu plus petit sur mobile */
   .hero__word .studio__word--line { display: none; }
   .hero__word .studio__word--stack { display: block; width: min(68vw, 340px); }
   .hero__line { max-width: 30ch; }

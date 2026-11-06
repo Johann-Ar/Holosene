@@ -29,7 +29,7 @@ const MONO_O = [(KIT.ring.center[0] - MONO_VB[0]) * MONO_U, (KIT.ring.center[1] 
 
 const O_OFF = [(MONO_O[0] - MONO_W / 2) / 1000, (MONO_O[1] - 500) / 1000], O_R = KIT.ring.outerRadius * MONO_U / 1000
 const bigOf = (w, h) => Math.min(h * (w < 760 ? 0.34 : 0.46), w * (w < 760 ? 0.38 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil (mobile : plus petit)
-const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * 0.62)   // rayon du « o » au relais avec le chargeur (px)
+const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * (w < 760 ? 0.75 : 0.62))   // rayon du « o » au relais avec le chargeur (px ; mobile : chargeur un peu plus grand)
 /** Rayon du « o » au relais avec le chargeur (px CSS) : connu avant même de créer le contexte WebGL. */
 export const loaderRadius = () => handoffR(innerWidth, innerHeight)
 
@@ -644,6 +644,9 @@ export function createGL(canvas, { reduced }) {
   let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false, markDom = false, heroHi = hasMark
   const PX_BUDGET = 2880 * 1800   // pixels de la toile au plus, au-delà de 2× (zoom du navigateur)
   const brandMark = document.querySelector('.topbar .brand')
+  const heroEl = document.querySelector('.hero'), dockVals = {}
+  const setDock = (k, v) => { if (dockVals[k] !== v) { dockVals[k] = v; heroEl.style.setProperty(k, v) } }   // seulement si la valeur change
+  const DOCK_CSS = CSS.supports('animation-timeline: scroll()')
   function resize() {
     W = innerWidth; H = canvas.clientHeight || innerHeight   // toile en 100lvh (CSS) : jamais plus courte que l'écran
     // résolution : jusqu'à 2× comme toujours (1,75× sur téléphone) ; au-delà, la densité réelle de l'écran tant que la toile
@@ -695,7 +698,8 @@ export function createGL(canvas, { reduced }) {
     time += dt
     // gros logo dessiné par la toile (ni relayé par l'image pendant sa montée, ni posé dans la barre) : pleine densité
     const wantHi = hasMark && !markDom && !docked
-    if (wantHi !== heroHi) { heroHi = wantHi; resize() }
+    // retour à 1,75× seulement une fois le défilement arrêté : changer la taille de la toile pendant le geste ferait un à-coup
+    if (wantHi !== heroHi && (wantHi || now - scrollT > 300)) { heroHi = wantHi; resize() }
     if (canvas.width !== Math.round(innerWidth * dpr)) resize()
     sendNext()
     let flowNeeded = lens.s > 0.01
@@ -797,12 +801,20 @@ export function createGL(canvas, { reduced }) {
         // fixe du kit (FLOW.calm, plus bas) : le passage de la toile à l'image ne se voit pas.
         if (!hoverDevice && !reduced) FLOW.calm = 1 - Math.min(1, Math.max(0, (p - 0.86) / 0.12))
         if (!hoverDevice && !reduced && dock && dock.m > 0 && p >= 0.999) {
-          // copie de l'image du logo hors de la scène collante (.hero__dock, styles.css), posée sur l'emplacement du logo
-          const d = (Math.pow(2, 10 * dock.m) - 1) / 1023, hs = hero.style
-          hs.setProperty('--dock-l', (sr.left - hr.left).toFixed(2) + 'px'); hs.setProperty('--dock-t', (sr.top - hr.top).toFixed(2) + 'px')
-          hs.setProperty('--dock-w', sr.width.toFixed(2) + 'px'); hs.setProperty('--dock-h', sr.height.toFixed(2) + 'px')
-          hs.setProperty('--dock-x', ((dock.x - slot.x) * d).toFixed(2) + 'px')
-          hs.setProperty('--dock-s', ((slot.h + (dock.h - slot.h) * d) / slot.h).toFixed(4))
+          // copie de l'image du logo hors de la scène collante (.hero__dock, styles.css), posée sur l'emplacement du logo.
+          // Là où le navigateur sait lier une animation au défilement, la montée vers la barre est jouée par lui (CSS,
+          // au rythme du doigt) : on ne lui donne que les positions de défilement de départ et d'arrivée et la taille et le
+          // décalage finaux. Sinon (anciens navigateurs), le script règle la taille et le décalage à chaque image.
+          const d = (Math.pow(2, 10 * dock.m) - 1) / 1023, y0 = scrollY + b.top
+          setDock('--dock-l', (sr.left - hr.left).toFixed(1) + 'px'); setDock('--dock-t', (sr.top - hr.top).toFixed(1) + 'px')
+          setDock('--dock-w', sr.width.toFixed(1) + 'px'); setDock('--dock-h', sr.height.toFixed(1) + 'px')
+          if (DOCK_CSS) {
+            setDock('--dock-y0', y0.toFixed(1) + 'px'); setDock('--dock-y1', (y0 + slot.y - (dock.y + b.top)).toFixed(1) + 'px')
+            setDock('--dock-dx', (dock.x - slot.x).toFixed(1) + 'px'); setDock('--dock-ds', (dock.h / slot.h).toFixed(4))
+          } else {
+            setDock('--dock-x', ((dock.x - slot.x) * d).toFixed(2) + 'px')
+            setDock('--dock-s', ((slot.h + (dock.h - slot.h) * d) / slot.h).toFixed(4))
+          }
           if (!markDom) { markDom = true; document.documentElement.classList.add('mark-dom') }
           FLOW.hoverTarget = 0; continue
         }
