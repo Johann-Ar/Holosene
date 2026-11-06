@@ -306,7 +306,7 @@ document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el))
    Pavé tactile (glissement latéral), doigt, souris (glisser), flèches et clavier ; douceur, inertie, et boucle sans fin :
    la position est ramenée dans un jeu de cartes (modulo), des copies couvrent les bords, sans saut visible. */
 const COPIES = 2
-const SNAP_NEAR = 0.12   // PC : calage sur une carte seulement si l'arrivée du geste en est à moins de 12 % d'un pas
+const SNAP_NEAR = 0.35   // PC : calage sur une carte si l'arrivée du geste en est à moins de 35 % d'un pas
 const RAIL_TAU = 0.11    // douceur de la piste (constante de temps, s)
 // molette de souris ou pavé tactile ? Souris : crans (lignes, ou pas de mouvement latéral et un wheelDelta qui n'est pas
 // le triple exact de deltaY, signature des pavés tactiles de Mac). Un geste latéral récent signale un pavé tactile.
