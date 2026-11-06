@@ -29,6 +29,7 @@ export const FLOW = {
   cpuMs: 0,         // temps de calcul de la dernière texture (mesure)
   t0,               // début de la montée du flux (fixé au relais du chargeur)
   agitate: 0,       // 0 à 1 : curseur agité sur la roue de la lentille (gl.js) ; le flux va plus vite
+  calm: 1,          // 1 : flux normal ; 0 : roue fixe du kit (écran tactile, juste avant le relais à l'image ; gl.js)
 }
 
 // l'intensité monte de 0 à 1 en 1,2 s (ease-out) à partir de FLOW.t0 : le relais du chargeur (main.js), dont la roue
@@ -36,7 +37,7 @@ export const FLOW = {
 const amountAt = (now) => {
   if (reduced || FLOW.frozen) return 0
   const x = Math.min(1, Math.max(0, (now - FLOW.t0) / 1200))
-  return 1 - Math.pow(1 - x, 3)
+  return (1 - Math.pow(1 - x, 3)) * FLOW.calm
 }
 
 // survol du « o » du logo (FLOW.hoverTarget, FLOW.hoverU : fixés par gl.js) : la couleur sous le curseur s'élargit. La

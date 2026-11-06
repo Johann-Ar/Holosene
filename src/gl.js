@@ -636,7 +636,7 @@ export function createGL(canvas, { reduced }) {
     v.textKey = key
   }
 
-  let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false
+  let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false, markDom = false
   const PX_BUDGET = 2880 * 1800   // pixels de la toile au plus, au-delà de 2× (zoom du navigateur)
   const brandMark = document.querySelector('.topbar .brand')
   function resize() {
@@ -780,6 +780,20 @@ export function createGL(canvas, { reduced }) {
         // posé dans la barre : le petit logo de la barre (image du kit, au-dessus de la toile) a pris le relais au même pixel ;
         // le logo WebGL, entièrement caché dessous, n'est plus dessiné (ni le flux de sa roue calculé)
         if (docked && document.documentElement.classList.contains('brand-on')) { FLOW.hoverTarget = 0; continue }
+        // écran tactile : le défilement est fait par le système (natif), le logo WebGL le suivrait avec une image de retard
+        // (à-coups). Pendant la montée vers la barre, c'est donc l'image du kit placée dans la page (.hero__mark, dans
+        // .hero__slot) qui est montrée : elle défile nativement avec la page ; le script ne règle que sa taille et sa position
+        // horizontale (variables --dock-x / --dock-s, styles.css). Avant le relais, la roue du « o » s'est posée sur la roue
+        // fixe du kit (FLOW.calm, plus bas) : le passage de la toile à l'image ne se voit pas.
+        if (!hoverDevice && !reduced) FLOW.calm = 1 - Math.min(1, Math.max(0, (p - 0.86) / 0.12))
+        if (!hoverDevice && !reduced && dock && dock.m > 0 && p >= 0.999) {
+          const d = (Math.pow(2, 10 * dock.m) - 1) / 1023, slotEl = hero.querySelector('.hero__slot')
+          slotEl.style.setProperty('--dock-x', ((dock.x - slot.x) * d).toFixed(2) + 'px')
+          slotEl.style.setProperty('--dock-s', ((slot.h + (dock.h - slot.h) * d) / slot.h).toFixed(4))
+          if (!markDom) { markDom = true; document.documentElement.classList.add('mark-dom') }
+          FLOW.hoverTarget = 0; continue
+        }
+        if (markDom) { markDom = false; document.documentElement.classList.remove('mark-dom') }
         flowNeeded = true
         xf = markXf(w, h, reduced ? 1 : p, reduced ? 1e9 : now - v.seen, slot, [innerWidth / 2 - b.left, innerHeight / 2 - b.top], dock)
         // survol du « o » (souris) : la couleur sous le curseur s'élargit (flow.js) ; position du curseur sur la roue, dans la
