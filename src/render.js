@@ -195,7 +195,7 @@ export function render(lang) {
     ${about.map((a) => `<p data-sw>${seq(t(a))}</p>`).join('')}
     <div class="contact" id="contact">
       <h2 class="lbl" id="contact-t" data-sw>${seq(t(ui.contact))}</h2>
-      <a class="mail" href="mailto:${esc(site.email)}" translate="no" aria-label="${esc(site.email)}"><span data-sw data-sw-letters aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
+      <a class="mail" href="mailto:${esc(site.email)}" translate="no" title="${esc(t(ui.copy))}" aria-label="${esc(site.email)}, ${esc(t(ui.copy))}" data-copy="${esc(site.email)}" data-done="${esc(t(ui.copied))}"><span data-sw data-sw-letters aria-hidden="true">${[...site.email].map((ch, i) => `<span class="w" style="--i:${i}">${esc(ch)}</span>`).join('')}</span></a>
       <div class="contact__row" data-reveal>
         <ul class="socials"><li${cvReady ? '' : ' class="todo"'}><a ${cvReady ? 'href' : 'data-href'}="${root}${esc(site.cv)}" download="Johann-Arata-CV.pdf" type="application/pdf">${esc(t(ui.cv))} ↗</a></li>${site.socials.map((s) => `<li><a href="${esc(s.href)}" target="_blank" rel="noopener">${esc(s.label)} ↗</a></li>`).join('')}</ul>
       </div>
@@ -211,6 +211,7 @@ export function render(lang) {
 </footer>
 
 ${projects.map(fiche).join('')}
+<p class="copy-toast" role="status" aria-live="polite"></p>
 <div class="fiche-veil" aria-hidden="true"></div>
 <span class="fiche-brand" aria-hidden="true"><img class="only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576" draggable="false"><img class="only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576" draggable="false"></span>
 `

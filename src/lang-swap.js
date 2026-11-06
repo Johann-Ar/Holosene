@@ -7,7 +7,7 @@
  * script (copies des cartes, bandes de flou, calques) sont ignorés ; les blocs découpés en mots (présentation, textes
  * des sections), dont le nombre de mots change d'une langue à l'autre, sont remplacés en entier.
  */
-const SKIP = '.card--copy, .side, .fx, .gl-card, canvas, script, style, .loader'
+const SKIP = '.card--copy, .side, .fx, .gl-card, canvas, script, style, .loader, .copy-toast'
 const WHOLE = '[data-seq], [data-hwords], [data-sw]'
 const ATTRS = ['aria-label', 'alt', 'title', 'href', 'hreflang', 'lang', 'data-copy', 'data-done', 'data-light', 'data-dark', 'content']
 

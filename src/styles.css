@@ -685,3 +685,11 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 /* touche G maintenue (main.js) : le voile et le fondu de la barre du haut, découpés en languettes accrochées au haut de
    l'écran derrière chaque élément (masque calculé par main.js) ; même dégradé, même flou que la bande entière.
    En sombre, le fondu du haut (.edge--top) prend la même découpe. */
+
+/* bulle « Adresse copiée » (clic sur l'adresse e-mail, main.js) : en bas au centre, encre du thème, fondu doux */
+.copy-toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); z-index: 60; margin: 0; translate: -50% 8px;
+  padding: 0.55em 1.1em; border-radius: var(--radius-pill, 99px); background: var(--ink); color: var(--bg); font: 600 var(--fs-small)/1.2 var(--font-text);
+  letter-spacing: 0.02em; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.3s var(--ease-flow), translate 0.3s var(--ease-flow), visibility 0.3s; }
+.copy-toast.on { opacity: 1; visibility: visible; translate: -50% 0; }
+.mail { cursor: copy; }
+@media (prefers-reduced-motion: reduce) { .copy-toast { transition: none; } }

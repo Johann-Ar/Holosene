@@ -62,20 +62,20 @@ labelThemes(); applyThemeColor()
 /* Aspiration des images aux bords de l'écran (WebGL), sauf si l'utilisateur réduit les animations. */
 if (!reduced) root.classList.add('liquid')
 
-/* Contact : copier l'adresse. */
-document.querySelectorAll('.copy').forEach((b) => {
-  const label = b.textContent
-  b.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(b.dataset.copy)
-      b.textContent = b.dataset.done
-    } catch {
-      const r = document.createRange(); r.selectNodeContents(document.querySelector('.mail'))
-      getSelection().removeAllRanges(); getSelection().addRange(r)
-    }
-    setTimeout(() => (b.textContent = label), 2000)
-  })
-})
+/* Contact : un clic sur l'adresse e-mail la copie (au lieu d'ouvrir la messagerie) ; une bulle « Adresse copiée »
+   apparaît en bas de l'écran (lue par les lecteurs d'écran). Sans JavaScript, le lien mailto reste. Si le
+   presse-papiers est refusé, l'adresse est sélectionnée pour un copier à la main. */
+{ const toast = document.querySelector('.copy-toast'); let tt = null
+  document.addEventListener('click', async (e) => {
+    const a = e.target.closest?.('.mail[data-copy]')
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return   // modificateur : ouvrir la messagerie
+    e.preventDefault()
+    let ok = true
+    try { await navigator.clipboard.writeText(a.dataset.copy) } catch { ok = false; const r = document.createRange(); r.selectNodeContents(a); getSelection().removeAllRanges(); getSelection().addRange(r) }
+    if (!toast || !ok) return
+    toast.textContent = a.dataset.done; toast.classList.add('on'); clearTimeout(tt)
+    tt = setTimeout(() => toast.classList.remove('on'), 2000)
+  }) }
 
 /* Défilement doux (désactivé si l'utilisateur réduit les animations) ; une seule boucle d'affichage pour le
    défilement et le WebGL, pour que la trame reste collée au texte. */
