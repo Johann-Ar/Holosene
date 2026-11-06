@@ -583,7 +583,9 @@ export function createGL(canvas, { reduced }) {
       gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL)
       v.maskB = t
     })
-    im.src = new URL('monogram-sdf.png', document.querySelector('.brand__mark').src).href
+    const markSrc = new URL(document.querySelector('.brand__mark').src), sdfUrl = new URL('monogram-sdf.png', markSrc)
+    sdfUrl.search = markSrc.search   // même version que le logo (?v=, render.js) : jamais l'ancienne carte en cache
+    im.src = sdfUrl.href
     return v.maskReady
   }
   /** Placement du monogramme. Arrivée (ms depuis la fin du chargeur) : le « o » prend exactement la place de l'anneau
@@ -789,9 +791,12 @@ export function createGL(canvas, { reduced }) {
         // fixe du kit (FLOW.calm, plus bas) : le passage de la toile à l'image ne se voit pas.
         if (!hoverDevice && !reduced) FLOW.calm = 1 - Math.min(1, Math.max(0, (p - 0.86) / 0.12))
         if (!hoverDevice && !reduced && dock && dock.m > 0 && p >= 0.999) {
-          const d = (Math.pow(2, 10 * dock.m) - 1) / 1023, slotEl = hero.querySelector('.hero__slot')
-          slotEl.style.setProperty('--dock-x', ((dock.x - slot.x) * d).toFixed(2) + 'px')
-          slotEl.style.setProperty('--dock-s', ((slot.h + (dock.h - slot.h) * d) / slot.h).toFixed(4))
+          // copie de l'image du logo hors de la scène collante (.hero__dock, styles.css), posée sur l'emplacement du logo
+          const d = (Math.pow(2, 10 * dock.m) - 1) / 1023, hs = hero.style
+          hs.setProperty('--dock-l', (sr.left - hr.left).toFixed(2) + 'px'); hs.setProperty('--dock-t', (sr.top - hr.top).toFixed(2) + 'px')
+          hs.setProperty('--dock-w', sr.width.toFixed(2) + 'px'); hs.setProperty('--dock-h', sr.height.toFixed(2) + 'px')
+          hs.setProperty('--dock-x', ((dock.x - slot.x) * d).toFixed(2) + 'px')
+          hs.setProperty('--dock-s', ((slot.h + (dock.h - slot.h) * d) / slot.h).toFixed(4))
           if (!markDom) { markDom = true; document.documentElement.classList.add('mark-dom') }
           FLOW.hoverTarget = 0; continue
         }

@@ -4,10 +4,16 @@
  * #p-<slug> (CSS :target), le JavaScript ajoute focus, Échap et piégeage du focus.
  */
 import { readFileSync, existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { site, ui, projects, research, studio, about, workIntro } from './content.js'
 import sizes from './media-sizes.json' with { type: 'json' }
 import { IRIS_STOPS } from '../design/logo-kit/src/iris.js'
 import { logotypeSvg, resetLogotypes } from './logotype-svg.js'
+
+// version des fichiers du logo (media/ est gardé 7 jours en cache) : l'adresse change dès que le logo change, les
+// téléphones et navigateurs rechargent alors le nouveau logo tout de suite (gl.js reprend ce ?v= pour monogram-sdf.png)
+const MONO_V = createHash('sha256').update(['monogram-iris-dark.svg', 'monogram-iris-light.svg', 'monogram-sdf.png']
+  .map((f) => readFileSync(new URL('../public/media/' + f, import.meta.url))).reduce((a, b) => Buffer.concat([a, b]))).digest('hex').slice(0, 10)
 
 // logotype en ligne (À propos) : le tracé se dessine, le blanc se remplit, puis ses bords se fondent dans une suite
 // répétée des couleurs irisées, comme le blanc de l'œil du monogramme noir (étapes successives, pas en même temps).
@@ -150,8 +156,8 @@ export function render(lang) {
     <a href="#projets">${esc(t(ui.projects))}</a><a href="#a-propos">${esc(t(ui.studio))}</a><a href="#contact">${esc(t(ui.contact))}</a>
   </nav>
   <a href="#top" class="brand" aria-label="Holosene">
-    <img class="brand__mark only-dark" draggable="false" src="${root}media/monogram-iris-dark.svg" alt="Holosene" width="470" height="576">
-    <img class="brand__mark only-light" draggable="false" src="${root}media/monogram-iris-light.svg" alt="Holosene" width="470" height="576">
+    <img class="brand__mark only-dark" draggable="false" src="${root}media/monogram-iris-dark.svg?v=${MONO_V}" alt="Holosene" width="470" height="576">
+    <img class="brand__mark only-light" draggable="false" src="${root}media/monogram-iris-light.svg?v=${MONO_V}" alt="Holosene" width="470" height="576">
   </a>
   <div class="topbar__tools">
     <button class="theme-toggle" type="button" data-light="${esc(t(ui.themeLight))}" data-dark="${esc(t(ui.themeDark))}" aria-label="${esc(t(ui.themeLight))}"><span class="theme-toggle__t">${lang === "fr" ? "Sombre" : "Dark"}</span></button>
@@ -161,12 +167,13 @@ export function render(lang) {
 
 <main id="top">
   <section class="hero" id="accueil" aria-labelledby="hero-t">
+    <span class="hero__dock" aria-hidden="true"><img class="only-dark" src="${root}media/monogram-iris-dark.svg?v=${MONO_V}" alt="" width="470" height="576" draggable="false"><img class="only-light" src="${root}media/monogram-iris-light.svg?v=${MONO_V}" alt="" width="470" height="576" draggable="false"></span>
     <div class="hero__pin">
       <div class="hero__view" data-gl="mark" data-cell="6" role="img" aria-label="${esc(t(ui.lensLabel))}">
         <img src="${m('riviere-calme.webp')}" alt="" decoding="async" fetchpriority="high">
       </div>
       <div class="hero__copy">
-        <div class="hero__slot" aria-hidden="true"><img class="hero__mark only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576"><img class="hero__mark only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576"></div>
+        <div class="hero__slot" aria-hidden="true"><img class="hero__mark only-dark" src="${root}media/monogram-iris-dark.svg?v=${MONO_V}" alt="" width="470" height="576"><img class="hero__mark only-light" src="${root}media/monogram-iris-light.svg?v=${MONO_V}" alt="" width="470" height="576"></div>
         <h1 id="hero-t" class="hero__word"><span class="sr">Johann Arata · Holosene</span>${logotypeSvg({ mot: 'johann-arata', decoratif: true, balayage: true, className: 'studio__word hero__name studio__word--line' })}${logotypeSvg({ mot: 'johann-arata', decoratif: true, empile: true, balayage: true, className: 'studio__word hero__name studio__word--stack' })}</h1>
         <p class="hero__line" data-hwords>${words(t(studio))}</p>
         <a class="hero__cta" href="#projets" aria-label="${lang === 'fr' ? 'Voir les projets' : 'See the work'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
@@ -213,6 +220,6 @@ export function render(lang) {
 
 ${projects.map(fiche).join('')}
 <div class="fiche-veil" aria-hidden="true"></div>
-<span class="fiche-brand" aria-hidden="true"><img class="only-dark" src="${root}media/monogram-iris-dark.svg" alt="" width="470" height="576" draggable="false"><img class="only-light" src="${root}media/monogram-iris-light.svg" alt="" width="470" height="576" draggable="false"></span>
+<span class="fiche-brand" aria-hidden="true"><img class="only-dark" src="${root}media/monogram-iris-dark.svg?v=${MONO_V}" alt="" width="470" height="576" draggable="false"><img class="only-light" src="${root}media/monogram-iris-light.svg?v=${MONO_V}" alt="" width="470" height="576" draggable="false"></span>
 `
 }
