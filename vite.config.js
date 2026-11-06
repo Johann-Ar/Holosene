@@ -79,8 +79,10 @@ function themeHead() {
       const { colors } = JSON.parse(readFileSync(resolve('design/logo-kit/tokens/iris.json'), 'utf8'))
       // site en clair (les fiches projet, en sombre, sont des calques dans la page)
       const meta = `<meta name="theme-color" content="${colors.bgLight}" />`
-      // par défaut en clair (data-theme="light" dans le HTML) ; le mode choisi au bouton, mémorisé, vaut pour tout le site
-      const boot = `<script>try{localStorage.removeItem('theme');var t=localStorage.getItem('site-theme');if(t==='light'||t==='dark'){document.documentElement.dataset.theme=t;document.documentElement.classList.add('theme-chosen')}}catch(e){}try{history.scrollRestoration='manual';var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(location.hash&&(!/^#p-/.test(location.hash)||(n&&n.type==='reload')))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours l'accueil, en haut (ni position mémorisée, ni ancre, ni fiche ouverte) ; un lien direct vers une fiche #p-… l'ouvre toujours
+      // toujours en clair au chargement (data-theme="light" dans le HTML), sur tous les appareils, quel que soit le mode du
+      // système ; le bouton Clair / Sombre ne vaut que pour la visite (main.js). Les anciens choix mémorisés par une
+      // version précédente du site (theme, site-theme) sont effacés : ils faisaient démarrer certains téléphones en sombre
+      const boot = `<script>try{localStorage.removeItem('theme');localStorage.removeItem('site-theme')}catch(e){}try{history.scrollRestoration='manual';var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(location.hash&&(!/^#p-/.test(location.hash)||(n&&n.type==='reload')))history.replaceState(null,'',location.pathname+location.search)}catch(e){}</script>`   // + rechargement : toujours l'accueil, en haut (ni position mémorisée, ni ancre, ni fiche ouverte) ; un lien direct vers une fiche #p-… l'ouvre toujours
       return html.replace('</head>', `  ${meta}\n  ${boot}\n</head>`)
     },
   }

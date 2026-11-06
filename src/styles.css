@@ -685,7 +685,7 @@ main { position: relative; }   /* pas de contexte d'empilement : le mot de l'acc
 .foot .foot__logo { grid-column: 2; width: auto; height: 26px; color: var(--ink); pointer-events: none; }
 .foot > p.lbl { grid-column: 1; grid-row: 1; justify-self: start; margin: 0; }
 .foot > a.lbl { grid-column: 3; justify-self: end; }
-@media (max-width: 760px) { .foot { grid-template-columns: 1fr; justify-items: center; } .foot .foot__logo, .foot > a.lbl, .foot > p.lbl { grid-column: 1; grid-row: auto; justify-self: center; } .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
+@media (max-width: 760px) { .foot { grid-template-columns: 1fr; justify-items: center; } .foot .foot__logo, .foot > a.lbl, .foot > p.lbl { grid-column: 1; grid-row: auto; justify-self: center; } .foot > p.lbl { order: 3; } .foot .foot__logo { order: 1; } .foot > a.lbl { order: 2; } .foot .foot__logo { height: 22px; margin-bottom: 4px; } }
 /* touche G maintenue (main.js) : le voile et le fondu de la barre du haut, découpés en languettes accrochées au haut de
    l'écran derrière chaque élément (masque calculé par main.js) ; même dégradé, même flou que la bande entière.
    En sombre, le fondu du haut (.edge--top) prend la même découpe. */

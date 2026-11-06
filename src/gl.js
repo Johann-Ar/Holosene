@@ -27,7 +27,7 @@ const MONO_W = MONO_VB[2] * MONO_U                                              
 const MONO_O = [(KIT.ring.center[0] - MONO_VB[0]) * MONO_U, (KIT.ring.center[1] - MONO_VB[1]) * MONO_U]   // centre du « o »
 
 const O_OFF = [(MONO_O[0] - MONO_W / 2) / 1000, (MONO_O[1] - 500) / 1000], O_R = KIT.ring.outerRadius * MONO_U / 1000
-const bigOf = (w, h) => Math.min(h * 0.46, w * (w < 760 ? 0.5 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil
+const bigOf = (w, h) => Math.min(h * (w < 760 ? 0.34 : 0.46), w * (w < 760 ? 0.38 : 0.6) * 1000 / 816)   // taille du logo au début de l'accueil (mobile : plus petit)
 const handoffR = (w, h) => Math.min(44, bigOf(w, h) * O_R * 0.62)   // rayon du « o » au relais avec le chargeur (px)
 /** Rayon du « o » au relais avec le chargeur (px CSS) : connu avant même de créer le contexte WebGL. */
 export const loaderRadius = () => handoffR(innerWidth, innerHeight)
