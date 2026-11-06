@@ -637,10 +637,16 @@ export function createGL(canvas, { reduced }) {
   }
 
   let W = 0, H = 0, dpr = 1, cellScale = 1, lastSY = 0, scrollT = -1e9, docked = false
+  const PX_BUDGET = 2880 * 1800   // pixels de la toile au plus, au-delà de 2× (zoom du navigateur)
   const brandMark = document.querySelector('.topbar .brand')
   function resize() {
     W = innerWidth; H = canvas.clientHeight || innerHeight   // toile en 100lvh (CSS) : jamais plus courte que l'écran
-    dpr = Math.min(devicePixelRatio || 1, W < 760 ? 1.75 : 2)
+    // résolution : jusqu'à 2× comme toujours (1,75× sur téléphone) ; au-delà, la densité réelle de l'écran tant que la toile
+    // ne dépasse pas le budget de pixels d'un écran 2880 × 1800. Zoom du navigateur (Cmd +) : la zone visible rapetisse
+    // et la densité monte d'autant ; la toile garde le même nombre de pixels mais reste nette comme le texte et les SVG
+    // (avant : plafond à 2×, logo et vignettes agrandis, flous)
+    const phone = W < 760 && matchMedia('(pointer: coarse)').matches
+    dpr = Math.min(devicePixelRatio || 1, phone ? 1.75 : Math.max(2, Math.min(8, Math.sqrt(PX_BUDGET / Math.max(1, W * H)))))
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr)
   }
   resize(); addEventListener('resize', resize)
