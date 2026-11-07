@@ -698,7 +698,7 @@ export function createGL(canvas, { reduced }) {
     }
     // la lentille : visible quand le pointeur est sur une carte (pas sur l'accueil)
     const small = W < 600
-    const Ro = small ? 70 : 88, Ri = Ro - (small ? 10.5 : 14)   // anneau de la lentille (agrandi, épaisseur proportionnelle ; couleurs du kit)
+    const Ro = small ? 76 : 95, Ri = Ro - Ro * 14 / 88   // anneau de la lentille (95 px, +8 % ; épaisseur proportionnelle ; couleurs du kit)
     let over = null
     for (const v of views) {
       if (v.mark || !v.ready) continue
