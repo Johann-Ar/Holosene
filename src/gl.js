@@ -201,7 +201,13 @@ vec3 withLens(vec2 q, vec3 base) {
       orig += vec3(0.18) * exp(-(Re - dd) / 1.5) * max(dot(dir, normalize(vec2(-0.6, -0.8))), 0.0) * (1.0 - smoothstep(Re, Re + 2.0, d)) * (1.0 - clamp(uSoft / 4.0, 0.0, 1.0));   // reflet du bord : effacé (aucune limite visible sous le fondu)
       float inner = 1.0 - smoothstep(R - aa, R + aa, d);
       col = mix(col, orig, inner);
-      // l'anneau est dessiné après toutes les vues, dans sa propre passe (RING) : jamais coupé par le bord d'une vignette
+      // anneau (de R − 1 à uLensO), couleurs du kit, dessiné DANS la vue : coupé par le bord de la vignette et déformé avec
+      // elle par le verre de ses bords (comme le 4 novembre). Bord extérieur anticrénelé sur un pixel d'écran exact
+      // (1 / dpr) ; bord intérieur fondu en dégradé (uSoft, choix de Johann : voir CLAUDE.md)
+      float aw = 1.0 / uDpr, wIn = aw * 0.5 + uSoft;
+      float rin = smoothstep(R - 1.0 - wIn, R - 1.0 + aw * 0.5, d);
+      float ring = smoothstep(uLensO + aw * 0.5, uLensO - aw * 0.5, d) * rin * rin * (3.0 - 2.0 * rin);
+      col = mix(col, flowColor(lp), ring);
     }
   }
   return col;
@@ -232,7 +238,7 @@ void main() {
   }
   vec4 h = halftoneS(hp, suck);
   vec3 col = h.rgb; float a = h.a;
-  col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLens.z) a = 1.0;
+  col = withLens(p, col); if (uLens.z > 0.5 && length(p - uLens.xy) < uLensO + 1.0) a = 1.0;
 
 
   // bords latéraux fondus de la piste (vues sans verre ; sinon la passe « verre » s'en charge)
@@ -414,22 +420,6 @@ void main() {
 
 // Anneau de la lentille : une passe à part, sur toute la toile, par-dessus les vues (il n'est jamais coupé par le bord
 // d'une vignette ni par son verre). Couleurs : roue « flux » du kit (même texture que le « o » du logo).
-const RING = `precision highp float;
-uniform sampler2D uFlow;
-uniform vec4 uRing;     // centre (px CSS, depuis le haut à gauche), rayon intérieur, rayon extérieur
-uniform vec2 uView;     // hauteur de la toile (px écran), dpr
-uniform float uSoft;    // largeur (px) du dégradé de flou du bord intérieur
-vec3 flowColor(vec2 p) { float u = fract((degrees(atan(p.y, p.x)) + 90.0 - 180.0) / 360.0); return texture2D(uFlow, vec2(u, 0.5)).rgb; }
-void main() {
-  vec2 p = vec2(gl_FragCoord.x, uView.x - gl_FragCoord.y) / uView.y;
-  vec2 lp = p - uRing.xy; float d = length(lp), aw = 1.0 / uView.y;
-  // bord intérieur : il s'étire vers le centre en un dégradé doux (courbe en S, sans limite
-  // visible), les couleurs de l'anneau se fondent dans la loupe
-  float wIn = aw * 0.5 + uSoft;
-  float inner = smoothstep(uRing.z - wIn, uRing.z + aw * 0.5, d);
-  float ring = smoothstep(uRing.w + aw * 0.5, uRing.w - aw * 0.5, d) * inner * inner * (3.0 - 2.0 * inner);
-  gl_FragColor = vec4(flowColor(lp) * ring, ring);
-}`
 
 export function createGL(canvas, { reduced }) {
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' })
@@ -474,11 +464,6 @@ export function createGL(canvas, { reduced }) {
   if (!gl.getProgramParameter(gProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(gProg))
   const GU = {}; for (const n of ['uFbo', 'uFboSize', 'uRes', 'uOrigin', 'uDpr', 'uRadius', 'uGlass', 'uBg', 'uClip', 'uIrisMix', 'uVivid', 'uEdgeFloor', 'uScrY', 'uScrX', 'uFx', 'uFxZone', 'uSeed', 'uPalHue', 'uPalTone', 'uPalDeg', 'uBgB', 'uBgScroll']) GU[n] = gl.getUniformLocation(gProg, n)
   // passe de l'anneau de la lentille
-  const rProg = gl.createProgram()
-  gl.attachShader(rProg, sh(gl.VERTEX_SHADER, VERT)); gl.attachShader(rProg, sh(gl.FRAGMENT_SHADER, RING)); gl.bindAttribLocation(rProg, 0, 'a'); gl.linkProgram(rProg)
-  if (!gl.getProgramParameter(rProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(rProg))
-  const RU = { uFlow: gl.getUniformLocation(rProg, 'uFlow'), uRing: gl.getUniformLocation(rProg, 'uRing'), uView: gl.getUniformLocation(rProg, 'uView'), uSoft: gl.getUniformLocation(rProg, 'uSoft') }
-  gl.useProgram(rProg); gl.uniform1i(RU.uFlow, 6); gl.useProgram(prog)
   // zones floues (fx-config.js) : valeurs envoyées au GPU seulement quand elles changent (réglages, largeur d'écran,
   // défilement pour la graine du grain), aucune allocation par image
   // teintes : 4 positions sur la roue, tirées au hasard à chaque chargement (un quart de tour d'écart environ, pour rester
@@ -955,19 +940,6 @@ export function createGL(canvas, { reduced }) {
         v.cx.drawImage(canvas, 0, canvas.height - ph, pw, ph, 0, 0, pw, ph)
         gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.scissor(0, 0, pw, ph); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
       }
-    }
-    if (sc > 0 && lens.view && !detached) {
-      // anneau de la lentille, par-dessus tout, sur la toile entière (rien ne le coupe)
-      const ri = (Ri + 1) * sc - 1, ro = Ro * sc, pad = 2
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      gl.viewport(0, 0, canvas.width, canvas.height)
-      const x0 = Math.max(0, Math.floor((lens.x - ro - pad) * dpr)), y0 = Math.max(0, Math.floor((H - lens.y - ro - pad) * dpr))
-      gl.scissor(x0, y0, Math.ceil((ro + pad) * 2 * dpr), Math.ceil((ro + pad) * 2 * dpr))
-      gl.useProgram(rProg)
-      gl.uniform4f(RU.uRing, lens.x, lens.y, ri, ro); gl.uniform2f(RU.uView, canvas.height, dpr)
-      gl.uniform1f(RU.uSoft, (Ri + 1) * sc * SOFT_W)   // fondu intérieur (même largeur que dans la vue)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
-      gl.useProgram(prog)
     }
   }
   document.documentElement.classList.add('has-gl')
